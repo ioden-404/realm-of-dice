@@ -792,13 +792,22 @@ body {
 }
 
 .cell-move {
-  background: var(--color-move-highlight) !important;
   cursor: pointer;
+  outline: 2px solid rgba(74, 111, 165, 0.8);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 12px rgba(74, 111, 165, 0.5);
+}
+
+.cell-move:not([class*="cell-terrain-"]) {
+  background: var(--color-move-highlight) !important;
 }
 
 .cell-target {
-  animation: pulse-target 1s ease-in-out infinite;
   cursor: pointer;
+  outline: 2px solid rgba(200, 48, 48, 0.9);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 12px rgba(200, 48, 48, 0.5);
+  animation: pulse-target 1s ease-in-out infinite;
 }
 
 .cell-rune {
