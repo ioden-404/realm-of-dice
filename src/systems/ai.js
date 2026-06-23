@@ -188,6 +188,15 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
 
       if (canKill(character, enemy, ability)) attackScore += 20
 
+      if (dist <= 1) attackScore += 4
+
+      const guardsNearTarget = enemies.filter(e =>
+        e.id !== enemy.id && e.classId === 'guerrier' &&
+        getCombatDistance(e.position, enemy.position) <= 1 &&
+        getCombatDistance(position, e.position) < dist
+      )
+      if (guardsNearTarget.length > 0) attackScore *= 0.6
+
       if (ability.id === 'coup-fatal') attackScore += 30
       if (ability.effect === 'stun') attackScore += 8
       if (ability.pushOnHit) attackScore += 4
@@ -204,22 +213,45 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
 
   let minEnemyDist = Infinity
   let adjEnemyCount = 0
+  let danger = 0
   for (const enemy of enemies) {
     const d = getCombatDistance(position, enemy.position)
     if (d < minEnemyDist) minEnemyDist = d
-    if (d <= 1) adjEnemyCount++
+    if (d <= 1) {
+      adjEnemyCount++
+      danger += 5
+      if (enemy.classId === 'guerrier') danger += 5
+      if (enemy.classId === 'voleur') danger += 2
+    }
   }
+
+  const isMelee = classId === 'guerrier' || classId === 'voleur'
+  score -= danger * (isMelee ? 0.3 : 0.8)
+
+  let allyNearby = 0
+  for (const ally of allies) {
+    if (getCombatDistance(position, ally.position) <= 2) allyNearby++
+  }
+  if (adjEnemyCount > 0 && allyNearby === 0) score -= 8
 
   score += Math.max(0, 10 - minEnemyDist) * 2
 
-  const highPriorityTarget = enemies.reduce((best, e) => {
-    const p = getTargetPriority(e)
-    return p > (best?.p || 0) ? { target: e, p } : best
-  }, null)
+  const safePriority = enemies
+    .map(e => ({
+      target: e,
+      priority: getTargetPriority(e),
+      dist: getCombatDistance(position, e.position),
+      guarded: enemies.some(g => g.id !== e.id && g.classId === 'guerrier' && getCombatDistance(g.position, e.position) <= 1)
+    }))
+    .sort((a, b) => {
+      const aScore = a.priority / (a.dist + 1) * (a.guarded ? 0.5 : 1)
+      const bScore = b.priority / (b.dist + 1) * (b.guarded ? 0.5 : 1)
+      return bScore - aScore
+    })[0]
 
-  if (highPriorityTarget) {
-    const distToTarget = getCombatDistance(position, highPriorityTarget.target.position)
-    score += Math.max(0, 8 - distToTarget) * highPriorityTarget.p
+  if (safePriority) {
+    const effPriority = safePriority.priority * (safePriority.guarded ? 0.5 : 1)
+    score += Math.max(0, 8 - safePriority.dist) * effPriority
   }
 
   switch (classId) {
