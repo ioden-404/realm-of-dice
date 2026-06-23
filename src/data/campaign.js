@@ -142,12 +142,13 @@ export function generateCampaignMap(actIndex) {
 export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18 }
 
 export const SHOP_ITEMS = [
-  { id: 'potion-soin', name: 'Potion de soin', desc: 'Soigne 50% PV d\'un allié', icon: '🧪', cost: 12, effect: 'healAlly', value: 0.5 },
-  { id: 'potion-grand-soin', name: 'Grand soin', desc: 'Soigne 100% PV d\'un allié', icon: '💊', cost: 22, effect: 'fullHealAlly', value: 1 },
-  { id: 'elixir-rez', name: 'Élixir de vie', desc: 'Revive un allié à 50% PV', icon: '⚗️', cost: 28, effect: 'reviveAlly', value: 0.5 },
-  { id: 'parchemin-bouclier', name: 'Parchemin bouclier', desc: '+8 bouclier au prochain combat (équipe)', icon: '📜', cost: 15, effect: 'teamShield', value: 8 },
-  { id: 'potion-rage', name: 'Potion de rage', desc: 'Rage 3 tours au prochain combat (équipe)', icon: '🔥', cost: 18, effect: 'teamRage', value: 3 },
-  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe', icon: '🌿', cost: 10, effect: 'teamHeal', value: 0.3 },
+  { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },
+  { id: 'potion-resistance', name: 'Potion de résistance', desc: '+2 CA pendant 3 tours', icon: '🛡️', cost: 14, actionType: 'bonus', targetType: 'self', effect: 'acBoost', acBonus: 2, duration: 3 },
+  { id: 'antidote', name: 'Antidote', desc: 'Retire poison et malédictions', icon: '💊', cost: 8, actionType: 'bonus', targetType: 'self', effect: 'purify' },
+  { id: 'huile', name: 'Bouteille d\'huile', desc: 'Crée zone huile 2x2, inflammable !', icon: '🛢️', cost: 12, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'oil', terrainEmoji: '🟤', terrainLabel: 'Huile', aoeSize: 2, duration: 4 },
+  { id: 'torche', name: 'Torche', desc: 'Enflamme une zone (feu 6 dégâts/tour)', icon: '🔥', cost: 8, actionType: 'bonus', targetType: 'cell', range: 2, effect: 'ignite', fireDamage: 6, fireDuration: 3 },
+  { id: 'bombe-fumigene', name: 'Bombe fumigène', desc: 'Fumée 2x2 bloque la vue, 2 tours', icon: '💨', cost: 14, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'smoke', terrainEmoji: '🌫️', terrainLabel: 'Fumée', aoeSize: 2, duration: 2 },
+  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe (hors combat)', icon: '🌿', cost: 10, effect: 'teamHeal', value: 0.3 },
 ]
 
 export function generateShopItems() {
@@ -155,7 +156,7 @@ export function generateShopItems() {
 }
 
 export function generateRewardChoices(count = 3) {
-  return shuffle([...SHOP_ITEMS].filter(i => i.cost <= 15)).slice(0, count)
+  return shuffle([...SHOP_ITEMS].filter(i => i.cost <= 12)).slice(0, count)
 }
 
 export function applyCampaignRest(characters, healFactor = 0.3) {

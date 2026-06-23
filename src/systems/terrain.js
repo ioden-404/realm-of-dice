@@ -4,7 +4,10 @@ export const TERRAIN_TYPES = {
   BLOCKING: 'blocking',
   DIFFICULT: 'difficult',
   COVER: 'cover',
-  HAZARD: 'hazard'
+  HAZARD: 'hazard',
+  OIL: 'oil',
+  FIRE: 'fire',
+  SMOKE: 'smoke'
 }
 
 export const HAZARD_DAMAGE = 4

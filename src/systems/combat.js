@@ -361,6 +361,11 @@ export function processStartOfTurn(character, terrain = {}) {
     effects.push({ type: 'damage', targetId: character.id, amount: HAZARD_DAMAGE })
     logs.push(`🔥 ${character.name} subit ${HAZARD_DAMAGE} dégâts de ${terrainCell.label} !`)
   }
+  if (terrainCell && terrainCell.type === TERRAIN_TYPES.FIRE) {
+    const fireDmg = terrainCell.damage || 6
+    effects.push({ type: 'damage', targetId: character.id, amount: fireDmg })
+    logs.push(`🔥 ${character.name} subit ${fireDmg} dégâts de feu !`)
+  }
 
   return { logs, effects }
 }

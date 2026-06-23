@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TURN_STATES } from '../data/config.js'
+import { UNIVERSAL_ACTIONS } from '../data/items.js'
 
 function getACBonus(character) {
   let bonus = 0
@@ -81,7 +82,9 @@ export default function ActionPanel({
   onSelectCategory,
   onSelectAbility,
   onEndTurn,
-  onBack
+  onBack,
+  combatInventory,
+  onUseItem
 }) {
   if (!character || character.team === 'enemy') return null
 
@@ -101,10 +104,48 @@ export default function ActionPanel({
   }
 
   if (turnState === TURN_STATES.SELECTING_ACTION && selectedCategory) {
-    const abilities = selectedCategory === 'actions'
-      ? classData.abilities.actions
-      : classData.abilities.bonusActions
+    if (selectedCategory === 'items') {
+      const items = combatInventory || []
+      return (
+        <div className="action-panel">
+          <div className="action-header">
+            <button className="action-back" onClick={onBack}>← Retour</button>
+            <span className="action-title">🎒 Objets</span>
+          </div>
+          <div className="ability-list">
+            {items.length === 0 && <div className="action-empty">Aucun objet</div>}
+            {items.map((item, i) => {
+              const canUse = item.actionType === 'bonus' ? !character.bonusActionUsed : !character.actionUsed
+              return (
+                <div key={`${item.id}-${i}`} className={`ability-card ${!canUse ? 'ability-disabled' : ''}`}>
+                  <button className="ability-card-main" disabled={!canUse} onClick={() => canUse && onUseItem(item)}>
+                    <div className="ability-card-top">
+                      <span className="ability-name">{item.emoji} {item.name}</span>
+                      <span className="ability-damage">{item.actionType === 'bonus' ? 'Bonus' : 'Action'}</span>
+                    </div>
+                    <div className="ability-card-bottom">
+                      <span className="ability-cd-info">{item.description}</span>
+                    </div>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )
+    }
+
+    let abilities = selectedCategory === 'actions'
+      ? [...classData.abilities.actions]
+      : [...classData.abilities.bonusActions]
     const isBonusAction = selectedCategory === 'bonusActions'
+
+    if (selectedCategory === 'actions') {
+      const hasDisengage = abilities.some(a => a.effect === 'disengage')
+      const hasDodge = abilities.some(a => a.effect === 'dodge')
+      if (!hasDisengage) abilities.push(UNIVERSAL_ACTIONS.find(a => a.effect === 'disengage'))
+      if (!hasDodge) abilities.push(UNIVERSAL_ACTIONS.find(a => a.effect === 'dodge'))
+    }
 
     return (
       <div className="action-panel">
@@ -113,7 +154,7 @@ export default function ActionPanel({
           <span className="action-title">{isBonusAction ? 'Bonus Actions' : 'Actions'}</span>
         </div>
         <div className="ability-list">
-          {abilities.map(ability => {
+          {abilities.filter(Boolean).map(ability => {
             const abilityState = getAbilityState(character.id, ability)
             return (
               <AbilityButton
@@ -158,6 +199,14 @@ export default function ActionPanel({
           onClick={() => onSelectCategory('bonusActions')}
         >
           ✨ Bonus
+        </button>
+        <button
+          className={`action-btn ${(!combatInventory || combatInventory.length === 0) ? 'action-used' : ''}`}
+          disabled={!combatInventory || combatInventory.length === 0}
+          onClick={() => onSelectCategory('items')}
+        >
+          🎒 Objets
+          {combatInventory?.length > 0 && <span className="action-sub">{combatInventory.length}</span>}
         </button>
         <button className="action-btn action-end" onClick={onEndTurn}>
           ⏭️ Fin du tour

@@ -153,7 +153,7 @@ export function checkLineOfSight(attacker, target, characters, terrain = {}) {
     const checkY = Math.round(attacker.position.y + (dy * i) / steps)
 
     const terrainCell = terrain[`${checkX},${checkY}`]
-    if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) return false
+    if (terrainCell && (terrainCell.type === TERRAIN_TYPES.BLOCKING || terrainCell.type === TERRAIN_TYPES.SMOKE)) return false
 
     for (const char of Object.values(characters)) {
       if (char.isDead) continue

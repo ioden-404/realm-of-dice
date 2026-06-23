@@ -884,6 +884,28 @@ body {
   50% { background: rgba(180, 50, 20, 0.5); }
 }
 
+.cell-terrain-oil {
+  background: rgba(139, 119, 42, 0.35) !important;
+}
+
+.cell-terrain-fire {
+  animation: pulse-fire 1s ease-in-out infinite;
+}
+
+@keyframes pulse-fire {
+  0%, 100% { background: rgba(255, 80, 0, 0.35); }
+  50% { background: rgba(255, 120, 0, 0.55); }
+}
+
+.cell-terrain-smoke {
+  background: rgba(150, 150, 150, 0.4) !important;
+}
+
+.cell-selectable {
+  cursor: crosshair;
+  outline: 1px dashed rgba(201, 168, 76, 0.5);
+}
+
 /* ========== TOKEN ========== */
 
 .token {
@@ -1424,6 +1446,14 @@ body {
 .combat-menu-confirm-btns {
   display: flex;
   gap: 10px;
+}
+
+.action-empty {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 12px;
 }
 
 .action-header {

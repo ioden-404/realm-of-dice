@@ -8,6 +8,7 @@ import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
 import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS } from '../data/campaign.js'
+import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -133,6 +134,105 @@ function initUses(character) {
   return uses
 }
 
+function resolveItemUse(character, item, targetCell, terrain, characters) {
+  const logs = []
+  const effects = []
+  let newTerrain = { ...terrain }
+
+  if (item.effect === 'heal') {
+    const match = item.healDice.match(/(\d+)d(\d+)(?:\+(\d+))?/)
+    if (match) {
+      let total = 0
+      for (let i = 0; i < parseInt(match[1]); i++) total += Math.floor(Math.random() * parseInt(match[2])) + 1
+      total += parseInt(match[3]) || 0
+      const heal = Math.min(total, character.maxHp - character.hp)
+      effects.push({ type: 'heal', targetId: character.id, amount: heal })
+      logs.push(`🧪 ${character.name} boit une potion — +${heal} PV`)
+    }
+  } else if (item.effect === 'acBoost') {
+    effects.push({ type: 'addStatus', targetId: character.id, status: { type: 'defensePosture', acBonus: item.acBonus, duration: item.duration } })
+    logs.push(`🛡️ ${character.name} boit une potion de résistance — +${item.acBonus} CA`)
+  } else if (item.effect === 'purify') {
+    effects.push({ type: 'removeStatus', targetId: character.id, statusType: 'poison' })
+    effects.push({ type: 'removeStatus', targetId: character.id, statusType: 'cursedMark' })
+    effects.push({ type: 'removeStatus', targetId: character.id, statusType: 'antiHeal' })
+    logs.push(`💊 ${character.name} utilise un antidote`)
+  } else if (item.effect === 'createTerrain' && targetCell) {
+    const size = item.aoeSize || 1
+    for (let dx = 0; dx < size; dx++) {
+      for (let dy = 0; dy < size; dy++) {
+        const key = `${targetCell.x + dx},${targetCell.y + dy}`
+        if (targetCell.x + dx < 7 && targetCell.y + dy < 5 && !terrain[key]?.type?.match(/blocking/)) {
+          newTerrain[key] = { type: item.terrainType, emoji: item.terrainEmoji, label: item.terrainLabel, duration: item.duration }
+        }
+      }
+    }
+    logs.push(`${item.emoji} ${character.name} lance ${item.name} !`)
+  } else if (item.effect === 'ignite' && targetCell) {
+    const keysToIgnite = []
+    const checkAndIgnite = (x, y) => {
+      const key = `${x},${y}`
+      if (terrain[key]?.type === 'oil' || newTerrain[key]?.type === 'oil') keysToIgnite.push(key)
+    }
+    checkAndIgnite(targetCell.x, targetCell.y)
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        checkAndIgnite(targetCell.x + dx, targetCell.y + dy)
+      }
+    }
+    if (keysToIgnite.length > 0) {
+      const allOilKeys = Object.keys(newTerrain).filter(k => newTerrain[k]?.type === 'oil')
+      for (const k of allOilKeys) {
+        newTerrain[k] = { type: 'fire', emoji: '🔥', label: 'Feu', duration: item.fireDuration, damage: item.fireDamage }
+      }
+      for (const char of Object.values(characters)) {
+        if (char.isDead) continue
+        const ck = `${char.position.x},${char.position.y}`
+        if (newTerrain[ck]?.type === 'fire') {
+          effects.push({ type: 'damage', targetId: char.id, amount: item.fireDamage })
+        }
+      }
+      logs.push(`🔥 L'huile s'enflamme ! Zone de feu créée !`)
+    } else {
+      const key = `${targetCell.x},${targetCell.y}`
+      newTerrain[key] = { type: 'fire', emoji: '🔥', label: 'Feu', duration: item.fireDuration, damage: item.fireDamage }
+      logs.push(`🔥 ${character.name} allume un feu !`)
+    }
+  }
+
+  return { logs, effects, terrain: newTerrain }
+}
+
+function tickDynamicTerrain(terrain) {
+  const updated = {}
+  for (const [key, cell] of Object.entries(terrain)) {
+    if (cell.duration !== undefined && cell.duration !== null) {
+      if (cell.duration > 1) {
+        updated[key] = { ...cell, duration: cell.duration - 1 }
+      }
+    } else {
+      updated[key] = cell
+    }
+  }
+  return updated
+}
+
+function checkFireOnMagicAttack(ability, target, terrain) {
+  if (!ability.magical) return { terrain, logs: [], effects: [] }
+  const fireAbilities = ['boule-de-feu', 'sort-mineur', 'eclair', 'dragon-breath']
+  if (!fireAbilities.includes(ability.id) && !ability.id?.includes('feu') && !ability.id?.includes('fire')) return { terrain, logs: [], effects: [] }
+
+  const targetKey = `${target.position.x},${target.position.y}`
+  if (terrain[targetKey]?.type !== 'oil') return { terrain, logs: [], effects: [] }
+
+  const newTerrain = { ...terrain }
+  const allOilKeys = Object.keys(newTerrain).filter(k => newTerrain[k]?.type === 'oil')
+  for (const k of allOilKeys) {
+    newTerrain[k] = { type: 'fire', emoji: '🔥', label: 'Feu', duration: 3, damage: 6 }
+  }
+  return { terrain: newTerrain, logs: ['🔥 Le sort enflamme l\'huile !'], effects: [] }
+}
+
 function generateEnemyTeam(allyClasses) {
   const allClasses = Object.keys(CLASSES)
   const shuffled = [...allClasses].sort(() => Math.random() - 0.5)
@@ -164,6 +264,7 @@ const initialState = {
   campaignEvent: null,
   pendingPaliers: [],
   combatResult: null,
+  combatInventory: [],
   campaignMode: false
 }
 
@@ -607,12 +708,14 @@ function gameReducer(state, action) {
       let newRound = state.round
       let updatedChars = { ...newChars, [current.id]: resetCurrent }
 
+      let updatedTerrain = state.terrain
       if (nextIndex >= state.initiativeOrder.length) {
         nextIndex = 0
         newRound++
         for (const id of Object.keys(updatedChars)) {
           updatedChars[id] = { ...updatedChars[id], reactionUsed: false }
         }
+        updatedTerrain = tickDynamicTerrain(updatedTerrain)
       }
 
       while (updatedChars[state.initiativeOrder[nextIndex]]?.isDead) {
@@ -674,6 +777,7 @@ function gameReducer(state, action) {
       return {
         ...state,
         characters: updatedChars,
+        terrain: updatedTerrain,
         currentTurnIndex: nextIndex,
         round: newRound,
         turnState: isEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
@@ -871,9 +975,21 @@ function gameReducer(state, action) {
         newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon }]
       } else if (event?.type === 'merchant') {
         if ((newCampaign.gold || 0) < reward.cost) return state
-        updatedChars = applyConsumable(state.characters, reward)
         newCampaign.gold = (newCampaign.gold || 0) - reward.cost
-        newCampaign.inventory = [...(newCampaign.inventory || []), reward.id]
+        const newInventory = [...(state.combatInventory || []), {
+          id: reward.id, name: reward.name, emoji: reward.icon, description: reward.desc,
+          actionType: reward.actionType || 'bonus', targetType: reward.targetType || 'self',
+          effect: reward.effect, healDice: reward.healDice, acBonus: reward.acBonus,
+          duration: reward.duration, terrainType: reward.terrainType, terrainEmoji: reward.terrainEmoji,
+          terrainLabel: reward.terrainLabel, aoeSize: reward.aoeSize, range: reward.range,
+          fireDamage: reward.fireDamage, fireDuration: reward.fireDuration
+        }]
+        return {
+          ...state,
+          campaignEvent: { ...event, rewardSelected: false },
+          campaign: newCampaign,
+          combatInventory: newInventory
+        }
       }
 
       return {
@@ -881,6 +997,41 @@ function gameReducer(state, action) {
         characters: updatedChars,
         campaignEvent: { ...event, rewardSelected: true },
         campaign: newCampaign
+      }
+    }
+
+    case 'USE_ITEM': {
+      const { item, targetCell } = action.payload
+      const current = state.characters[state.initiativeOrder[state.currentTurnIndex]]
+      const result = resolveItemUse(current, item, targetCell, state.terrain, state.characters)
+
+      const { characters: newChars, stats: newStats } = applyEffects(
+        { characters: state.characters, stats: state.stats }, result.effects
+      )
+
+      const isBonus = item.actionType === 'bonus'
+      const updatedCurrent = {
+        ...newChars[current.id],
+        actionUsed: isBonus ? newChars[current.id].actionUsed : true,
+        bonusActionUsed: isBonus ? true : newChars[current.id].bonusActionUsed
+      }
+
+      const inventory = [...(state.combatInventory || [])]
+      const idx = inventory.findIndex(i => i.id === item.id)
+      if (idx >= 0) inventory.splice(idx, 1)
+
+      return {
+        ...state,
+        characters: { ...newChars, [current.id]: updatedCurrent },
+        stats: newStats,
+        terrain: result.terrain,
+        combatInventory: inventory,
+        log: [...state.log, ...result.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
+        turnState: TURN_STATES.IDLE,
+        selectedAbility: null,
+        selectedCategory: null,
+        validTargets: [],
+        validMoves: []
       }
     }
 

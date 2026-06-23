@@ -26,6 +26,7 @@ export default function App() {
   const audio = useAudio(HUB_MUSIC, COMBAT_MUSIC)
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
+  const [pendingItem, setPendingItem] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -257,7 +258,12 @@ export default function App() {
         turnState={state.turnState}
         terrain={state.terrain}
         terrainTheme={state.terrainTheme}
-        onCellClick={() => {}}
+        onCellClick={(x, y) => {
+          if (pendingItem) {
+            dispatch({ type: 'USE_ITEM', payload: { item: pendingItem, targetCell: { x, y } } })
+            setPendingItem(null)
+          }
+        }}
         onTokenClick={handleTokenInspect}
         onTerrainClick={(cell) => setInspectedTerrain(cell)}
       />
@@ -296,6 +302,15 @@ export default function App() {
           onSelectAbility={handleSelectAbility}
           onEndTurn={() => dispatch({ type: 'END_TURN' })}
           onBack={() => dispatch({ type: 'BACK_TO_IDLE' })}
+          combatInventory={state.combatInventory}
+          onUseItem={(item) => {
+            if (item.targetType === 'cell') {
+              setPendingItem(item)
+              dispatch({ type: 'SET_TURN_STATE', payload: { turnState: 'selecting-cell' } })
+            } else {
+              dispatch({ type: 'USE_ITEM', payload: { item, targetCell: null } })
+            }
+          }}
         />
       )}
 

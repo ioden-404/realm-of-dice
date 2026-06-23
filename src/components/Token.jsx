@@ -4,7 +4,10 @@ import { CLASS_COLORS } from '../data/config.js'
 const TERRAIN_BADGES = {
   cover: '🛡️',
   hazard: '🔥',
-  difficult: '🐌'
+  difficult: '🐌',
+  fire: '🔥',
+  oil: '🛢️',
+  smoke: '🌫️'
 }
 
 export default function Token({ character, isActive, terrainType, onClick }) {

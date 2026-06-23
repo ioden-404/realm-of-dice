@@ -5,7 +5,10 @@ const TERRAIN_LABELS = {
   cover: { icon: '🛡️', label: 'Couvert', desc: '+2 CA contre tirs à distance' },
   hazard: { icon: '🔥', label: 'Zone de danger', desc: '4 dégâts en début de tour' },
   difficult: { icon: '🐌', label: 'Terrain difficile', desc: 'Coûte 2 pts de mouvement' },
-  blocking: { icon: '⛔', label: 'Terrain bloquant', desc: 'Infranchissable' }
+  blocking: { icon: '⛔', label: 'Terrain bloquant', desc: 'Infranchissable' },
+  oil: { icon: '🛢️', label: 'Huile', desc: 'Inflammable ! Le feu crée une zone de dégâts' },
+  fire: { icon: '🔥', label: 'Feu', desc: '6 dégâts en début de tour' },
+  smoke: { icon: '🌫️', label: 'Fumée', desc: 'Bloque la ligne de vue' }
 }
 
 export default function CharacterCard({ character, terrain, onClose }) {
