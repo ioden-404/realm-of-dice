@@ -170,7 +170,7 @@ export function checkLineOfSight(attacker, target, characters, terrain = {}) {
       if (char.isDead) continue
       if (char.id === attacker.id || char.id === target.id) continue
       if (char.position.x === checkX && char.position.y === checkY) {
-        return false
+        hasSmoke = true
       }
     }
   }
