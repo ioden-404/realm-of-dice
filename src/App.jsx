@@ -212,7 +212,7 @@ export default function App() {
               dispatch({ type: 'START_CAMPAIGN', payload: { allyClasses: state.selectedClasses, modifiers: modifierIds, glory } })
             })
           }}
-          onBack={() => dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })}
+          onBack={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.TEAM_SELECT } })}
         />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>

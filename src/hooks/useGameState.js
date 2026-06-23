@@ -9,7 +9,29 @@ import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
 import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
 import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
-import { NARRATIVE_EVENTS } from '../data/modifiers.js'
+import { NARRATIVE_EVENTS, RUN_MODIFIERS } from '../data/modifiers.js'
+
+function resolveModifiers(modifierIds = []) {
+  const result = { enemyHpMult: 1, goldMult: 1, restHealMult: 1, allyHpMult: 1, allyAtkBonus: 0, xpMult: 1, extraEnemy: false, fogOfWar: false, shopCostMult: 1, treasureGoldMult: 1, combatGoldMult: 1, extraRelics: false }
+  for (const id of modifierIds) {
+    const mod = RUN_MODIFIERS.find(m => m.id === id)
+    if (!mod) continue
+    const a = mod.apply
+    if (a.enemyHpMult) result.enemyHpMult *= a.enemyHpMult
+    if (a.goldMult) result.goldMult *= a.goldMult
+    if (a.restHealMult) result.restHealMult *= a.restHealMult
+    if (a.allyHpMult) result.allyHpMult *= a.allyHpMult
+    if (a.allyAtkBonus) result.allyAtkBonus += a.allyAtkBonus
+    if (a.xpMult) result.xpMult *= a.xpMult
+    if (a.extraEnemy) result.extraEnemy = true
+    if (a.fogOfWar) result.fogOfWar = true
+    if (a.shopCostMult) result.shopCostMult *= a.shopCostMult
+    if (a.treasureGoldMult) result.treasureGoldMult *= a.treasureGoldMult
+    if (a.combatGoldMult) result.combatGoldMult *= a.combatGoldMult
+    if (a.extraRelics) result.extraRelics = true
+  }
+  return result
+}
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -266,7 +288,6 @@ const initialState = {
   pendingPaliers: [],
   combatResult: null,
   combatInventory: [],
-  narrativeEvent: null,
   campaignMode: false
 }
 
@@ -673,7 +694,9 @@ function gameReducer(state, action) {
         const newXp = (state.campaign.xp || 0) + xpGain
         const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
         execChars = palierResult.characters
-        const goldGain = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+        const runMods = resolveModifiers(state.campaign.modifiers)
+        const baseGold = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+        const goldGain = Math.floor(baseGold * runMods.goldMult * (nodeType !== 'boss' && nodeType !== 'elite' ? runMods.combatGoldMult : 1))
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         execPendingPaliers = palierResult.pendingChoices || []
         execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
@@ -774,7 +797,9 @@ function gameReducer(state, action) {
           const newXp = (state.campaign.xp || 0) + xpGain
           const palierResult2 = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
           restChars = palierResult2.characters
-          const goldGain2 = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+          const runMods2 = resolveModifiers(state.campaign.modifiers)
+          const baseGold2 = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+          const goldGain2 = Math.floor(baseGold2 * runMods2.goldMult * (nodeType !== 'boss' && nodeType !== 'elite' ? runMods2.combatGoldMult : 1))
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           endPendingPaliers = palierResult2.pendingChoices || []
           endCombatResult = { victory: true, gold: goldGain2, xp: xpGain }
@@ -900,11 +925,15 @@ function gameReducer(state, action) {
 
       const startGold = (glory.upgrades?.['base-gold'] || 0) * 10
       const hpBonus = (glory.upgrades?.['base-hp'] || 0) * 2
-      if (hpBonus > 0) {
-        for (const id of Object.keys(characters)) {
-          characters[id].maxHp += hpBonus
-          characters[id].hp += hpBonus
+      const mods = resolveModifiers(modifiers)
+
+      for (const id of Object.keys(characters)) {
+        if (hpBonus > 0) { characters[id].maxHp += hpBonus; characters[id].hp += hpBonus }
+        if (mods.allyHpMult !== 1) {
+          characters[id].maxHp = Math.floor(characters[id].maxHp * mods.allyHpMult)
+          characters[id].hp = Math.floor(characters[id].hp * mods.allyHpMult)
         }
+        if (mods.allyAtkBonus) characters[id].attackBonus += mods.allyAtkBonus
       }
 
       return {
@@ -931,7 +960,9 @@ function gameReducer(state, action) {
 
       if (node.type === 'rest') {
         const hasHealRest = teamHasHealer(state.characters)
-        const healed = { ...state.characters, ...applyCampaignRest(state.characters, hasHealRest ? 0.5 : 0.7) }
+        const restMods = resolveModifiers(campaign.modifiers)
+        const restFactor = (hasHealRest ? 0.5 : 0.7) * restMods.restHealMult
+        const healed = { ...state.characters, ...applyCampaignRest(state.characters, restFactor) }
         return {
           ...state,
           characters: healed,
@@ -940,7 +971,8 @@ function gameReducer(state, action) {
       }
 
       if (node.type === 'treasure') {
-        const goldGain = GOLD_REWARDS.treasure
+        const tMods = resolveModifiers(campaign.modifiers)
+        const goldGain = Math.floor(GOLD_REWARDS.treasure * tMods.treasureGoldMult * tMods.goldMult)
         return {
           ...state,
           campaignEvent: { type: 'treasure', goldGain, nodeId: node.id },
@@ -969,9 +1001,14 @@ function gameReducer(state, action) {
         }
       })
 
+      const combatMods = resolveModifiers(campaign.modifiers)
       node.encounter.monsters.forEach((monsterId, i) => {
         const monster = createMonster(monsterId, i, node.encounter.monsters)
         monster.uses = initUses(monster)
+        if (combatMods.enemyHpMult !== 1) {
+          monster.maxHp = Math.floor(monster.maxHp * combatMods.enemyHpMult)
+          monster.hp = monster.maxHp
+        }
         characters[monster.id] = monster
       })
 
