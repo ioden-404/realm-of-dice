@@ -1,7 +1,9 @@
 import { useEffect, useCallback, useState } from 'react'
 import { PHASES, TURN_STATES } from './data/config.js'
 import { useGameState } from './hooks/useGameState.js'
+import { useAudio } from './hooks/useAudio.js'
 import Hub from './components/Hub.jsx'
+import Settings from './components/Settings.jsx'
 import TeamSelect from './components/TeamSelect.jsx'
 import Transition from './components/Transition.jsx'
 import Board from './components/Board.jsx'
@@ -13,15 +15,34 @@ import StatusBadge from './components/StatusBadge.jsx'
 import VictoryScreen from './components/VictoryScreen.jsx'
 import CharacterCard from './components/CharacterCard.jsx'
 
+const MUSIC_SRC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
+
 export default function App() {
   const { state, dispatch, getAbilityState, executeAITurn } = useGameState()
+  const audio = useAudio(MUSIC_SRC)
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
 
   const currentChar = state.phase === PHASES.COMBAT
     ? state.characters[state.initiativeOrder[state.currentTurnIndex]]
     : null
+
+  const handleFirstInteraction = useCallback(() => {
+    audio.start()
+    window.removeEventListener('click', handleFirstInteraction)
+    window.removeEventListener('touchstart', handleFirstInteraction)
+  }, [audio])
+
+  useEffect(() => {
+    window.addEventListener('click', handleFirstInteraction)
+    window.addEventListener('touchstart', handleFirstInteraction)
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction)
+      window.removeEventListener('touchstart', handleFirstInteraction)
+    }
+  }, [handleFirstInteraction])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
@@ -88,11 +109,26 @@ export default function App() {
     }
   }, [state.selectedAbility, state.validTargets, handleTargetClick])
 
+  if (showSettings) {
+    return (
+      <div className="app">
+        <Settings
+          volume={audio.volume}
+          muted={audio.muted}
+          onVolumeChange={audio.setVolume}
+          onToggleMute={audio.toggleMute}
+          onBack={() => setShowSettings(false)}
+        />
+      </div>
+    )
+  }
+
   if (state.phase === PHASES.HUB) {
     return (
       <div className="app">
         <Hub onNavigate={(tab) => {
           if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
+          if (tab === 'settings') setShowSettings(true)
         }} />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
