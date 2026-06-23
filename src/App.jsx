@@ -16,12 +16,14 @@ import VictoryScreen from './components/VictoryScreen.jsx'
 import CharacterCard from './components/CharacterCard.jsx'
 import TerrainCard from './components/TerrainCard.jsx'
 import CampaignMap from './components/CampaignMap.jsx'
+import CombatMenu from './components/CombatMenu.jsx'
 
-const MUSIC_SRC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
+const HUB_MUSIC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
+const COMBAT_MUSIC = import.meta.env.BASE_URL + 'Audio/Bannerfall Oath.mp3'
 
 export default function App() {
   const { state, dispatch, getAbilityState, executeAITurn } = useGameState()
-  const audio = useAudio(MUSIC_SRC)
+  const audio = useAudio(HUB_MUSIC, COMBAT_MUSIC)
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -46,6 +48,10 @@ export default function App() {
       window.removeEventListener('touchstart', handleFirstInteraction)
     }
   }, [handleFirstInteraction])
+
+  useEffect(() => {
+    audio.switchTrack(state.phase === PHASES.COMBAT ? 'combat' : 'hub')
+  }, [state.phase])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
@@ -277,9 +283,16 @@ export default function App() {
           onSelectAbility={handleSelectAbility}
           onEndTurn={() => dispatch({ type: 'END_TURN' })}
           onBack={() => dispatch({ type: 'BACK_TO_IDLE' })}
-          onAbandon={() => dispatch({ type: 'RESTART' })}
         />
       )}
+
+      <CombatMenu
+        volume={audio.volume}
+        muted={audio.muted}
+        onVolumeChange={audio.setVolume}
+        onToggleMute={audio.toggleMute}
+        onAbandon={() => dispatch({ type: 'RESTART' })}
+      />
 
       {inspectedCharId && state.characters[inspectedCharId] && (
         <CharacterCard

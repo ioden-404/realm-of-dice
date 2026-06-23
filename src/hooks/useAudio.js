@@ -16,42 +16,61 @@ function saveSettings(settings) {
   } catch {}
 }
 
-export function useAudio(src) {
-  const audioRef = useRef(null)
+export function useAudio(hubSrc, combatSrc) {
+  const hubRef = useRef(null)
+  const combatRef = useRef(null)
   const [started, setStarted] = useState(false)
   const [volume, setVolumeState] = useState(() => loadSettings().volume)
   const [muted, setMutedState] = useState(() => loadSettings().muted)
+  const [track, setTrack] = useState('hub')
 
   useEffect(() => {
-    const audio = new Audio(src)
-    audio.loop = true
-    audio.volume = muted ? 0 : volume
-    audioRef.current = audio
+    const hub = new Audio(hubSrc)
+    hub.loop = true
+    hub.volume = muted ? 0 : volume
+    hubRef.current = hub
+
+    const combat = new Audio(combatSrc)
+    combat.loop = true
+    combat.volume = muted ? 0 : volume
+    combatRef.current = combat
+
     return () => {
-      audio.pause()
-      audio.src = ''
+      hub.pause(); hub.src = ''
+      combat.pause(); combat.src = ''
     }
-  }, [src])
+  }, [hubSrc, combatSrc])
 
   useEffect(() => {
-    if (!audioRef.current) return
-    audioRef.current.volume = muted ? 0 : volume
+    const vol = muted ? 0 : volume
+    if (hubRef.current) hubRef.current.volume = vol
+    if (combatRef.current) combatRef.current.volume = vol
     saveSettings({ volume, muted })
   }, [volume, muted])
 
+  useEffect(() => {
+    if (!started) return
+    if (track === 'combat') {
+      hubRef.current?.pause()
+      combatRef.current?.play().catch(() => {})
+    } else {
+      combatRef.current?.pause()
+      hubRef.current?.play().catch(() => {})
+    }
+  }, [track, started])
+
   const start = useCallback(() => {
-    if (started || !audioRef.current) return
-    audioRef.current.play().catch(() => {})
+    if (started) return
+    hubRef.current?.play().catch(() => {})
     setStarted(true)
   }, [started])
 
-  const setVolume = useCallback((v) => {
-    setVolumeState(v)
+  const switchTrack = useCallback((t) => {
+    setTrack(t)
   }, [])
 
-  const toggleMute = useCallback(() => {
-    setMutedState(m => !m)
-  }, [])
+  const setVolume = useCallback((v) => setVolumeState(v), [])
+  const toggleMute = useCallback(() => setMutedState(m => !m), [])
 
-  return { volume, muted, setVolume, toggleMute, start }
+  return { volume, muted, setVolume, toggleMute, start, switchTrack, track }
 }

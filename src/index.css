@@ -1305,6 +1305,119 @@ body {
   cursor: pointer;
 }
 
+/* ========== COMBAT MENU (gear) ========== */
+
+.combat-menu-toggle {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: rgba(42, 31, 14, 0.85);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.combat-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 95;
+  padding: 20px;
+  animation: fade-in 0.15s ease-out;
+}
+
+.combat-menu {
+  background: linear-gradient(145deg, #2a1f0e, #3d3428, #2a1f0e);
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+  max-width: 300px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.combat-menu-title {
+  font-family: var(--font-title);
+  font-size: 16px;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.combat-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.combat-menu-label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.combat-menu-slider {
+  flex: 1;
+  accent-color: var(--color-gold);
+  height: 4px;
+}
+
+.combat-menu-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: rgba(61, 52, 40, 0.5);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.combat-menu-abandon {
+  border-color: var(--color-crimson);
+  color: var(--color-crimson-light);
+}
+
+.combat-menu-close {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  margin-top: 4px;
+}
+
+.combat-menu-divider {
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+}
+
+.combat-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.combat-menu-confirm-btns {
+  display: flex;
+  gap: 10px;
+}
+
 .action-header {
   display: flex;
   align-items: center;
