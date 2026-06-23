@@ -1308,21 +1308,17 @@ body {
 /* ========== COMBAT MENU (gear) ========== */
 
 .combat-menu-toggle {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   background: rgba(42, 31, 14, 0.85);
-  font-size: 18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 50;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .combat-menu-overlay {

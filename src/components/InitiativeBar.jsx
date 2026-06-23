@@ -1,6 +1,6 @@
 import { CLASS_COLORS } from '../data/config.js'
 
-export default function InitiativeBar({ characters, initiativeOrder, currentTurnIndex, round }) {
+export default function InitiativeBar({ characters, initiativeOrder, currentTurnIndex, round, children }) {
   return (
     <div className="initiative-bar">
       <span className="initiative-label">Initiative</span>
@@ -25,6 +25,7 @@ export default function InitiativeBar({ characters, initiativeOrder, currentTurn
         })}
       </div>
       <span className="initiative-round">R{round}</span>
+      {children}
     </div>
   )
 }

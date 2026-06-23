@@ -234,7 +234,15 @@ export default function App() {
         initiativeOrder={state.initiativeOrder}
         currentTurnIndex={state.currentTurnIndex}
         round={state.round}
-      />
+      >
+        <CombatMenu
+          volume={audio.volume}
+          muted={audio.muted}
+          onVolumeChange={audio.setVolume}
+          onToggleMute={audio.toggleMute}
+          onAbandon={() => dispatch({ type: 'RESTART' })}
+        />
+      </InitiativeBar>
 
       <Board
         characters={state.characters}
@@ -285,14 +293,6 @@ export default function App() {
           onBack={() => dispatch({ type: 'BACK_TO_IDLE' })}
         />
       )}
-
-      <CombatMenu
-        volume={audio.volume}
-        muted={audio.muted}
-        onVolumeChange={audio.setVolume}
-        onToggleMute={audio.toggleMute}
-        onAbandon={() => dispatch({ type: 'RESTART' })}
-      />
 
       {inspectedCharId && state.characters[inspectedCharId] && (
         <CharacterCard

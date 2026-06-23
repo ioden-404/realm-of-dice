@@ -17,8 +17,11 @@ function saveSettings(settings) {
 }
 
 export function useAudio(hubSrc, combatSrc) {
+  const ctxRef = useRef(null)
   const hubRef = useRef(null)
   const combatRef = useRef(null)
+  const hubGainRef = useRef(null)
+  const combatGainRef = useRef(null)
   const [started, setStarted] = useState(false)
   const [volume, setVolumeState] = useState(() => loadSettings().volume)
   const [muted, setMutedState] = useState(() => loadSettings().muted)
@@ -27,12 +30,12 @@ export function useAudio(hubSrc, combatSrc) {
   useEffect(() => {
     const hub = new Audio(hubSrc)
     hub.loop = true
-    hub.volume = muted ? 0 : volume
+    hub.crossOrigin = 'anonymous'
     hubRef.current = hub
 
     const combat = new Audio(combatSrc)
     combat.loop = true
-    combat.volume = muted ? 0 : volume
+    combat.crossOrigin = 'anonymous'
     combatRef.current = combat
 
     return () => {
@@ -41,8 +44,37 @@ export function useAudio(hubSrc, combatSrc) {
     }
   }, [hubSrc, combatSrc])
 
+  const ensureContext = useCallback(() => {
+    if (ctxRef.current) return
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    ctxRef.current = ctx
+
+    const hubGain = ctx.createGain()
+    hubGain.connect(ctx.destination)
+    hubGainRef.current = hubGain
+
+    const combatGain = ctx.createGain()
+    combatGain.connect(ctx.destination)
+    combatGainRef.current = combatGain
+
+    if (hubRef.current) {
+      try {
+        const hubSource = ctx.createMediaElementSource(hubRef.current)
+        hubSource.connect(hubGain)
+      } catch {}
+    }
+    if (combatRef.current) {
+      try {
+        const combatSource = ctx.createMediaElementSource(combatRef.current)
+        combatSource.connect(combatGain)
+      } catch {}
+    }
+  }, [])
+
   useEffect(() => {
     const vol = muted ? 0 : volume
+    if (hubGainRef.current) hubGainRef.current.gain.value = vol
+    if (combatGainRef.current) combatGainRef.current.gain.value = vol
     if (hubRef.current) hubRef.current.volume = vol
     if (combatRef.current) combatRef.current.volume = vol
     saveSettings({ volume, muted })
@@ -61,14 +93,13 @@ export function useAudio(hubSrc, combatSrc) {
 
   const start = useCallback(() => {
     if (started) return
+    ensureContext()
+    if (ctxRef.current?.state === 'suspended') ctxRef.current.resume()
     hubRef.current?.play().catch(() => {})
     setStarted(true)
-  }, [started])
+  }, [started, ensureContext])
 
-  const switchTrack = useCallback((t) => {
-    setTrack(t)
-  }, [])
-
+  const switchTrack = useCallback((t) => setTrack(t), [])
   const setVolume = useCallback((v) => setVolumeState(v), [])
   const toggleMute = useCallback(() => setMutedState(m => !m), [])
 
