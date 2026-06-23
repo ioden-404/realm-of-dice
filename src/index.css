@@ -2376,6 +2376,22 @@ body {
 .cmap-grid {
   position: relative;
   width: 100%;
+  z-index: 0;
+}
+
+.cmap-abandon-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  opacity: 0.7;
+  position: relative;
+  z-index: 10;
 }
 
 .cmap-lines {
