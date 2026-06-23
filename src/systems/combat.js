@@ -1,13 +1,14 @@
 import { rollD20, rollDice, rollDiceCrit, rollRange, rollWithAdvantage, rollWithDisadvantage } from './dice.js'
 import { getDistance, isAdjacent, getAdjacentAllies, getAdjacentEnemies, checkLineOfSight, findPushDestination } from './movement.js'
+import { TERRAIN_TYPES, HAZARD_DAMAGE } from './terrain.js'
 
-export function resolveAttack(attacker, target, ability, characters) {
+export function resolveAttack(attacker, target, ability, characters, terrain = {}) {
   const logs = []
   const effects = []
   let hasAdvantage = hasStatus(attacker, 'advantage')
   let hasDisadvantage = false
 
-  if (ability.magical && !checkLineOfSight(attacker, target, characters)) {
+  if (ability.magical && !checkLineOfSight(attacker, target, characters, terrain)) {
     hasDisadvantage = true
     logs.push('👁️ Ligne de vue bloquée - désavantage !')
   }
@@ -42,7 +43,12 @@ export function resolveAttack(attacker, target, ability, characters) {
   const rageBonus = hasStatus(attacker, 'rage') ? 2 : 0
   const attackTotal = d20Roll + attacker.attackBonus + rageBonus
 
-  const targetAC = getEffectiveAC(target)
+  let targetAC = getEffectiveAC(target)
+
+  const abilityRange = ability.range || attacker.range || 1
+  const targetTerrain = terrain[`${target.position.x},${target.position.y}`]
+  const coverBonus = (abilityRange > 1 && targetTerrain && targetTerrain.type === TERRAIN_TYPES.COVER) ? 2 : 0
+  targetAC += coverBonus
 
   if (isCritFail) {
     logs.push(`🎲 d20 = 1 - Raté critique !`)
@@ -52,7 +58,7 @@ export function resolveAttack(attacker, target, ability, characters) {
   const hit = isCrit || attackTotal >= targetAC
 
   if (!isCrit) {
-    logs.push(`🎲 d20+${attacker.attackBonus}${rageBonus ? `+${rageBonus}` : ''} = ${attackTotal} vs CA ${targetAC} - ${hit ? 'Touché !' : 'Raté !'}`)
+    logs.push(`🎲 d20+${attacker.attackBonus}${rageBonus ? `+${rageBonus}` : ''} = ${attackTotal} vs CA ${targetAC}${coverBonus ? ' (couvert +2)' : ''} - ${hit ? 'Touché !' : 'Raté !'}`)
   } else {
     logs.push(`🎲 d20 = 20 - CRITIQUE ! ⚡`)
   }
@@ -133,14 +139,14 @@ export function resolveAttack(attacker, target, ability, characters) {
   return { hit: true, logs, effects, isCrit, isCritFail: false, damage: finalDamage }
 }
 
-export function resolveMultiHit(attacker, target, ability, characters) {
+export function resolveMultiHit(attacker, target, ability, characters, terrain = {}) {
   const allLogs = []
   const allEffects = []
   let totalDamage = 0
 
   for (let i = 0; i < ability.hits; i++) {
     allLogs.push(`--- Frappe ${i + 1} ---`)
-    const result = resolveAttack(attacker, target, { ...ability, hits: undefined }, characters)
+    const result = resolveAttack(attacker, target, { ...ability, hits: undefined }, characters, terrain)
     allLogs.push(...result.logs)
     allEffects.push(...result.effects)
     if (result.hit) totalDamage += result.damage || 0
@@ -175,7 +181,7 @@ export function resolveHeal(healer, target, ability) {
   return { logs, effects, healAmount: actualHeal }
 }
 
-export function resolveAbility(attacker, target, ability, characters) {
+export function resolveAbility(attacker, target, ability, characters, terrain = {}) {
   const logs = []
   const effects = []
 
@@ -220,9 +226,16 @@ export function resolveAbility(attacker, target, ability, characters) {
   }
 
   if (ability.effect === 'push') {
-    const newPos = findPushDestination(target, attacker, ability.pushDistance, characters)
+    const newPos = findPushDestination(target, attacker, ability.pushDistance, characters, terrain)
     effects.push({ type: 'move', characterId: target.id, position: newPos })
     logs.push(`🌀 ${attacker.name} repousse ${target.name} !`)
+
+    const destTerrain = terrain[`${newPos.x},${newPos.y}`]
+    if (destTerrain && destTerrain.type === TERRAIN_TYPES.HAZARD) {
+      effects.push({ type: 'damage', targetId: target.id, amount: HAZARD_DAMAGE })
+      logs.push(`🔥 ${target.name} est projeté dans ${destTerrain.label} ! ${HAZARD_DAMAGE} dégâts !`)
+    }
+
     return { logs, effects }
   }
 
@@ -312,15 +325,15 @@ export function resolveAbility(attacker, target, ability, characters) {
 
   if (ability.damage) {
     if (ability.hits && ability.hits > 1) {
-      return resolveMultiHit(attacker, target, ability, characters)
+      return resolveMultiHit(attacker, target, ability, characters, terrain)
     }
-    return resolveAttack(attacker, target, ability, characters)
+    return resolveAttack(attacker, target, ability, characters, terrain)
   }
 
   return { logs, effects }
 }
 
-export function processStartOfTurn(character) {
+export function processStartOfTurn(character, terrain = {}) {
   const logs = []
   const effects = []
 
@@ -328,6 +341,12 @@ export function processStartOfTurn(character) {
   if (poison) {
     effects.push({ type: 'damage', targetId: character.id, amount: poison.damage })
     logs.push(`☠️ ${character.name} subit ${poison.damage} dégâts de poison (${poison.source})`)
+  }
+
+  const terrainCell = terrain[`${character.position.x},${character.position.y}`]
+  if (terrainCell && terrainCell.type === TERRAIN_TYPES.HAZARD) {
+    effects.push({ type: 'damage', targetId: character.id, amount: HAZARD_DAMAGE })
+    logs.push(`🔥 ${character.name} subit ${HAZARD_DAMAGE} dégâts de ${terrainCell.label} !`)
   }
 
   return { logs, effects }
@@ -341,6 +360,61 @@ export function processEndOfTurn(character) {
   effects.push({ type: 'removeStatus', targetId: character.id, statusType: 'disengaged' })
 
   return { effects }
+}
+
+export function resolveOpportunityAttacks(mover, oldPosition, characters) {
+  const logs = []
+  const effects = []
+
+  if (hasStatus(mover, 'disengaged')) return { logs, effects }
+
+  for (const char of Object.values(characters)) {
+    if (char.isDead || char.team === mover.team || char.reactionUsed) continue
+
+    const wasAdjacent = Math.max(
+      Math.abs(oldPosition.x - char.position.x),
+      Math.abs(oldPosition.y - char.position.y)
+    ) <= 1
+
+    if (!wasAdjacent) continue
+
+    const aoAbility = char.classData.abilities.reactions.find(r => r.trigger === 'enemyLeaves')
+    if (!aoAbility) continue
+    if (!aoAbility.damage) continue
+
+    logs.push(`⚡ ATTAQUE D'OPPORTUNITÉ - ${char.name} réagit !`)
+
+    const d20 = rollD20()
+    const isCrit = d20 === 20
+    const isFail = d20 === 1
+    const rageBonus = hasStatus(char, 'rage') ? 2 : 0
+    const total = d20 + char.attackBonus + rageBonus
+    const targetAC = mover.ac
+
+    if (isFail) {
+      logs.push(`🎲 d20 = 1 - Raté critique !`)
+      effects.push({ type: 'useReaction', targetId: char.id })
+      continue
+    }
+
+    const hit = isCrit || total >= targetAC
+    logs.push(`🎲 d20+${char.attackBonus}${rageBonus ? `+${rageBonus}` : ''} = ${total} vs CA ${targetAC} - ${hit ? 'Touché !' : 'Raté !'}`)
+
+    if (hit) {
+      const dmgRoll = isCrit ? rollDiceCrit(aoAbility.damage) : rollDice(aoAbility.damage)
+      let dmg = dmgRoll.total
+      if (hasStatus(char, 'rage')) {
+        const rageDmg = rollDice('1d4')
+        dmg += rageDmg.total
+      }
+      logs.push(`🔥 ${dmg} dégâts d'opportunité`)
+      effects.push({ type: 'damage', targetId: mover.id, amount: dmg })
+    }
+
+    effects.push({ type: 'useReaction', targetId: char.id })
+  }
+
+  return { logs, effects }
 }
 
 export function checkRageComeback(deadCharacter, characters) {

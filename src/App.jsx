@@ -176,6 +176,7 @@ export default function App() {
         validMoves={state.validMoves}
         validTargets={state.validTargets}
         turnState={state.turnState}
+        terrain={state.terrain}
         onCellClick={() => {}}
         onTokenClick={handleTokenInspect}
       />

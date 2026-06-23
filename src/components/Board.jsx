@@ -7,6 +7,7 @@ export default function Board({
   validMoves,
   validTargets,
   turnState,
+  terrain = {},
   onCellClick,
   onTokenClick
 }) {
@@ -23,16 +24,23 @@ export default function Board({
       )
       const isValidTarget = charHere && validTargets.includes(charHere.id)
       const isCorner = (x === 0 || x === BOARD_COLS - 1) && (y === 0 || y === BOARD_ROWS - 1)
+      const terrainCell = terrain[`${x},${y}`]
+      const terrainClass = terrainCell ? `cell-terrain-${terrainCell.type}` : ''
 
       cells.push(
         <div
           key={`${x}-${y}`}
-          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''}`}
+          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass}`}
           onClick={() => {
             if (isValidMove) onCellClick(x, y)
           }}
         >
           {isCorner && <div className="cell-rune">᛭</div>}
+          {terrainCell && (
+            <div className="cell-terrain-icon" title={terrainCell.label}>
+              {terrainCell.emoji}
+            </div>
+          )}
           {charHere && (
             <Token
               character={charHere}

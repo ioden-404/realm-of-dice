@@ -19,7 +19,8 @@ export default function Token({ character, isActive, onClick }) {
   const circumference = Math.PI * 40
   const offset = circumference * (1 - hpPercent)
   const hpColor = hpPercent > 0.5 ? '#4caf50' : hpPercent > 0.25 ? '#ff9800' : '#f44336'
-  const teamColor = character.team === 'ally' ? '#c9a84c' : '#8b2020'
+  const isAlly = character.team === 'ally'
+  const teamColor = isAlly ? '#c9a84c' : '#8b2020'
   const classColor = CLASS_COLORS[character.classId]
   const hasRage = character.statuses.some(s => s.type === 'rage')
   const hasPoison = character.statuses.some(s => s.type === 'poison')
@@ -43,7 +44,7 @@ export default function Token({ character, isActive, onClick }) {
   return (
     <div
       ref={tokenRef}
-      className={`token ${isActive ? 'token-active' : ''} ${hasRage ? 'token-rage' : ''}`}
+      className={`token ${isAlly ? 'token-ally' : 'token-enemy'} ${isActive ? 'token-active' : ''} ${hasRage ? 'token-rage' : ''}`}
       style={{ '--team-color': teamColor, '--class-color': classColor }}
       onClick={onClick}
     >
@@ -62,6 +63,9 @@ export default function Token({ character, isActive, onClick }) {
       </svg>
       <div className="token-inner">
         <span className="token-emoji">{character.emoji}</span>
+      </div>
+      <div className="token-team-marker">
+        {isAlly ? '▲' : '▼'}
       </div>
       {isActive && <div className="token-active-badge">ACTIF</div>}
       <div className="token-status-icons">

@@ -1,7 +1,8 @@
 import { getDistance, getAdjacentEnemies, getAccessibleCells, getCombatDistance } from './movement.js'
 import { hasStatus } from './combat.js'
+import { TERRAIN_TYPES } from './terrain.js'
 
-export function decideAction(character, characters, getAbilityState) {
+export function decideAction(character, characters, getAbilityState, terrain = {}) {
   const enemies = Object.values(characters).filter(c => c.team !== character.team && !c.isDead)
   const allies = Object.values(characters).filter(c => c.team === character.team && !c.isDead && c.id !== character.id)
 
@@ -18,14 +19,14 @@ export function decideAction(character, characters, getAbilityState) {
   const hasFreeDisengage = decision.bonusAction?.effect === 'disengage' || hasStatus(character, 'disengaged')
 
   // Evaluer la position actuelle
-  let bestEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState)
+  let bestEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain)
   let bestPos = null
 
   // Evaluer chaque case accessible
-  const accessible = getAccessibleCells(character.position, character.movement, characters, character.id)
+  const accessible = getAccessibleCells(character.position, character.movement, characters, character.id, terrain)
 
   for (const cell of accessible) {
-    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState)
+    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain)
 
     // Pénalité AO si on quitte la mêlée sans désengagement
     if (inMelee && !hasFreeDisengage) {
@@ -53,7 +54,7 @@ export function decideAction(character, characters, getAbilityState) {
   // Si on est en mêlée, qu'on veut bouger, et qu'on n'a pas de désengagement gratuit,
   // il faut utiliser l'action pour se désengager (si ça vaut le coup)
   if (inMelee && bestPos && !hasFreeDisengage) {
-    const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState)
+    const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain)
     const moveGain = bestEval.score + 15 - stayEval.score
 
     if (moveGain > 10) {
@@ -76,7 +77,7 @@ export function decideAction(character, characters, getAbilityState) {
   return decision
 }
 
-function evaluatePosition(character, position, enemies, allies, characters, getAbilityState) {
+function evaluatePosition(character, position, enemies, allies, characters, getAbilityState, terrain = {}) {
   let score = 0
   let bestAction = null
   let bestTarget = null
@@ -277,6 +278,16 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
       if (adjEnemyCount > 0) score -= 15
       score += Math.min(minEnemyDist, 3) * 3
       break
+  }
+
+  const posKey = `${position.x},${position.y}`
+  const terrainCell = terrain[posKey]
+  if (terrainCell) {
+    if (terrainCell.type === TERRAIN_TYPES.HAZARD) score -= 20
+    if (terrainCell.type === TERRAIN_TYPES.COVER &&
+        (classId === 'mage' || classId === 'rodeur' || classId === 'clerc')) {
+      score += 5
+    }
   }
 
   return { score, action: bestAction, target: bestTarget }

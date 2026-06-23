@@ -1,11 +1,11 @@
-export const BOARD_COLS = 6
-export const BOARD_ROWS = 4
+export const BOARD_COLS = 7
+export const BOARD_ROWS = 5
 
 export const CELL_SIZE = 52
 export const TOKEN_SIZE = 44
 
 export const ALLY_START_COLS = [0, 1]
-export const ENEMY_START_COLS = [4, 5]
+export const ENEMY_START_COLS = [5, 6]
 
 export const TEAMS = {
   ALLY: 'ally',

@@ -808,6 +808,40 @@ body {
   pointer-events: none;
 }
 
+/* ========== TERRAIN ========== */
+
+.cell-terrain-icon {
+  position: absolute;
+  font-size: 20px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.cell-terrain-blocking {
+  background: #2a2520 !important;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+.cell-terrain-difficult {
+  background: rgba(74, 111, 165, 0.2) !important;
+}
+
+.cell-terrain-cover {
+  background: rgba(45, 106, 79, 0.25) !important;
+  box-shadow: inset 0 0 6px rgba(45, 106, 79, 0.3);
+}
+
+.cell-terrain-hazard {
+  animation: pulse-hazard 2s ease-in-out infinite;
+}
+
+@keyframes pulse-hazard {
+  0%, 100% { background: rgba(139, 32, 32, 0.3); }
+  50% { background: rgba(180, 50, 20, 0.5); }
+}
+
 /* ========== TOKEN ========== */
 
 .token {
@@ -825,6 +859,18 @@ body {
   z-index: 2;
 }
 
+.token-ally {
+  background: radial-gradient(circle, #3d3420, #2a2010);
+  box-shadow: 0 0 6px rgba(201, 168, 76, 0.4), inset 0 0 8px rgba(201, 168, 76, 0.15);
+  border-width: 3px;
+}
+
+.token-enemy {
+  background: radial-gradient(circle, #3d2020, #2a1010);
+  box-shadow: 0 0 6px rgba(139, 32, 32, 0.5), inset 0 0 8px rgba(139, 32, 32, 0.2);
+  border-width: 3px;
+}
+
 .token-active {
   animation: pulse-gold 1.5s ease-in-out infinite;
 }
@@ -839,6 +885,19 @@ body {
   transform: rotate(90deg);
   cursor: default;
   border-color: #555;
+  box-shadow: none;
+}
+
+.token-team-marker {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--team-color);
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
 }
 
 .token-hp-ring {

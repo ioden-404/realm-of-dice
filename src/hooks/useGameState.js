@@ -2,9 +2,10 @@ import { useReducer, useCallback, useRef } from 'react'
 import { CLASSES } from '../data/classes.js'
 import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
-import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback } from '../systems/combat.js'
+import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks } from '../systems/combat.js'
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
 import { decideAction } from '../systems/ai.js'
+import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -13,11 +14,11 @@ function createCharacter(classId, team, index) {
 
   let position
   if (team === TEAMS.ALLY) {
-    const positions = [{ x: 0, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 0 }, { x: 1, y: 3 }, { x: 1, y: 1 }]
+    const positions = [{ x: 0, y: 1 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 4 }, { x: 1, y: 2 }]
     position = positions[index] || { x: 0, y: index }
   } else {
-    const positions = [{ x: 5, y: 1 }, { x: 5, y: 2 }, { x: 4, y: 0 }, { x: 4, y: 3 }, { x: 4, y: 2 }]
-    position = positions[index] || { x: 5, y: index }
+    const positions = [{ x: 6, y: 1 }, { x: 6, y: 3 }, { x: 5, y: 0 }, { x: 5, y: 4 }, { x: 5, y: 2 }]
+    position = positions[index] || { x: 6, y: index }
   }
 
   return {
@@ -82,11 +83,15 @@ const initialState = {
   selectedCategory: null,
   movementRemaining: 0,
   originalPosition: null,
+  originalMovementUsed: 0,
   validTargets: [],
   validMoves: [],
   log: [],
   stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
-  pendingAO: null
+  pendingAO: null,
+  terrain: {},
+  terrainTheme: null,
+  terrainThemeName: ''
 }
 
 function applyEffects(state, effects) {
@@ -150,6 +155,10 @@ function applyEffects(state, effects) {
         break
       }
       case 'extraMovement': {
+        break
+      }
+      case 'useReaction': {
+        newChars = { ...newChars, [char.id]: { ...char, reactionUsed: true } }
         break
       }
       case 'breakConcentration': {
@@ -223,6 +232,8 @@ function gameReducer(state, action) {
       const firstChar = characters[initiativeOrder[0]]
       const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
 
+      const { terrain, theme: terrainTheme, themeName } = generateTerrain()
+
       return {
         ...state,
         phase: PHASES.COMBAT,
@@ -231,7 +242,11 @@ function gameReducer(state, action) {
         currentTurnIndex: 0,
         round: 1,
         turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        terrain,
+        terrainTheme,
+        terrainThemeName: themeName,
         log: [
+          { text: `🗺️ ${themeName}`, type: 'system' },
           { text: '⚔️ Le combat commence !', type: 'system' },
           { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
         ],
@@ -252,13 +267,14 @@ function gameReducer(state, action) {
       const extraMove = current.statuses.find(s => s.type === 'extraMovement')
       const totalMovement = current.movement + (extraMove ? extraMove.amount : 0)
       const remaining = totalMovement - current.movementUsed
-      const validMoves = getAccessibleCells(current.position, remaining, state.characters, current.id)
+      const validMoves = getAccessibleCells(current.position, remaining, state.characters, current.id, state.terrain)
 
       return {
         ...state,
         turnState: TURN_STATES.MOVING,
         movementRemaining: remaining,
         originalPosition: { ...current.position },
+        originalMovementUsed: current.movementUsed,
         validMoves
       }
     }
@@ -269,31 +285,60 @@ function gameReducer(state, action) {
       const newX = current.position.x + dx
       const newY = current.position.y + dy
 
-      if (!canMoveTo(current.position, { dx, dy }, state.characters, current.id)) {
+      if (!canMoveTo(current.position, { dx, dy }, state.characters, current.id, state.terrain)) {
         return state
       }
 
-      if (state.movementRemaining <= 0) return state
+      const terrainKey = `${newX},${newY}`
+      const terrainCell = state.terrain[terrainKey]
+      const moveCost = (terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT) ? 2 : 1
 
-      const newChars = {
-        ...state.characters,
-        [current.id]: {
-          ...current,
-          position: { x: newX, y: newY },
-          movementUsed: current.movementUsed + 1
+      if (state.movementRemaining < moveCost) return state
+
+      const aoResult = resolveOpportunityAttacks(current, current.position, state.characters)
+      let updatedChars = { ...state.characters }
+      let aoLogs = []
+
+      if (aoResult.effects.length > 0) {
+        const applied = applyEffects({ characters: updatedChars, stats: state.stats }, aoResult.effects)
+        updatedChars = applied.characters
+        aoLogs = aoResult.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' }))
+      }
+
+      const movedCurrent = updatedChars[current.id]
+      if (movedCurrent.isDead) {
+        const gameEnd = checkGameEnd(updatedChars)
+        return {
+          ...state,
+          characters: updatedChars,
+          log: [...state.log, ...aoLogs].slice(-50),
+          turnState: TURN_STATES.IDLE,
+          movementRemaining: 0,
+          validMoves: [],
+          phase: gameEnd || state.phase
         }
       }
 
-      const newRemaining = state.movementRemaining - 1
+      const newChars = {
+        ...updatedChars,
+        [current.id]: {
+          ...movedCurrent,
+          position: { x: newX, y: newY },
+          movementUsed: movedCurrent.movementUsed + moveCost
+        }
+      }
+
+      const newRemaining = state.movementRemaining - moveCost
       const newValidMoves = getAccessibleCells(
-        { x: newX, y: newY }, newRemaining, newChars, current.id
+        { x: newX, y: newY }, newRemaining, newChars, current.id, state.terrain
       )
 
       return {
         ...state,
         characters: newChars,
         movementRemaining: newRemaining,
-        validMoves: newValidMoves
+        validMoves: newValidMoves,
+        log: [...state.log, ...aoLogs].slice(-50)
       }
     }
 
@@ -302,6 +347,7 @@ function gameReducer(state, action) {
         ...state,
         turnState: TURN_STATES.IDLE,
         originalPosition: null,
+        originalMovementUsed: 0,
         validMoves: []
       }
     }
@@ -313,7 +359,7 @@ function gameReducer(state, action) {
       const restored = {
         ...current,
         position: state.originalPosition,
-        movementUsed: current.movementUsed - (current.movement - state.movementRemaining)
+        movementUsed: state.originalMovementUsed
       }
 
       return {
@@ -321,6 +367,7 @@ function gameReducer(state, action) {
         characters: { ...state.characters, [current.id]: restored },
         turnState: TURN_STATES.IDLE,
         originalPosition: null,
+        originalMovementUsed: 0,
         movementRemaining: 0,
         validMoves: []
       }
@@ -364,7 +411,7 @@ function gameReducer(state, action) {
       const current = state.characters[state.initiativeOrder[state.currentTurnIndex]]
       const target = targetId ? state.characters[targetId] : current
 
-      const result = resolveAbility(current, target, ability, state.characters)
+      const result = resolveAbility(current, target, ability, state.characters, state.terrain)
       const { characters: newChars, stats: newStats } = applyEffects(
         { characters: state.characters, stats: state.stats },
         result.effects
@@ -485,7 +532,7 @@ function gameReducer(state, action) {
       const nextChar = updatedChars[state.initiativeOrder[nextIndex]]
       const isEnemy = nextChar?.team === TEAMS.ENEMY
 
-      const startResult = nextChar ? processStartOfTurn(nextChar) : { logs: [], effects: [] }
+      const startResult = nextChar ? processStartOfTurn(nextChar, state.terrain) : { logs: [], effects: [] }
       if (startResult.effects.length > 0) {
         const applied = applyEffects({ characters: updatedChars, stats: state.stats }, startResult.effects)
         updatedChars = applied.characters
@@ -527,13 +574,35 @@ function gameReducer(state, action) {
       const { characterId, position } = action.payload
       const char = state.characters[characterId]
       if (!char) return state
+
+      const aoResult = resolveOpportunityAttacks(char, char.position, state.characters)
+      let updatedChars = { ...state.characters }
+      let aoLogs = [{ text: `🏃 ${char.name} se déplace`, type: 'info' }]
+
+      if (aoResult.effects.length > 0) {
+        const applied = applyEffects({ characters: updatedChars, stats: state.stats }, aoResult.effects)
+        updatedChars = applied.characters
+        aoLogs.push(...aoResult.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' })))
+      }
+
+      const movedChar = updatedChars[characterId]
+      if (movedChar.isDead) {
+        const gameEnd = checkGameEnd(updatedChars)
+        return {
+          ...state,
+          characters: updatedChars,
+          log: [...state.log, ...aoLogs].slice(-50),
+          phase: gameEnd || state.phase
+        }
+      }
+
       return {
         ...state,
         characters: {
-          ...state.characters,
-          [characterId]: { ...char, position, movementUsed: char.movement }
+          ...updatedChars,
+          [characterId]: { ...movedChar, position, movementUsed: char.movement }
         },
-        log: [...state.log, { text: `🏃 ${char.name} se déplace`, type: 'info' }].slice(-50)
+        log: [...state.log, ...aoLogs].slice(-50)
       }
     }
 
@@ -602,7 +671,7 @@ export function useGameState() {
       return
     }
 
-    const decision = decideAction(current, state.characters, getAbilityState)
+    const decision = decideAction(current, state.characters, getAbilityState, state.terrain)
     const steps = []
 
     if (decision.movement) {

@@ -1,4 +1,5 @@
 import { BOARD_COLS, BOARD_ROWS } from '../data/config.js'
+import { TERRAIN_TYPES } from './terrain.js'
 
 const CARDINAL = [
   { dx: 0, dy: -1 },
@@ -44,21 +45,21 @@ export function getOccupiedCells(characters) {
   return occupied
 }
 
-export function getAccessibleCells(position, movementRemaining, characters, characterId) {
+export function getAccessibleCells(position, movementRemaining, characters, characterId, terrain = {}) {
   const occupied = getOccupiedCells(characters)
   const accessible = []
-  const visited = new Set()
+  const costs = new Map()
+  const startKey = `${position.x},${position.y}`
+  costs.set(startKey, 0)
   const queue = [{ x: position.x, y: position.y, cost: 0 }]
-  visited.add(`${position.x},${position.y}`)
 
   while (queue.length > 0) {
+    queue.sort((a, b) => a.cost - b.cost)
     const current = queue.shift()
 
-    if (current.cost > 0) {
+    if (current.cost > 0 && !accessible.some(a => a.x === current.x && a.y === current.y)) {
       accessible.push({ x: current.x, y: current.y })
     }
-
-    if (current.cost >= movementRemaining) continue
 
     for (const dir of CARDINAL) {
       const nx = current.x + dir.dx
@@ -66,25 +67,39 @@ export function getAccessibleCells(position, movementRemaining, characters, char
       const key = `${nx},${ny}`
 
       if (!isInBounds(nx, ny)) continue
-      if (visited.has(key)) continue
+
+      const terrainCell = terrain[key]
+      if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) continue
+
       if (occupied[key] && occupied[key] !== characterId) continue
 
-      visited.add(key)
-      queue.push({ x: nx, y: ny, cost: current.cost + 1 })
+      const moveCost = (terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT) ? 2 : 1
+      const newCost = current.cost + moveCost
+
+      if (newCost > movementRemaining) continue
+
+      const prevCost = costs.get(key)
+      if (prevCost !== undefined && prevCost <= newCost) continue
+
+      costs.set(key, newCost)
+      queue.push({ x: nx, y: ny, cost: newCost })
     }
   }
 
   return accessible
 }
 
-export function canMoveTo(position, direction, characters, characterId) {
+export function canMoveTo(position, direction, characters, characterId, terrain = {}) {
   const nx = position.x + direction.dx
   const ny = position.y + direction.dy
 
   if (!isInBounds(nx, ny)) return false
 
-  const occupied = getOccupiedCells(characters)
   const key = `${nx},${ny}`
+  const terrainCell = terrain[key]
+  if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) return false
+
+  const occupied = getOccupiedCells(characters)
   if (occupied[key] && occupied[key] !== characterId) return false
 
   return true
@@ -126,7 +141,7 @@ export function getAdjacentAllies(position, characters, team, excludeId) {
   return allies
 }
 
-export function checkLineOfSight(attacker, target, characters) {
+export function checkLineOfSight(attacker, target, characters, terrain = {}) {
   const dx = target.position.x - attacker.position.x
   const dy = target.position.y - attacker.position.y
   const steps = Math.max(Math.abs(dx), Math.abs(dy))
@@ -136,6 +151,9 @@ export function checkLineOfSight(attacker, target, characters) {
   for (let i = 1; i < steps; i++) {
     const checkX = Math.round(attacker.position.x + (dx * i) / steps)
     const checkY = Math.round(attacker.position.y + (dy * i) / steps)
+
+    const terrainCell = terrain[`${checkX},${checkY}`]
+    if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) return false
 
     for (const char of Object.values(characters)) {
       if (char.isDead) continue
@@ -175,7 +193,7 @@ export function getValidTargets(attacker, ability, characters) {
   return targets
 }
 
-export function findPushDestination(target, attacker, distance, characters) {
+export function findPushDestination(target, attacker, distance, characters, terrain = {}) {
   const dx = target.position.x - attacker.position.x
   const dy = target.position.y - attacker.position.y
   const dirX = dx === 0 ? 0 : dx > 0 ? 1 : -1
@@ -189,7 +207,12 @@ export function findPushDestination(target, attacker, distance, characters) {
     const ny = finalPos.y + dirY
 
     if (!isInBounds(nx, ny)) break
-    if (occupied[`${nx},${ny}`] && occupied[`${nx},${ny}`] !== target.id) break
+
+    const key = `${nx},${ny}`
+    const terrainCell = terrain[key]
+    if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) break
+
+    if (occupied[key] && occupied[key] !== target.id) break
 
     finalPos = { x: nx, y: ny }
   }
