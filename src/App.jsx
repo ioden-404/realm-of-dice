@@ -18,12 +18,17 @@ import TerrainCard from './components/TerrainCard.jsx'
 import CampaignMap from './components/CampaignMap.jsx'
 import CombatMenu from './components/CombatMenu.jsx'
 
-const HUB_MUSIC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
-const COMBAT_MUSIC = import.meta.env.BASE_URL + 'Audio/Bannerfall Oath.mp3'
+const B = import.meta.env.BASE_URL
+const TRACKS = {
+  hub: B + 'Audio/Dawn of Asterhollow.mp3',
+  combat: B + 'Audio/Bannerfall Oath.mp3',
+  victory: B + 'Audio/Treasure Bloom.mp3',
+  defeat: B + 'Audio/Broken Banner Waltz.mp3'
+}
 
 export default function App() {
   const { state, dispatch, getAbilityState, executeAITurn } = useGameState()
-  const audio = useAudio(HUB_MUSIC, COMBAT_MUSIC)
+  const audio = useAudio(TRACKS)
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [pendingItem, setPendingItem] = useState(null)
@@ -51,7 +56,11 @@ export default function App() {
   }, [handleFirstInteraction])
 
   useEffect(() => {
-    audio.switchTrack(state.phase === PHASES.COMBAT ? 'combat' : 'hub')
+    const phase = state.phase
+    if (phase === PHASES.COMBAT) audio.switchTrack('combat')
+    else if (phase === PHASES.VICTORY || phase === PHASES.CAMPAIGN_COMPLETE) audio.switchTrack('victory')
+    else if (phase === PHASES.DEFEAT || phase === PHASES.CAMPAIGN_DEFEAT) audio.switchTrack('defeat')
+    else audio.switchTrack('hub')
   }, [state.phase])
 
   useEffect(() => {
