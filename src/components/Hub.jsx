@@ -33,10 +33,9 @@ export default function Hub({ onNavigate }) {
           <span className="hub-tab-icon">🏗️</span>
           <span className="hub-tab-label">Étages</span>
         </button>
-        <button className="hub-tab hub-tab-locked" disabled>
-          <span className="hub-tab-icon">📜</span>
-          <span className="hub-tab-label">Campagne</span>
-          <span className="hub-tab-lock">🔒</span>
+        <button className="hub-tab" onClick={() => onNavigate('glory')}>
+          <span className="hub-tab-icon">⭐</span>
+          <span className="hub-tab-label">Gloire</span>
         </button>
         <button className="hub-tab" onClick={() => onNavigate('settings')}>
           <span className="hub-tab-icon">⚙️</span>

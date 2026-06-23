@@ -1,4 +1,4 @@
-export default function VictoryScreen({ isVictory, stats, onRestart, title, subtitle }) {
+export default function VictoryScreen({ isVictory, stats, onRestart, title, subtitle, gloryGain }) {
   return (
     <div className="victory-overlay">
       <div className={`victory-scroll ${isVictory ? 'victory-win' : 'victory-lose'}`}>
@@ -24,6 +24,9 @@ export default function VictoryScreen({ isVictory, stats, onRestart, title, subt
             <span className="victory-stat-value">{stats.healingDone}</span>
           </div>
         </div>
+        {gloryGain > 0 && (
+          <div className="victory-glory">⭐ +{gloryGain} points de gloire</div>
+        )}
         <button className="victory-btn" onClick={onRestart}>
           Rejouer
         </button>

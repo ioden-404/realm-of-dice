@@ -9,6 +9,7 @@ import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
 import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
 import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
+import { NARRATIVE_EVENTS } from '../data/modifiers.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -265,6 +266,7 @@ const initialState = {
   pendingPaliers: [],
   combatResult: null,
   combatInventory: [],
+  narrativeEvent: null,
   campaignMode: false
 }
 
@@ -882,8 +884,12 @@ function gameReducer(state, action) {
       return { ...initialState, phase: PHASES.HUB }
     }
 
+    case 'SET_PHASE': {
+      return { ...state, phase: action.payload.phase }
+    }
+
     case 'START_CAMPAIGN': {
-      const { allyClasses } = action.payload
+      const { allyClasses, modifiers = [], glory = {} } = action.payload
       const characters = {}
 
       allyClasses.forEach((classId, i) => {
@@ -891,6 +897,15 @@ function gameReducer(state, action) {
         char.uses = initUses(char)
         characters[char.id] = char
       })
+
+      const startGold = (glory.upgrades?.['base-gold'] || 0) * 10
+      const hpBonus = (glory.upgrades?.['base-hp'] || 0) * 2
+      if (hpBonus > 0) {
+        for (const id of Object.keys(characters)) {
+          characters[id].maxHp += hpBonus
+          characters[id].hp += hpBonus
+        }
+      }
 
       return {
         ...state,
@@ -901,7 +916,8 @@ function gameReducer(state, action) {
           map: generateCampaignMap(0),
           currentLayer: 0, lastNodeId: null,
           visitedNodes: [], currentNode: null,
-          rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: []
+          rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: startGold, inventory: [],
+          modifiers
         },
         campaignEvent: null,
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
@@ -1063,6 +1079,88 @@ function gameReducer(state, action) {
         validTargets: [],
         validMoves: []
       }
+    }
+
+    case 'NARRATIVE_CHOICE': {
+      const { choice } = action.payload
+      let updatedChars = { ...state.characters }
+      let newCampaign = { ...state.campaign }
+      const logs = []
+
+      if (choice.effect === 'none') {
+        return { ...state, narrativeEvent: null }
+      }
+      if (choice.effect === 'teamHeal') {
+        for (const [id, char] of Object.entries(updatedChars)) {
+          if (char.team !== 'ally') continue
+          const missing = char.maxHp - char.hp
+          updatedChars[id] = { ...char, hp: char.hp + Math.floor(missing * (choice.value || 0.3)) }
+        }
+      }
+      if (choice.effect === 'sacrifice') {
+        const allies = Object.entries(updatedChars).filter(([, c]) => c.team === 'ally' && !c.isDead)
+        for (const [id, char] of allies) {
+          updatedChars[id] = { ...char, hp: Math.max(1, char.hp - (choice.hpCost || 0)) }
+        }
+        if (choice.stat) {
+          const best = allies.sort((a, b) => b[1].hp - a[1].hp)[0]
+          if (best) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
+        }
+      }
+      if (choice.effect === 'helpTraveler' || choice.effect === 'safeGold') {
+        newCampaign.gold = (newCampaign.gold || 0) + (choice.gold || 0)
+      }
+      if (choice.effect === 'robTraveler') {
+        newCampaign.gold = (newCampaign.gold || 0) + (choice.gold || 0)
+        for (const [id, char] of Object.entries(updatedChars)) {
+          if (char.team === 'ally') updatedChars[id] = { ...char, hp: Math.max(1, char.hp - (choice.hpCost || 0)) }
+        }
+      }
+      if (choice.effect === 'gamble') {
+        if (Math.random() < (choice.successRate || 0.5)) {
+          newCampaign.gold = (newCampaign.gold || 0) + (choice.goldWin || 0)
+        } else {
+          for (const [id, char] of Object.entries(updatedChars)) {
+            if (char.team === 'ally') updatedChars[id] = { ...char, hp: Math.max(1, char.hp - (choice.hpLoss || 0)) }
+          }
+        }
+      }
+      if (choice.effect === 'redShroom') {
+        for (const [id, char] of Object.entries(updatedChars)) {
+          if (char.team !== 'ally') continue
+          updatedChars[id] = { ...char, maxHp: char.maxHp + (choice.hpMaxBonus || 0), hp: Math.max(1, char.hp - (choice.hpCost || 0)) + (choice.hpMaxBonus || 0) }
+        }
+      }
+      if (choice.effect === 'fillPotions') {
+        const potions = []
+        for (let i = 0; i < (choice.potions || 1); i++) {
+          potions.push({ ...SURVIVAL_POTION, id: `event-potion-${Date.now()}-${i}` })
+        }
+        return { ...state, characters: updatedChars, campaign: newCampaign, narrativeEvent: null, combatInventory: [...(state.combatInventory || []), ...potions] }
+      }
+      if (choice.effect === 'buyUpgrade') {
+        if ((newCampaign.gold || 0) < (choice.cost || 0)) return { ...state, narrativeEvent: null }
+        newCampaign.gold -= choice.cost
+        const allies = Object.entries(updatedChars).filter(([, c]) => c.team === 'ally' && !c.isDead)
+        const best = allies.sort((a, b) => b[1].hp - a[1].hp)[0]
+        if (best && choice.stat) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
+      }
+      if (choice.effect === 'haggle') {
+        if (Math.random() < 0.5) {
+          const allies = Object.entries(updatedChars).filter(([, c]) => c.team === 'ally' && !c.isDead)
+          const best = allies.sort((a, b) => b[1].hp - a[1].hp)[0]
+          if (best && choice.stat) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
+        } else {
+          newCampaign.gold = Math.max(0, (newCampaign.gold || 0) - (choice.cost || 0))
+        }
+      }
+      if (choice.effect === 'fountain' && choice.stat) {
+        const allies = Object.entries(updatedChars).filter(([, c]) => c.team === 'ally' && !c.isDead)
+        const best = allies.sort((a, b) => b[1].hp - a[1].hp)[0]
+        if (best) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
+      }
+
+      return { ...state, characters: updatedChars, campaign: newCampaign, narrativeEvent: null }
     }
 
     case 'CAMPAIGN_APPLY_PALIER': {

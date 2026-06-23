@@ -17,6 +17,10 @@ import CharacterCard from './components/CharacterCard.jsx'
 import TerrainCard from './components/TerrainCard.jsx'
 import CampaignMap from './components/CampaignMap.jsx'
 import CombatMenu from './components/CombatMenu.jsx'
+import RunModifiers from './components/RunModifiers.jsx'
+import GloryScreen from './components/GloryScreen.jsx'
+import NarrativeEvent from './components/NarrativeEvent.jsx'
+import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
 
 const B = import.meta.env.BASE_URL
 const TRACKS = {
@@ -32,6 +36,8 @@ export default function App() {
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [pendingItem, setPendingItem] = useState(null)
+  const [glory, setGlory] = useState(() => loadGlory())
+  const [narrativeEvent, setNarrativeEvent] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -87,13 +93,13 @@ export default function App() {
   }, [pendingAction])
 
   const handleStartCombat = useCallback((classes) => {
-    startTransition(() => {
-      if (state.campaignMode) {
-        dispatch({ type: 'START_CAMPAIGN', payload: { allyClasses: classes } })
-      } else {
+    if (state.campaignMode) {
+      dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.RUN_MODIFIERS } })
+    } else {
+      startTransition(() => {
         dispatch({ type: 'START_COMBAT', payload: { allyClasses: classes } })
-      }
-    })
+      })
+    }
   }, [dispatch, startTransition, state.campaignMode])
 
   const handleSelectAbility = useCallback((ability, isBonusAction) => {
@@ -153,9 +159,32 @@ export default function App() {
         <Hub onNavigate={(tab) => {
           if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
           if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
+          if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
           if (tab === 'settings') setShowSettings(true)
         }} />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.GLORY) {
+    return (
+      <div className="app">
+        <GloryScreen
+          glory={glory}
+          onUpgrade={(upgrade) => {
+            if (glory.points >= upgrade.cost) {
+              const newGlory = {
+                ...glory,
+                points: glory.points - upgrade.cost,
+                upgrades: { ...glory.upgrades, [upgrade.id]: (glory.upgrades[upgrade.id] || 0) + 1 }
+              }
+              setGlory(newGlory)
+              saveGlory(newGlory)
+            }
+          }}
+          onBack={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.HUB } })}
+        />
       </div>
     )
   }
@@ -168,6 +197,22 @@ export default function App() {
           onToggle={(classId) => dispatch({ type: 'TOGGLE_CLASS', payload: { classId } })}
           onStart={handleStartCombat}
           onBack={() => dispatch({ type: 'GO_TO_HUB' })}
+        />
+        <Transition active={transitioning} onComplete={handleTransitionComplete} />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.RUN_MODIFIERS) {
+    return (
+      <div className="app">
+        <RunModifiers
+          onConfirm={(modifierIds) => {
+            startTransition(() => {
+              dispatch({ type: 'START_CAMPAIGN', payload: { allyClasses: state.selectedClasses, modifiers: modifierIds, glory } })
+            })
+          }}
+          onBack={() => dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })}
         />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
@@ -206,37 +251,47 @@ export default function App() {
           onSelectReward={(reward) => dispatch({ type: 'CAMPAIGN_EVENT_REWARD', payload: { reward } })}
           onEventDone={() => dispatch({ type: 'CAMPAIGN_EVENT_DONE' })}
           onApplyPalier={(palier, charId) => dispatch({ type: 'CAMPAIGN_APPLY_PALIER', payload: { palier, characterId: charId } })}
-          onDismissResult={() => dispatch({ type: 'CAMPAIGN_DISMISS_RESULT' })}
+          onDismissResult={() => {
+            dispatch({ type: 'CAMPAIGN_DISMISS_RESULT' })
+            if (Math.random() < 0.25 && !state.narrativeEvent) {
+              const events = NARRATIVE_EVENTS || []
+              const event = events[Math.floor(Math.random() * events.length)]
+              if (event) setNarrativeEvent(event)
+            }
+          }}
           onAbandon={() => dispatch({ type: 'RESTART' })}
         />
+        {narrativeEvent && (
+          <NarrativeEvent
+            event={narrativeEvent}
+            onChoice={(event, choice) => {
+              dispatch({ type: 'NARRATIVE_CHOICE', payload: { choice } })
+              setNarrativeEvent(null)
+            }}
+          />
+        )}
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )
   }
 
-  if (state.phase === PHASES.CAMPAIGN_COMPLETE) {
+  if (state.phase === PHASES.CAMPAIGN_COMPLETE || state.phase === PHASES.CAMPAIGN_DEFEAT) {
+    const won = state.phase === PHASES.CAMPAIGN_COMPLETE
+    const gloryGain = calculateGloryReward(won, state.campaign.act + 1, (state.campaign.modifiers || []).length)
     return (
       <div className="app">
         <VictoryScreen
-          isVictory={true}
+          isVictory={won}
           stats={state.stats}
-          title="CAMPAGNE TERMINÉE !"
-          subtitle="Vous avez vaincu le Dragon et sauvé le royaume !"
-          onRestart={() => dispatch({ type: 'RESTART' })}
-        />
-      </div>
-    )
-  }
-
-  if (state.phase === PHASES.CAMPAIGN_DEFEAT) {
-    return (
-      <div className="app">
-        <VictoryScreen
-          isVictory={false}
-          stats={state.stats}
-          title="CAMPAGNE ÉCHOUÉE"
-          subtitle="Votre équipe a été vaincue..."
-          onRestart={() => dispatch({ type: 'RESTART' })}
+          title={won ? 'CAMPAGNE TERMINÉE !' : 'CAMPAGNE ÉCHOUÉE'}
+          subtitle={won ? 'Vous avez vaincu le Dragon et sauvé le royaume !' : 'Votre équipe a été vaincue...'}
+          gloryGain={gloryGain}
+          onRestart={() => {
+            const newGlory = { ...glory, points: glory.points + gloryGain, totalRuns: glory.totalRuns + 1, victories: won ? glory.victories + 1 : glory.victories }
+            setGlory(newGlory)
+            saveGlory(newGlory)
+            dispatch({ type: 'RESTART' })
+          }}
         />
       </div>
     )
