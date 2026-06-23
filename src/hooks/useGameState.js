@@ -958,7 +958,8 @@ export function useGameState() {
       return
     }
 
-    const decision = decideAction(current, state.characters, getAbilityState, state.terrain)
+    const difficulty = state.campaign.active ? Math.min(state.campaign.act + 1, 3) : 2
+    const decision = decideAction(current, state.characters, getAbilityState, state.terrain, difficulty)
     const steps = []
 
     if (decision.movement) {

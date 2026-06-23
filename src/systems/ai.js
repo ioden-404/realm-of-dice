@@ -21,11 +21,51 @@ function canKill(attacker, enemy, ability) {
   return avgDmg >= enemy.hp
 }
 
-export function decideAction(character, characters, getAbilityState, terrain = {}) {
+function assessBattlefield(allies, enemies, difficulty) {
+  if (difficulty < 2) return { strategy: 'BASIC', focusTarget: null }
+
+  const enemyHealer = enemies.find(c => c.classId === 'clerc')
+  const healerAlive = enemyHealer && enemyHealer.hp > 0
+  const healerHealthy = healerAlive && enemyHealer.hp > enemyHealer.maxHp * 0.25
+
+  const allyHpRatio = allies.reduce((s, c) => s + c.hp, 0) / Math.max(1, allies.reduce((s, c) => s + c.maxHp, 0))
+  const enemyHpRatio = enemies.reduce((s, c) => s + c.hp, 0) / Math.max(1, enemies.reduce((s, c) => s + c.maxHp, 0))
+
+  const almostDead = enemies.filter(e => e.hp / e.maxHp < 0.25)
+
+  let strategy = 'AGGRO'
+  let focusTarget = null
+
+  if (almostDead.length > 0) {
+    strategy = 'FINISH'
+    focusTarget = almostDead.sort((a, b) => a.hp - b.hp)[0]?.id
+  } else if (healerHealthy && enemies.length >= 2 && enemyHpRatio > 0.4) {
+    strategy = 'FOCUS_HEALER'
+    focusTarget = enemyHealer.id
+  } else if (allyHpRatio < 0.3 && allies.length <= 2) {
+    strategy = 'DESPERATE'
+    focusTarget = enemies.sort((a, b) => a.hp - b.hp)[0]?.id
+  } else if (enemyHpRatio < 0.35) {
+    strategy = 'OVERWHELM'
+    focusTarget = enemies.sort((a, b) => a.hp - b.hp)[0]?.id
+  } else {
+    focusTarget = enemies.sort((a, b) => {
+      const aScore = getTargetPriority(a) * (1 + (1 - a.hp / a.maxHp))
+      const bScore = getTargetPriority(b) * (1 + (1 - b.hp / b.maxHp))
+      return bScore - aScore
+    })[0]?.id
+  }
+
+  return { strategy, focusTarget }
+}
+
+export function decideAction(character, characters, getAbilityState, terrain = {}, difficulty = 2) {
   const enemies = Object.values(characters).filter(c => c.team !== character.team && !c.isDead)
   const allies = Object.values(characters).filter(c => c.team === character.team && !c.isDead && c.id !== character.id)
 
   if (enemies.length === 0) return { movement: null, action: null, actionTarget: null, bonusAction: null, bonusActionTarget: null }
+
+  const battlePlan = assessBattlefield([character, ...allies], enemies, difficulty)
 
   const decision = { movement: null, action: null, actionTarget: null, bonusAction: null, bonusActionTarget: null }
 
@@ -36,13 +76,13 @@ export function decideAction(character, characters, getAbilityState, terrain = {
 
   const hasFreeDisengage = decision.bonusAction?.effect === 'disengage' || hasStatus(character, 'disengaged')
 
-  let bestEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain)
+  let bestEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
   let bestPos = null
 
   const accessible = getAccessibleCells(character.position, character.movement, characters, character.id, terrain)
 
   for (const cell of accessible) {
-    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain)
+    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
 
     if (inMelee && !hasFreeDisengage) {
       eval_.score -= 15
@@ -60,13 +100,11 @@ export function decideAction(character, characters, getAbilityState, terrain = {
 
   if (!decision.action && !character.actionUsed) {
     const dodgeAbility = findAbilityByEffect(character, 'dodge', 'actions', getAbilityState)
-    if (dodgeAbility) {
-      decision.action = dodgeAbility
-    }
+    if (dodgeAbility) decision.action = dodgeAbility
   }
 
   if (inMelee && bestPos && !hasFreeDisengage) {
-    const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain)
+    const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
     const moveGain = bestEval.score + 15 - stayEval.score
 
     if (moveGain > 10) {
@@ -89,7 +127,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
   return decision
 }
 
-function evaluatePosition(character, position, enemies, allies, characters, getAbilityState, terrain = {}) {
+function evaluatePosition(character, position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty) {
   let score = 0
   let bestAction = null
   let bestTarget = null
@@ -116,11 +154,7 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
         if (missingRatio < 0.15) continue
         let healScore = missingRatio * 25
         if (target.hp / target.maxHp < 0.3) healScore += 12
-        if (healScore > bestActionScore) {
-          bestActionScore = healScore
-          bestAction = ability
-          bestTarget = target
-        }
+        if (healScore > bestActionScore) { bestActionScore = healScore; bestAction = ability; bestTarget = target }
       }
       continue
     }
@@ -151,7 +185,8 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
       for (const enemy of enemies) {
         const dist = range <= 1 ? getCombatDistance(position, enemy.position) : getDistance(position, enemy.position)
         if (dist > range) continue
-        const effectScore = ability.effect === 'push' ? 8 : 10
+        let effectScore = ability.effect === 'push' ? 8 : 10
+        if (difficulty >= 3 && battlePlan.focusTarget === enemy.id) effectScore += 5
         if (effectScore > bestActionScore) { bestActionScore = effectScore; bestAction = ability; bestTarget = enemy }
       }
       continue
@@ -168,16 +203,13 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
 
       if (ability.damage) {
         const match = ability.damage.match(/(\d+)d(\d+)(?:\+(\d+))?/)
-        if (match) {
-          attackScore += parseInt(match[1]) * (parseInt(match[2]) + 1) / 2 + (parseInt(match[3]) || 0)
-        }
+        if (match) attackScore += parseInt(match[1]) * (parseInt(match[2]) + 1) / 2 + (parseInt(match[3]) || 0)
       }
 
       if (ability.hits) attackScore *= ability.hits * 0.85
-
       if (ability.sneakAttack && ability.bonusDamage) {
-        const adjAlliesOfEnemy = allies.filter(a => getCombatDistance(a.position, enemy.position) <= 1)
-        if (adjAlliesOfEnemy.length > 0 || hasStatus(character, 'advantage')) attackScore += 7
+        const adjAllies = allies.filter(a => getCombatDistance(a.position, enemy.position) <= 1)
+        if (adjAllies.length > 0 || hasStatus(character, 'advantage')) attackScore += 7
       }
       if (ability.requiresFlank && ability.bonusDamage) attackScore += 7
 
@@ -186,19 +218,28 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
       const hpRatio = enemy.hp / enemy.maxHp
       attackScore += (1 - hpRatio) * 12
 
-      if (canKill(character, enemy, ability)) attackScore += 20
+      if (canKill(character, enemy, ability)) attackScore += 25
 
       if (dist <= 1) attackScore += 4
+
+      if (difficulty >= 2 && battlePlan.focusTarget === enemy.id) {
+        attackScore *= difficulty >= 3 ? 1.6 : 1.3
+      }
+
+      if (difficulty >= 3 && ability.effect === 'stun' && battlePlan.focusTarget === enemy.id) {
+        attackScore += 15
+      }
 
       const guardsNearTarget = enemies.filter(e =>
         e.id !== enemy.id && e.classId === 'guerrier' &&
         getCombatDistance(e.position, enemy.position) <= 1 &&
         getCombatDistance(position, e.position) < dist
       )
-      if (guardsNearTarget.length > 0) attackScore *= 0.6
+      if (guardsNearTarget.length > 0) {
+        attackScore *= difficulty >= 3 ? 0.7 : 0.55
+      }
 
       if (ability.id === 'coup-fatal') attackScore += 30
-      if (ability.effect === 'stun') attackScore += 8
       if (ability.pushOnHit) attackScore += 4
 
       if (attackScore > bestActionScore) {
@@ -232,26 +273,22 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
   for (const ally of allies) {
     if (getCombatDistance(position, ally.position) <= 2) allyNearby++
   }
-  if (adjEnemyCount > 0 && allyNearby === 0) score -= 8
+  if (adjEnemyCount > 0 && allyNearby === 0 && difficulty >= 2) score -= 10
 
   score += Math.max(0, 10 - minEnemyDist) * 2
 
-  const safePriority = enemies
-    .map(e => ({
-      target: e,
-      priority: getTargetPriority(e),
-      dist: getCombatDistance(position, e.position),
-      guarded: enemies.some(g => g.id !== e.id && g.classId === 'guerrier' && getCombatDistance(g.position, e.position) <= 1)
-    }))
-    .sort((a, b) => {
-      const aScore = a.priority / (a.dist + 1) * (a.guarded ? 0.5 : 1)
-      const bScore = b.priority / (b.dist + 1) * (b.guarded ? 0.5 : 1)
-      return bScore - aScore
-    })[0]
-
-  if (safePriority) {
-    const effPriority = safePriority.priority * (safePriority.guarded ? 0.5 : 1)
-    score += Math.max(0, 8 - safePriority.dist) * effPriority
+  if (battlePlan.focusTarget && difficulty >= 2) {
+    const focusEnemy = enemies.find(e => e.id === battlePlan.focusTarget)
+    if (focusEnemy) {
+      const distToFocus = getCombatDistance(position, focusEnemy.position)
+      const focusPriority = getTargetPriority(focusEnemy)
+      const guardedFocus = enemies.some(e =>
+        e.id !== focusEnemy.id && e.classId === 'guerrier' &&
+        getCombatDistance(e.position, focusEnemy.position) <= 1
+      )
+      const mult = guardedFocus ? 0.7 : 1.0
+      score += Math.max(0, 8 - distToFocus) * focusPriority * mult * (difficulty >= 3 ? 1.5 : 1.0)
+    }
   }
 
   switch (classId) {
@@ -265,12 +302,10 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
         }
       }
       break
-
     case 'mage':
       if (adjEnemyCount > 0) score -= 30
       score += Math.min(minEnemyDist, 5) * 5
       break
-
     case 'voleur':
       for (const enemy of enemies) {
         if (getCombatDistance(position, enemy.position) <= 1) {
@@ -279,22 +314,20 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
         }
       }
       break
-
     case 'rodeur':
       if (adjEnemyCount > 0) score -= 25
       if (minEnemyDist >= 3 && minEnemyDist <= 5) score += 12
       else if (minEnemyDist >= 2) score += 6
       score += Math.min(minEnemyDist, 4) * 3
       break
-
     case 'clerc':
       for (const ally of allies) {
         const allyDist = getCombatDistance(position, ally.position)
-        const hpRatio = ally.hp / ally.maxHp
-        if (hpRatio < 0.7) {
-          if (allyDist <= 1) score += (1 - hpRatio) * 15
-          else if (allyDist <= 3) score += (1 - hpRatio) * 8
-          else score += (1 - hpRatio) * 3
+        const hr = ally.hp / ally.maxHp
+        if (hr < 0.7) {
+          if (allyDist <= 1) score += (1 - hr) * 15
+          else if (allyDist <= 3) score += (1 - hr) * 8
+          else score += (1 - hr) * 3
         }
       }
       if (adjEnemyCount > 0) score -= 15
@@ -302,8 +335,7 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
       break
   }
 
-  const posKey = `${position.x},${position.y}`
-  const terrainCell = terrain[posKey]
+  const terrainCell = terrain[`${position.x},${position.y}`]
   if (terrainCell) {
     if (terrainCell.type === TERRAIN_TYPES.HAZARD) score -= 20
     if (terrainCell.type === TERRAIN_TYPES.COVER && ['mage', 'rodeur', 'clerc'].includes(classId)) score += 5
@@ -323,66 +355,36 @@ function decideBonusAction(character, characters, allies, enemies, decision, get
     }
     const disparaitre = findAbility(character, 'disparaitre', 'bonusActions', getAbilityState)
     if (disparaitre) { decision.bonusAction = disparaitre; return }
-
     const poisonTarget = enemies.find(e => !hasStatus(e, 'antiHeal') && getCombatDistance(character.position, e.position) <= 1)
     const poison = findAbility(character, 'poison-corrosif', 'bonusActions', getAbilityState)
     if (poisonTarget && poison) { decision.bonusAction = poison; decision.bonusActionTarget = poisonTarget; return }
   }
-
   if (classId === 'rodeur') {
     const poisonTarget = enemies.find(e => !hasStatus(e, 'poison') && getDistance(character.position, e.position) <= 5)
-    const poison = findAbility(character, 'poison', 'bonusActions', getAbilityState)
-    if (poisonTarget && poison) { decision.bonusAction = poison; decision.bonusActionTarget = poisonTarget; return }
+    const rpois = findAbility(character, 'poison', 'bonusActions', getAbilityState)
+    if (poisonTarget && rpois) { decision.bonusAction = rpois; decision.bonusActionTarget = poisonTarget; return }
     const markTarget = enemies.find(e => !hasStatus(e, 'cursedMark') && getDistance(character.position, e.position) <= 5)
     const mark = findAbility(character, 'marque-maudite', 'bonusActions', getAbilityState)
     if (markTarget && mark) { decision.bonusAction = mark; decision.bonusActionTarget = markTarget; return }
-    if (adjEnemies.length > 0) {
-      const couverture = findAbility(character, 'couverture', 'bonusActions', getAbilityState)
-      if (couverture) { decision.bonusAction = couverture; return }
-    }
+    if (adjEnemies.length > 0) { const c = findAbility(character, 'couverture', 'bonusActions', getAbilityState); if (c) { decision.bonusAction = c; return } }
   }
-
   if (classId === 'guerrier') {
-    if (character.hp / character.maxHp < 0.4) {
-      const secondSouffle = findAbility(character, 'second-souffle', 'bonusActions', getAbilityState)
-      if (secondSouffle) { decision.bonusAction = secondSouffle; return }
-    }
-    if (adjEnemies.length >= 2) {
-      const posture = findAbility(character, 'posture-defensive', 'bonusActions', getAbilityState)
-      if (posture) { decision.bonusAction = posture; return }
-    }
-    if (adjEnemies.length > 0) {
-      const seconde = findAbility(character, 'seconde-attaque', 'bonusActions', getAbilityState)
-      if (seconde) { decision.bonusAction = seconde; decision.bonusActionTarget = adjEnemies[0]; return }
-    }
+    if (character.hp / character.maxHp < 0.4) { const s = findAbility(character, 'second-souffle', 'bonusActions', getAbilityState); if (s) { decision.bonusAction = s; return } }
+    if (adjEnemies.length >= 2) { const p = findAbility(character, 'posture-defensive', 'bonusActions', getAbilityState); if (p) { decision.bonusAction = p; return } }
+    if (adjEnemies.length > 0) { const s = findAbility(character, 'seconde-attaque', 'bonusActions', getAbilityState); if (s) { decision.bonusAction = s; decision.bonusActionTarget = adjEnemies[0]; return } }
   }
-
   if (classId === 'mage') {
-    if (character.hp / character.maxHp < 0.5 && !hasStatus(character, 'shield')) {
-      const bouclier = findAbility(character, 'bouclier-magique', 'bonusActions', getAbilityState)
-      if (bouclier) { decision.bonusAction = bouclier; return }
-    }
-    if (adjEnemies.length > 0) {
-      const pasDeMage = findAbility(character, 'pas-de-mage', 'bonusActions', getAbilityState)
-      if (pasDeMage) { decision.bonusAction = pasDeMage; return }
-    }
+    if (character.hp / character.maxHp < 0.5 && !hasStatus(character, 'shield')) { const b = findAbility(character, 'bouclier-magique', 'bonusActions', getAbilityState); if (b) { decision.bonusAction = b; return } }
+    if (adjEnemies.length > 0) { const p = findAbility(character, 'pas-de-mage', 'bonusActions', getAbilityState); if (p) { decision.bonusAction = p; return } }
   }
-
   if (classId === 'clerc') {
     const hurtAlly = [...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]
     if (hurtAlly && hurtAlly.hp / hurtAlly.maxHp < 0.5) {
-      const motGuerison = findAbility(character, 'mot-guerison', 'bonusActions', getAbilityState)
-      if (motGuerison && getDistance(character.position, hurtAlly.position) <= motGuerison.range) {
-        decision.bonusAction = motGuerison; decision.bonusActionTarget = hurtAlly; return
-      }
+      const m = findAbility(character, 'mot-guerison', 'bonusActions', getAbilityState)
+      if (m && getDistance(character.position, hurtAlly.position) <= m.range) { decision.bonusAction = m; decision.bonusActionTarget = hurtAlly; return }
     }
-    const exposedAlly = allies.find(a => getAdjacentEnemies(a.position, characters, a.team).length > 0 && !hasStatus(a, 'faithShield'))
-    if (exposedAlly) {
-      const bouclierFoi = findAbility(character, 'bouclier-foi', 'bonusActions', getAbilityState)
-      if (bouclierFoi && getDistance(character.position, exposedAlly.position) <= bouclierFoi.range) {
-        decision.bonusAction = bouclierFoi; decision.bonusActionTarget = exposedAlly; return
-      }
-    }
+    const exposed = allies.find(a => getAdjacentEnemies(a.position, characters, a.team).length > 0 && !hasStatus(a, 'faithShield'))
+    if (exposed) { const b = findAbility(character, 'bouclier-foi', 'bonusActions', getAbilityState); if (b && getDistance(character.position, exposed.position) <= b.range) { decision.bonusAction = b; decision.bonusActionTarget = exposed; return } }
   }
 
   decideGenericBonusAction(character, characters, allies, enemies, decision, getAbilityState)
@@ -390,54 +392,28 @@ function decideBonusAction(character, characters, allies, enemies, decision, get
 
 function decideGenericBonusAction(character, characters, allies, enemies, decision, getAbilityState) {
   if (decision.bonusAction) return
-
   const bonusActions = character.classData.abilities.bonusActions || []
   const adjEnemies = getAdjacentEnemies(character.position, characters, character.team)
 
   for (const ability of bonusActions) {
     const state = getAbilityState(character.id, ability)
     if (!state.available) continue
-
-    if (ability.effect === 'shield' && character.hp / character.maxHp < 0.6 && !hasStatus(character, 'shield')) {
-      decision.bonusAction = ability; return
-    }
-    if (ability.effect === 'defensePosture' && adjEnemies.length >= 1) {
-      decision.bonusAction = ability; return
-    }
-    if (ability.effect === 'extraMovement' && adjEnemies.length > 0) {
-      decision.bonusAction = ability; return
-    }
-    if (ability.heal && character.hp / character.maxHp < 0.4) {
-      decision.bonusAction = ability; return
-    }
+    if (ability.effect === 'shield' && character.hp / character.maxHp < 0.6 && !hasStatus(character, 'shield')) { decision.bonusAction = ability; return }
+    if (ability.effect === 'defensePosture' && adjEnemies.length >= 1) { decision.bonusAction = ability; return }
+    if (ability.effect === 'extraMovement' && adjEnemies.length > 0) { decision.bonusAction = ability; return }
+    if (ability.heal && character.hp / character.maxHp < 0.4) { decision.bonusAction = ability; return }
   }
-
   for (const ability of bonusActions) {
     const state = getAbilityState(character.id, ability)
     if (!state.available) continue
-
-    if (ability.damage && adjEnemies.length > 0) {
-      const target = adjEnemies.sort((a, b) => a.hp - b.hp)[0]
-      decision.bonusAction = ability
-      decision.bonusActionTarget = target
-      return
-    }
-
-    if (ability.effect === 'advantage') {
-      decision.bonusAction = ability; return
-    }
-
+    if (ability.damage && adjEnemies.length > 0) { decision.bonusAction = ability; decision.bonusActionTarget = adjEnemies.sort((a, b) => a.hp - b.hp)[0]; return }
+    if (ability.effect === 'advantage') { decision.bonusAction = ability; return }
     if (ability.effect === 'poison') {
-      const target = enemies.find(e => !hasStatus(e, 'poison') && getDistance(character.position, e.position) <= (ability.range || 1))
-      if (target) { decision.bonusAction = ability; decision.bonusActionTarget = target; return }
+      const t = enemies.find(e => !hasStatus(e, 'poison') && getDistance(character.position, e.position) <= (ability.range || 1))
+      if (t) { decision.bonusAction = ability; decision.bonusActionTarget = t; return }
     }
-
-    if (ability.effect === 'disengage' && adjEnemies.length > 0) {
-      decision.bonusAction = ability; return
-    }
-    if (ability.effect === 'dodge' && adjEnemies.length > 0) {
-      decision.bonusAction = ability; return
-    }
+    if (ability.effect === 'disengage' && adjEnemies.length > 0) { decision.bonusAction = ability; return }
+    if (ability.effect === 'dodge' && adjEnemies.length > 0) { decision.bonusAction = ability; return }
   }
 }
 
