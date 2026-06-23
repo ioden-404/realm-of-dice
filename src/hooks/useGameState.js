@@ -366,7 +366,7 @@ function gameReducer(state, action) {
 
       if (state.movementRemaining < moveCost) return state
 
-      const aoResult = resolveOpportunityAttacks(current, current.position, state.characters)
+      const aoResult = resolveOpportunityAttacks(current, current.position, { x: newX, y: newY }, state.characters)
       let updatedChars = { ...state.characters }
       let aoLogs = []
 
@@ -687,7 +687,7 @@ function gameReducer(state, action) {
       const char = state.characters[characterId]
       if (!char) return state
 
-      const aoResult = resolveOpportunityAttacks(char, char.position, state.characters)
+      const aoResult = resolveOpportunityAttacks(char, char.position, position, state.characters)
       let updatedChars = { ...state.characters }
       let aoLogs = [{ text: `🏃 ${char.name} se déplace`, type: 'info' }]
 

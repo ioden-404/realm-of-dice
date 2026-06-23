@@ -375,7 +375,7 @@ export function processEndOfTurn(character) {
   return { effects }
 }
 
-export function resolveOpportunityAttacks(mover, oldPosition, characters) {
+export function resolveOpportunityAttacks(mover, oldPosition, newPosition, characters) {
   const logs = []
   const effects = []
 
@@ -389,7 +389,12 @@ export function resolveOpportunityAttacks(mover, oldPosition, characters) {
       Math.abs(oldPosition.y - char.position.y)
     ) <= 1
 
-    if (!wasAdjacent) continue
+    const stillAdjacent = Math.max(
+      Math.abs(newPosition.x - char.position.x),
+      Math.abs(newPosition.y - char.position.y)
+    ) <= 1
+
+    if (!wasAdjacent || stillAdjacent) continue
 
     const aoAbility = char.classData.abilities.reactions.find(r => r.trigger === 'enemyLeaves')
     if (!aoAbility) continue

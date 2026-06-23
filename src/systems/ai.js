@@ -220,6 +220,8 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
     if (d <= 1) adjEnemyCount++
   }
 
+  score += Math.max(0, 10 - minEnemyDist) * 2
+
   switch (classId) {
     case 'guerrier':
       // Tank : veut être au contact, protéger les alliés fragiles
