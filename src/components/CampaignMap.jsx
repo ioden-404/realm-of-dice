@@ -146,7 +146,7 @@ export default function CampaignMap({
         </div>
 
         <div className="cmap-gold">
-          <span>🪙 {campaign.gold || 0} or</span>
+          <span><span className="gold-icon">⬤</span> {campaign.gold || 0} or</span>
         </div>
 
         {campaign.relics && campaign.relics.length > 0 && (
@@ -236,7 +236,7 @@ export default function CampaignMap({
             {campaignEvent.type === 'treasure' && (
               <>
                 <h3 className="cmap-event-title">🎁 Trésor trouvé !</h3>
-                <p className="cmap-event-gold">+{campaignEvent.goldGain} 🪙</p>
+                <p className="cmap-event-gold">+{campaignEvent.goldGain} <span className="gold-icon">⬤</span></p>
                 <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
               </>
             )}
@@ -244,7 +244,7 @@ export default function CampaignMap({
             {campaignEvent.type === 'merchant' && (
               <>
                 <h3 className="cmap-event-title">🛒 Marchand ambulant</h3>
-                <p className="cmap-event-desc">🪙 {campaign.gold || 0} or disponible</p>
+                <p className="cmap-event-desc"><span className="gold-icon">⬤</span> {campaign.gold || 0} or disponible</p>
                 <div className="cmap-event-rewards">
                   {(campaignEvent.items || []).map(item => {
                     const canAfford = (campaign.gold || 0) >= item.cost
@@ -260,7 +260,7 @@ export default function CampaignMap({
                           <span className="reward-name">{item.name}</span>
                           <span className="reward-desc">{item.desc}</span>
                         </div>
-                        <span className="reward-cost">🪙 {item.cost}</span>
+                        <span className="reward-cost"><span className="gold-icon">⬤</span> {item.cost}</span>
                       </button>
                     )
                   })}
@@ -306,7 +306,7 @@ export default function CampaignMap({
             <h3 className="cmap-event-title">{combatResult.victory ? '⚔️ Victoire !' : '💀 Défaite...'}</h3>
             <div className="cmap-result-gains">
               <span>+{combatResult.xp} XP</span>
-              <span>+{combatResult.gold} 🪙</span>
+              <span>+{combatResult.gold} <span className="gold-icon">⬤</span></span>
             </div>
             <button className="campaign-next-btn" onClick={onDismissResult}>Continuer</button>
           </div>
