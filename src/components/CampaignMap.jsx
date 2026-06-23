@@ -125,7 +125,7 @@ export default function CampaignMap({
           <div className="cmap-xp-bar" onClick={() => setXpTooltip(null)}>
             {XP_PALIERS.map(p => {
               const reached = (campaign.appliedPaliers || []).includes(p.id)
-              const pct = Math.min((p.xp / 15) * 100, 100)
+              const pct = Math.min((p.xp / 24) * 100, 100)
               return (
                 <button
                   key={p.id}
@@ -141,7 +141,7 @@ export default function CampaignMap({
                 </button>
               )
             })}
-            <div className="cmap-xp-fill" style={{ width: `${Math.min(((campaign.xp || 0) / 15) * 100, 100)}%` }} />
+            <div className="cmap-xp-fill" style={{ width: `${Math.min(((campaign.xp || 0) / 24) * 100, 100)}%` }} />
           </div>
         </div>
 

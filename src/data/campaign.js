@@ -72,11 +72,14 @@ export const NODE_TYPES = {
 
 const MAP_TEMPLATE = [
   ['combat', 'combat', 'combat'],
-  ['rest', 'combat', 'elite'],
+  ['combat', 'rest', 'merchant'],
+  ['elite', 'combat', 'treasure'],
   ['combat', 'merchant', 'combat'],
-  ['combat', 'treasure', 'combat'],
   ['rest', 'combat', 'elite'],
-  ['combat', 'combat'],
+  ['combat', 'treasure', 'combat'],
+  ['elite', 'rest', 'combat'],
+  ['combat', 'combat', 'treasure'],
+  ['combat', 'rest'],
   ['boss']
 ]
 
@@ -239,13 +242,13 @@ export function applyConsumable(characters, item) {
 // ============ XP SYSTEM ============
 
 export const XP_PALIERS = [
-  { id: 'p1', xp: 1, label: '+2 PV max', effects: [{ stat: 'maxHp', value: 2 }] },
-  { id: 'p2', xp: 3, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
-  { id: 'p3', xp: 5, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
-  { id: 'evo', xp: 6, label: 'Évolution !', isEvolution: true, effects: [] },
-  { id: 'p4', xp: 8, label: '+1 Mouvement', effects: [{ stat: 'movement', value: 1 }] },
-  { id: 'p5', xp: 11, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
-  { id: 'p6', xp: 14, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
+  { id: 'p1', xp: 2, label: '+2 PV max', effects: [{ stat: 'maxHp', value: 2 }] },
+  { id: 'p2', xp: 5, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'p3', xp: 8, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
+  { id: 'evo', xp: 10, label: 'Évolution !', isEvolution: true, effects: [] },
+  { id: 'p4', xp: 14, label: '+1 Mouvement', effects: [{ stat: 'movement', value: 1 }] },
+  { id: 'p5', xp: 18, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'p6', xp: 22, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
 ]
 
 function applyStatEffects(char, effects) {
