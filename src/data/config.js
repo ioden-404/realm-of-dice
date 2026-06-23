@@ -18,7 +18,7 @@ export const PHASES = {
   COMBAT: 'combat',
   VICTORY: 'victory',
   DEFEAT: 'defeat',
-  CAMPAIGN_REST: 'campaign-rest',
+  CAMPAIGN_MAP: 'campaign-map',
   CAMPAIGN_COMPLETE: 'campaign-complete',
   CAMPAIGN_DEFEAT: 'campaign-defeat'
 }

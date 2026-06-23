@@ -1880,147 +1880,221 @@ body {
   font-family: var(--font-ui);
 }
 
-/* ========== CAMPAIGN REST ========== */
+/* ========== CAMPAIGN MAP ========== */
 
-.campaign-rest {
+.cmap {
   width: 100%;
   height: 100%;
   background: var(--color-bg-deep);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  position: relative;
 }
 
-.campaign-rest-scroll {
-  padding: 16px;
+.cmap-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   max-width: 420px;
   margin: 0 auto;
   width: 100%;
 }
 
-.campaign-header {
+.cmap-header {
   text-align: center;
 }
 
-.campaign-act-title {
+.cmap-title {
   font-family: var(--font-title);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--color-gold-light);
   text-shadow: 0 2px 8px rgba(201, 168, 76, 0.4);
-  margin-bottom: 8px;
 }
 
-.campaign-progress {
+.cmap-team {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.cmap-char {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  background: rgba(61, 52, 40, 0.4);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  flex: 1;
+  max-width: 110px;
 }
 
-.campaign-progress-bar {
+.cmap-char-emoji { font-size: 20px; }
+
+.cmap-char-hp {
   width: 100%;
-  height: 6px;
-  background: var(--color-stone-dark);
-  border-radius: 3px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
   overflow: hidden;
 }
 
-.campaign-progress-fill {
+.cmap-char-hp-fill {
   height: 100%;
-  background: var(--color-gold);
-  border-radius: 3px;
-  transition: width 0.5s ease;
+  border-radius: 2px;
 }
 
-.campaign-progress-text {
+.cmap-char-hp-text {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-muted);
 }
 
-.campaign-victory-banner {
+.cmap-banner {
   text-align: center;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-gold);
   background: rgba(201, 168, 76, 0.1);
   border: 1px solid rgba(201, 168, 76, 0.2);
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px;
 }
 
-.campaign-section-title {
-  font-family: var(--font-title);
-  font-size: 14px;
-  color: var(--color-text-primary);
-  margin-bottom: 8px;
+.cmap-grid {
+  position: relative;
+  width: 100%;
 }
 
-.campaign-team {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.cmap-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
-.campaign-char {
+.cmap-line {
+  stroke: rgba(90, 74, 48, 0.3);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.cmap-line-visited {
+  stroke: var(--color-gold);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.cmap-line-available {
+  stroke: var(--color-gold-light);
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+.cmap-node {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-stone-dark);
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(61, 52, 40, 0.5);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.campaign-char-emoji {
-  font-size: 24px;
-}
-
-.campaign-char-info {
-  flex: 1;
-  display: flex;
+  justify-content: center;
   flex-direction: column;
-  gap: 3px;
+  cursor: default;
+  transition: all 0.2s;
+  z-index: 2;
 }
 
-.campaign-char-name {
+.cmap-node-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.cmap-node-boss-label {
   font-family: var(--font-title);
-  font-size: 13px;
+  font-size: 7px;
+  color: var(--color-crimson-light);
+  position: absolute;
+  bottom: -10px;
+  letter-spacing: 1px;
 }
 
-.campaign-hp-bar {
+.cmap-node-visited {
+  opacity: 0.4;
+  border-color: var(--color-gold);
+  background: rgba(201, 168, 76, 0.15);
+}
+
+.cmap-node-available {
+  cursor: pointer;
+  border-color: var(--color-gold-light);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.5);
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+.cmap-node-available:active {
+  transform: scale(0.93);
+}
+
+.cmap-node-hidden {
+  opacity: 0.15;
+}
+
+/* Event overlay */
+.cmap-event-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  padding: 20px;
+  animation: fade-in 0.15s ease-out;
+}
+
+.cmap-event {
+  background: linear-gradient(145deg, #2a1f0e, #3d3428, #2a1f0e);
+  border: 2px solid var(--color-gold);
+  border-radius: 10px;
+  padding: 16px;
+  max-width: 340px;
   width: 100%;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.campaign-hp-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.campaign-hp-text {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.campaign-rewards {
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
-.campaign-reward-list {
+.cmap-event-title {
+  font-family: var(--font-title);
+  font-size: 18px;
+  color: var(--color-gold-light);
+  text-align: center;
+}
+
+.cmap-event-desc {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.cmap-event-rewards {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
+/* ========== SHARED CAMPAIGN REWARDS ========== */
 
 .campaign-reward {
   display: flex;

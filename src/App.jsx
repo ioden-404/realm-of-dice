@@ -15,7 +15,7 @@ import StatusBadge from './components/StatusBadge.jsx'
 import VictoryScreen from './components/VictoryScreen.jsx'
 import CharacterCard from './components/CharacterCard.jsx'
 import TerrainCard from './components/TerrainCard.jsx'
-import CampaignRest from './components/CampaignRest.jsx'
+import CampaignMap from './components/CampaignMap.jsx'
 
 const MUSIC_SRC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
 
@@ -169,19 +169,23 @@ export default function App() {
     )
   }
 
-  if (state.phase === PHASES.CAMPAIGN_REST) {
+  if (state.phase === PHASES.CAMPAIGN_MAP) {
     return (
       <div className="app">
-        <CampaignRest
-          characters={state.characters}
+        <CampaignMap
           campaign={state.campaign}
-          rewards={state.campaignRewards}
-          rewardSelected={state.campaignRewardSelected}
+          characters={state.characters}
+          campaignEvent={state.campaignEvent}
           stats={state.stats}
-          onSelectReward={(reward) => dispatch({ type: 'CAMPAIGN_SELECT_REWARD', payload: { reward } })}
-          onNextCombat={() => {
-            startTransition(() => dispatch({ type: 'CAMPAIGN_NEXT_COMBAT' }))
+          onSelectNode={(node) => {
+            if (node.type === 'combat' || node.type === 'elite' || node.type === 'boss') {
+              startTransition(() => dispatch({ type: 'CAMPAIGN_SELECT_NODE', payload: { node } }))
+            } else {
+              dispatch({ type: 'CAMPAIGN_SELECT_NODE', payload: { node } })
+            }
           }}
+          onSelectReward={(reward) => dispatch({ type: 'CAMPAIGN_EVENT_REWARD', payload: { reward } })}
+          onEventDone={() => dispatch({ type: 'CAMPAIGN_EVENT_DONE' })}
           onAbandon={() => dispatch({ type: 'RESTART' })}
         />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />

@@ -7,7 +7,7 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { CAMPAIGN_DATA, generateRewardChoices, applyCampaignRest, applyReward } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateRewardChoices, applyCampaignRest, applyReward } from '../data/campaign.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -101,11 +101,33 @@ function getAllyPosition(index) {
 function resolveCampaignPhase(state, gameEnd) {
   if (!gameEnd || !state.campaign.active) return gameEnd
   if (gameEnd === PHASES.DEFEAT) return PHASES.CAMPAIGN_DEFEAT
-  const acts = CAMPAIGN_DATA.acts
-  const isLastEncounter = state.campaign.encounter >= acts[state.campaign.act].encounters.length - 1
-  const isLastAct = state.campaign.act >= acts.length - 1
-  if (isLastEncounter && isLastAct) return PHASES.CAMPAIGN_COMPLETE
-  return PHASES.CAMPAIGN_REST
+  const node = state.campaign.currentNode
+  if (node?.type === 'boss' && state.campaign.act >= ACTS.length - 1) {
+    return PHASES.CAMPAIGN_COMPLETE
+  }
+  return PHASES.CAMPAIGN_MAP
+}
+
+function advanceCampaignAfterCombat(campaign) {
+  const node = campaign.currentNode
+  let newCampaign = {
+    ...campaign,
+    currentLayer: campaign.currentLayer + 1,
+    lastNodeId: node?.id || campaign.lastNodeId,
+    currentNode: null
+  }
+  if (node?.type === 'boss' && campaign.act < ACTS.length - 1) {
+    const nextAct = campaign.act + 1
+    newCampaign = {
+      ...newCampaign,
+      act: nextAct,
+      map: generateCampaignMap(nextAct),
+      currentLayer: 0,
+      lastNodeId: null,
+      visitedNodes: []
+    }
+  }
+  return newCampaign
 }
 
 function initUses(character) {
@@ -151,9 +173,8 @@ const initialState = {
   terrain: {},
   terrainTheme: null,
   terrainThemeName: '',
-  campaign: { active: false, act: 0, encounter: 0, rewards: [] },
-  campaignRewards: [],
-  campaignRewardSelected: false,
+  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [] },
+  campaignEvent: null,
   campaignMode: false
 }
 
@@ -537,10 +558,14 @@ function gameReducer(state, action) {
 
       const resolvedPhase2 = resolveCampaignPhase(state, gameEnd)
       let execChars = finalChars
-      let execRewards = state.campaignRewards
-      if (resolvedPhase2 === PHASES.CAMPAIGN_REST) {
-        execChars = { ...finalChars, ...applyCampaignRest(finalChars) }
-        execRewards = generateRewardChoices()
+      let execCampaign = state.campaign
+      let execEvent = state.campaignEvent
+      if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
+        execChars = { ...finalChars, ...applyCampaignRest(finalChars, 0.3) }
+        execCampaign = advanceCampaignAfterCombat(state.campaign)
+        if (state.campaign.currentNode?.type === 'elite') {
+          execEvent = { type: 'elite-reward', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+        }
       }
 
       return {
@@ -553,8 +578,8 @@ function gameReducer(state, action) {
         selectedCategory: null,
         validTargets: [],
         phase: resolvedPhase2 || state.phase,
-        campaignRewards: execRewards,
-        campaignRewardSelected: resolvedPhase2 === PHASES.CAMPAIGN_REST ? false : state.campaignRewardSelected
+        campaign: execCampaign,
+        campaignEvent: execEvent
       }
     }
 
@@ -615,17 +640,21 @@ function gameReducer(state, action) {
       if (gameEnd) {
         const resolvedPhase = resolveCampaignPhase(state, gameEnd)
         let restChars = updatedChars
-        let rewards = state.campaignRewards
-        if (resolvedPhase === PHASES.CAMPAIGN_REST) {
-          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars) }
-          rewards = generateRewardChoices()
+        let endCampaign = state.campaign
+        let endEvent = state.campaignEvent
+        if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
+          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, 0.3) }
+          endCampaign = advanceCampaignAfterCombat(state.campaign)
+          if (state.campaign.currentNode?.type === 'elite') {
+            endEvent = { type: 'elite-reward', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+          }
         }
         return {
           ...state,
           characters: restChars,
           phase: resolvedPhase,
-          campaignRewards: rewards,
-          campaignRewardSelected: false,
+          campaign: endCampaign,
+          campaignEvent: endEvent,
           currentTurnIndex: nextIndex,
           round: newRound,
           log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
@@ -727,86 +756,66 @@ function gameReducer(state, action) {
         characters[char.id] = char
       })
 
-      const act = CAMPAIGN_DATA.acts[0]
-      const encounter = act.encounters[0]
-
-      encounter.monsters.forEach((monsterId, i) => {
-        const monster = createMonster(monsterId, i, encounter.monsters)
-        monster.uses = initUses(monster)
-        characters[monster.id] = monster
-      })
-
-      const initiativeOrder = rollInitiative(characters)
-      const firstChar = characters[initiativeOrder[0]]
-      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
-      const { terrain, theme: terrainTheme, themeName } = generateTerrain(act.terrainTheme)
-
       return {
         ...state,
-        phase: PHASES.COMBAT,
+        phase: PHASES.CAMPAIGN_MAP,
         characters,
-        initiativeOrder,
-        currentTurnIndex: 0,
-        round: 1,
-        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
-        terrain,
-        terrainTheme,
-        terrainThemeName: themeName,
-        campaign: { active: true, act: 0, encounter: 0, rewards: [] },
-        campaignRewards: [],
-        campaignRewardSelected: false,
-        log: [
-          { text: `📜 ${act.name}`, type: 'system' },
-          { text: `⚔️ ${encounter.name}`, type: 'system' },
-          { text: `🗺️ ${themeName}`, type: 'system' },
-          { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
-        ],
+        campaign: {
+          active: true, act: 0,
+          map: generateCampaignMap(0),
+          currentLayer: 0, lastNodeId: null,
+          visitedNodes: [], currentNode: null, rewards: []
+        },
+        campaignEvent: null,
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
       }
     }
 
-    case 'CAMPAIGN_SELECT_REWARD': {
-      const { reward } = action.payload
-      const updatedChars = applyReward(state.characters, reward)
-      return {
-        ...state,
-        characters: updatedChars,
-        campaign: { ...state.campaign, rewards: [...state.campaign.rewards, reward.id] },
-        campaignRewardSelected: true
-      }
-    }
+    case 'CAMPAIGN_SELECT_NODE': {
+      const { node } = action.payload
+      const campaign = state.campaign
+      const newVisited = [...campaign.visitedNodes, node.id]
 
-    case 'CAMPAIGN_NEXT_COMBAT': {
-      let nextAct = state.campaign.act
-      let nextEncounter = state.campaign.encounter + 1
-      const acts = CAMPAIGN_DATA.acts
-
-      if (nextEncounter >= acts[nextAct].encounters.length) {
-        nextAct++
-        nextEncounter = 0
+      if (node.type === 'rest') {
+        const healed = { ...state.characters, ...applyCampaignRest(state.characters, 0.5) }
+        return {
+          ...state,
+          characters: healed,
+          campaign: { ...campaign, currentLayer: campaign.currentLayer + 1, lastNodeId: node.id, visitedNodes: newVisited, currentNode: null }
+        }
       }
 
-      const act = acts[nextAct]
-      const encounter = act.encounters[nextEncounter]
+      if (node.type === 'treasure') {
+        return {
+          ...state,
+          campaignEvent: { type: 'treasure', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: node.id },
+          campaign: { ...campaign, visitedNodes: newVisited }
+        }
+      }
+
+      if (node.type === 'merchant') {
+        return {
+          ...state,
+          campaignEvent: { type: 'merchant', rewards: generateRewardChoices(5), rewardSelected: false, nodeId: node.id },
+          campaign: { ...campaign, visitedNodes: newVisited }
+        }
+      }
+
+      const act = ACTS[campaign.act]
       const characters = {}
-
       const allies = Object.values(state.characters).filter(c => c.team === TEAMS.ALLY)
       allies.forEach((char, i) => {
         characters[char.id] = {
           ...char,
           position: getAllyPosition(i),
-          actionUsed: false,
-          bonusActionUsed: false,
-          reactionUsed: false,
-          movementUsed: 0,
-          cooldowns: {},
-          animation: null,
+          actionUsed: false, bonusActionUsed: false, reactionUsed: false,
+          movementUsed: 0, cooldowns: {}, animation: null,
           uses: initUses(char)
         }
       })
 
-      encounter.monsters.forEach((monsterId, i) => {
-        const monster = createMonster(monsterId, i, encounter.monsters)
+      node.encounter.monsters.forEach((monsterId, i) => {
+        const monster = createMonster(monsterId, i, node.encounter.monsters)
         monster.uses = initUses(monster)
         characters[monster.id] = monster
       })
@@ -819,28 +828,46 @@ function gameReducer(state, action) {
       return {
         ...state,
         phase: PHASES.COMBAT,
-        characters,
-        initiativeOrder,
-        currentTurnIndex: 0,
-        round: 1,
+        characters, initiativeOrder,
+        currentTurnIndex: 0, round: 1,
         turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
-        terrain,
-        terrainTheme,
-        terrainThemeName: themeName,
-        campaign: { ...state.campaign, act: nextAct, encounter: nextEncounter },
-        campaignRewards: [],
-        campaignRewardSelected: false,
-        selectedAbility: null,
-        selectedCategory: null,
-        validTargets: [],
-        validMoves: [],
+        terrain, terrainTheme, terrainThemeName: themeName,
+        campaign: { ...campaign, currentNode: node, visitedNodes: newVisited },
+        campaignEvent: null,
+        selectedAbility: null, selectedCategory: null,
+        validTargets: [], validMoves: [],
         log: [
           { text: `📜 ${act.name}`, type: 'system' },
-          { text: `⚔️ ${encounter.name}`, type: 'system' },
+          { text: `⚔️ ${node.encounter.name}`, type: 'system' },
           { text: `🗺️ ${themeName}`, type: 'system' },
           { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
         ],
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+      }
+    }
+
+    case 'CAMPAIGN_EVENT_REWARD': {
+      const { reward } = action.payload
+      const updatedChars = applyReward(state.characters, reward)
+      return {
+        ...state,
+        characters: updatedChars,
+        campaignEvent: { ...state.campaignEvent, rewardSelected: true },
+        campaign: { ...state.campaign, rewards: [...state.campaign.rewards, reward.id] }
+      }
+    }
+
+    case 'CAMPAIGN_EVENT_DONE': {
+      const nodeId = state.campaignEvent?.nodeId || state.campaign.currentNode?.id
+      return {
+        ...state,
+        campaignEvent: null,
+        campaign: {
+          ...state.campaign,
+          currentLayer: state.campaign.currentLayer + 1,
+          lastNodeId: nodeId,
+          currentNode: null
+        }
       }
     }
 
