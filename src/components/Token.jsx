@@ -20,7 +20,7 @@ export default function Token({ character, isActive, onClick }) {
   const offset = circumference * (1 - hpPercent)
   const hpColor = hpPercent > 0.5 ? '#4caf50' : hpPercent > 0.25 ? '#ff9800' : '#f44336'
   const isAlly = character.team === 'ally'
-  const teamColor = isAlly ? '#c9a84c' : '#8b2020'
+  const teamColor = isAlly ? '#c9a84c' : '#c83030'
   const classColor = CLASS_COLORS[character.classId]
   const hasRage = character.statuses.some(s => s.type === 'rage')
   const hasPoison = character.statuses.some(s => s.type === 'poison')
