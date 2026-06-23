@@ -202,3 +202,101 @@ export function applyReward(characters, reward) {
   }
   return updated
 }
+
+// ============ XP SYSTEM ============
+
+export const XP_PALIERS = [
+  { id: 'p1', xp: 1, label: '+2 PV max', effects: [{ stat: 'maxHp', value: 2 }] },
+  { id: 'p2', xp: 3, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'p3', xp: 5, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
+  { id: 'evo', xp: 6, label: 'Évolution !', isEvolution: true, effects: [] },
+  { id: 'p4', xp: 8, label: '+1 Mouvement', effects: [{ stat: 'movement', value: 1 }] },
+  { id: 'p5', xp: 11, label: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'p6', xp: 14, label: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
+]
+
+function applyStatEffects(char, effects) {
+  const patched = { ...char }
+  for (const e of effects) {
+    if (e.stat === 'maxHp') { patched.maxHp += e.value; patched.hp += e.value }
+    else if (e.stat === 'fullHeal') { patched.hp = patched.maxHp }
+    else { patched[e.stat] = (patched[e.stat] || 0) + e.value }
+  }
+  return patched
+}
+
+const EVOLUTIONS = {
+  guerrier: { name: 'Chevalier', patches: { 'attaque-puissante': { cooldown: 1 } } },
+  mage: { name: 'Archimage', patches: { 'sort-mineur': { damage: '1d8+3' } } },
+  voleur: { name: 'Assassin', patches: { 'coup-fatal': { executeThreshold: 0.30 } } },
+  rodeur: { name: 'Traqueur', patches: { 'tir-precis': { range: 6 } } },
+  clerc: { name: 'Haut-Clerc', patches: { 'soin-divin': { cooldown: 3 } } }
+}
+
+function evolveCharacter(char) {
+  const evo = EVOLUTIONS[char.classId]
+  if (!evo) return char
+  const newClassData = JSON.parse(JSON.stringify(char.classData))
+  newClassData.name = evo.name
+  for (const [abilityId, patches] of Object.entries(evo.patches)) {
+    for (const cat of ['actions', 'bonusActions', 'reactions']) {
+      const ab = newClassData.abilities[cat]?.find(a => a.id === abilityId)
+      if (ab) Object.assign(ab, patches)
+    }
+  }
+  return { ...char, classData: newClassData, evolved: true }
+}
+
+export function applyNewPaliers(characters, xp, appliedPaliers) {
+  let updated = { ...characters }
+  const newApplied = [...appliedPaliers]
+  let didEvolve = false
+
+  for (const palier of XP_PALIERS) {
+    if (xp >= palier.xp && !appliedPaliers.includes(palier.id)) {
+      newApplied.push(palier.id)
+      if (palier.isEvolution) {
+        for (const [id, char] of Object.entries(updated)) {
+          if (char.team === 'ally') updated[id] = evolveCharacter(char)
+        }
+        didEvolve = true
+      } else {
+        for (const [id, char] of Object.entries(updated)) {
+          if (char.team === 'ally') updated[id] = applyStatEffects(char, palier.effects)
+        }
+      }
+    }
+  }
+  return { characters: updated, appliedPaliers: newApplied, didEvolve }
+}
+
+// ============ RELICS ============
+
+export const MINOR_RELICS = [
+  { id: 'blood-pendant', name: 'Pendentif sanglant', icon: '🗡️', desc: '+3 PV max', effects: [{ stat: 'maxHp', value: 3 }] },
+  { id: 'iron-ring', name: 'Anneau de fer', icon: '🛡️', desc: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
+  { id: 'swift-boots', name: 'Bottes rapides', icon: '🏃', desc: '+1 mouvement', effects: [{ stat: 'movement', value: 1 }] },
+  { id: 'rage-stone', name: 'Pierre de rage', icon: '💢', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'vitality-gem', name: 'Gemme de vitalité', icon: '❤️', desc: '+5 PV max', effects: [{ stat: 'maxHp', value: 5 }] },
+  { id: 'sharp-eye', name: 'Œil de faucon', icon: '🎯', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+]
+
+export const MAJOR_RELICS = [
+  { id: 'destiny-blade', name: 'Lame du destin', icon: '🔥', desc: '+2 ATK, +1 CA', effects: [{ stat: 'attackBonus', value: 2 }, { stat: 'ac', value: 1 }] },
+  { id: 'phoenix-heart', name: 'Cœur du phénix', icon: '❤️', desc: '+8 PV max + soin complet', effects: [{ stat: 'maxHp', value: 8 }, { stat: 'fullHeal' }] },
+  { id: 'kings-crown', name: 'Couronne du roi', icon: '👑', desc: '+1 ATK, +1 CA, +1 mouvement', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'ac', value: 1 }, { stat: 'movement', value: 1 }] },
+  { id: 'war-banner', name: 'Bannière de guerre', icon: '⚔️', desc: '+3 ATK', effects: [{ stat: 'attackBonus', value: 3 }] },
+  { id: 'fortress-shield', name: 'Bouclier-forteresse', icon: '🏰', desc: '+3 CA', effects: [{ stat: 'ac', value: 3 }] },
+]
+
+export function pickRelics(pool, count) {
+  return shuffle([...pool]).slice(0, count)
+}
+
+export function applyRelicEffects(characters, relic) {
+  const updated = { ...characters }
+  for (const [id, char] of Object.entries(updated)) {
+    if (char.team === 'ally') updated[id] = applyStatEffects(char, relic.effects)
+  }
+  return updated
+}

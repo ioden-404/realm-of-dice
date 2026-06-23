@@ -1,4 +1,4 @@
-import { ACTS, NODE_TYPES } from '../data/campaign.js'
+import { ACTS, NODE_TYPES, XP_PALIERS } from '../data/campaign.js'
 import { CLASS_COLORS } from '../data/config.js'
 
 const LAYER_H = 70
@@ -101,6 +101,43 @@ export default function CampaignMap({
           <div className="cmap-banner">⚔️ Victoire ! L'équipe récupère ses forces...</div>
         )}
 
+        <div className="cmap-xp">
+          <div className="cmap-xp-header">
+            <span className="cmap-xp-label">XP : {campaign.xp || 0}</span>
+            {(() => {
+              const next = XP_PALIERS.find(p => !(campaign.appliedPaliers || []).includes(p.id))
+              return next ? <span className="cmap-xp-next">Prochain : {next.label} ({next.xp} XP)</span> : <span className="cmap-xp-next">Max !</span>
+            })()}
+          </div>
+          <div className="cmap-xp-bar">
+            {XP_PALIERS.map(p => {
+              const reached = (campaign.appliedPaliers || []).includes(p.id)
+              const pct = Math.min((p.xp / 15) * 100, 100)
+              return (
+                <div
+                  key={p.id}
+                  className={`cmap-xp-pip ${reached ? 'cmap-xp-pip-done' : ''} ${p.isEvolution ? 'cmap-xp-pip-evo' : ''}`}
+                  style={{ left: `${pct}%` }}
+                  title={`${p.xp} XP : ${p.label}`}
+                />
+              )
+            })}
+            <div className="cmap-xp-fill" style={{ width: `${Math.min(((campaign.xp || 0) / 15) * 100, 100)}%` }} />
+          </div>
+        </div>
+
+        {campaign.relics && campaign.relics.length > 0 && (
+          <div className="cmap-relics">
+            {campaign.relics.map((r, i) => (
+              <span key={i} className="cmap-relic" title={r.name}>{r.icon}</span>
+            ))}
+          </div>
+        )}
+
+        {campaign.evolved && (
+          <div className="cmap-evo-banner">⚡ Classes évoluées !</div>
+        )}
+
         <div className="cmap-grid" style={{ height: mapHeight }}>
           <svg className="cmap-lines" viewBox={`0 0 100 ${mapHeight}`} preserveAspectRatio="none">
             {map.map((layer, li) =>
@@ -162,21 +199,26 @@ export default function CampaignMap({
             <h3 className="cmap-event-title">
               {campaignEvent.type === 'treasure' && '🎁 Trésor trouvé !'}
               {campaignEvent.type === 'merchant' && '🛒 Marchand ambulant !'}
-              {campaignEvent.type === 'elite-reward' && '💀 Victoire héroïque !'}
+              {campaignEvent.type === 'relic-minor' && '💀 Relique trouvée !'}
+              {campaignEvent.type === 'relic-major' && '👹 Relique majeure !'}
             </h3>
-            <p className="cmap-event-desc">Choisissez une amélioration</p>
+            <p className="cmap-event-desc">
+              {(campaignEvent.type === 'relic-minor' || campaignEvent.type === 'relic-major')
+                ? 'Choisissez une relique'
+                : 'Choisissez une amélioration'}
+            </p>
             <div className="cmap-event-rewards">
-              {campaignEvent.rewards.map(r => (
+              {(campaignEvent.relics || campaignEvent.rewards || []).map(r => (
                 <button
                   key={r.id}
-                  className={`campaign-reward ${campaignEvent.rewardSelected ? 'reward-disabled' : ''}`}
+                  className={`campaign-reward ${campaignEvent.type === 'relic-major' ? 'reward-major' : ''} ${campaignEvent.rewardSelected ? 'reward-disabled' : ''}`}
                   onClick={() => !campaignEvent.rewardSelected && onSelectReward(r)}
                   disabled={campaignEvent.rewardSelected}
                 >
                   <span className="reward-icon">{r.icon}</span>
                   <div className="reward-info">
                     <span className="reward-name">{r.name}</span>
-                    <span className="reward-desc">{r.description}</span>
+                    <span className="reward-desc">{r.desc || r.description}</span>
                   </div>
                 </button>
               ))}

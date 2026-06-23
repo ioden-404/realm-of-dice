@@ -7,7 +7,7 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { ACTS, generateCampaignMap, generateRewardChoices, applyCampaignRest, applyReward } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateRewardChoices, applyCampaignRest, applyReward, applyNewPaliers, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS } from '../data/campaign.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -109,25 +109,12 @@ function resolveCampaignPhase(state, gameEnd) {
 }
 
 function advanceCampaignAfterCombat(campaign) {
-  const node = campaign.currentNode
-  let newCampaign = {
+  return {
     ...campaign,
     currentLayer: campaign.currentLayer + 1,
-    lastNodeId: node?.id || campaign.lastNodeId,
+    lastNodeId: campaign.currentNode?.id || campaign.lastNodeId,
     currentNode: null
   }
-  if (node?.type === 'boss' && campaign.act < ACTS.length - 1) {
-    const nextAct = campaign.act + 1
-    newCampaign = {
-      ...newCampaign,
-      act: nextAct,
-      map: generateCampaignMap(nextAct),
-      currentLayer: 0,
-      lastNodeId: null,
-      visitedNodes: []
-    }
-  }
-  return newCampaign
 }
 
 function initUses(character) {
@@ -173,7 +160,7 @@ const initialState = {
   terrain: {},
   terrainTheme: null,
   terrainThemeName: '',
-  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [] },
+  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [] },
   campaignEvent: null,
   campaignMode: false
 }
@@ -562,9 +549,16 @@ function gameReducer(state, action) {
       let execEvent = state.campaignEvent
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
         execChars = { ...finalChars, ...applyCampaignRest(finalChars, 0.3) }
-        execCampaign = advanceCampaignAfterCombat(state.campaign)
-        if (state.campaign.currentNode?.type === 'elite') {
-          execEvent = { type: 'elite-reward', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+        const nodeType = state.campaign.currentNode?.type
+        const xpGain = nodeType === 'elite' ? 2 : 1
+        const newXp = (state.campaign.xp || 0) + xpGain
+        const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
+        execChars = palierResult.characters
+        execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved }
+        if (nodeType === 'elite') {
+          execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+        } else if (nodeType === 'boss') {
+          execEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         }
       }
 
@@ -644,9 +638,16 @@ function gameReducer(state, action) {
         let endEvent = state.campaignEvent
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
           restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, 0.3) }
-          endCampaign = advanceCampaignAfterCombat(state.campaign)
-          if (state.campaign.currentNode?.type === 'elite') {
-            endEvent = { type: 'elite-reward', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+          const nodeType = state.campaign.currentNode?.type
+          const xpGain = nodeType === 'elite' ? 2 : 1
+          const newXp = (state.campaign.xp || 0) + xpGain
+          const palierResult = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
+          restChars = palierResult.characters
+          endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved }
+          if (nodeType === 'elite') {
+            endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+          } else if (nodeType === 'boss') {
+            endEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           }
         }
         return {
@@ -764,7 +765,8 @@ function gameReducer(state, action) {
           active: true, act: 0,
           map: generateCampaignMap(0),
           currentLayer: 0, lastNodeId: null,
-          visitedNodes: [], currentNode: null, rewards: []
+          visitedNodes: [], currentNode: null,
+          rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: []
         },
         campaignEvent: null,
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
@@ -848,27 +850,50 @@ function gameReducer(state, action) {
 
     case 'CAMPAIGN_EVENT_REWARD': {
       const { reward } = action.payload
-      const updatedChars = applyReward(state.characters, reward)
+      const event = state.campaignEvent
+      const isRelic = event?.type === 'relic-minor' || event?.type === 'relic-major'
+
+      const updatedChars = isRelic
+        ? applyRelicEffects(state.characters, reward)
+        : applyReward(state.characters, reward)
+
+      const newRelics = isRelic
+        ? [...(state.campaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon }]
+        : (state.campaign.relics || [])
+
       return {
         ...state,
         characters: updatedChars,
-        campaignEvent: { ...state.campaignEvent, rewardSelected: true },
-        campaign: { ...state.campaign, rewards: [...state.campaign.rewards, reward.id] }
+        campaignEvent: { ...event, rewardSelected: true },
+        campaign: { ...state.campaign, relics: newRelics, rewards: [...state.campaign.rewards, reward.id] }
       }
     }
 
     case 'CAMPAIGN_EVENT_DONE': {
-      const nodeId = state.campaignEvent?.nodeId || state.campaign.currentNode?.id
-      return {
-        ...state,
-        campaignEvent: null,
-        campaign: {
-          ...state.campaign,
-          currentLayer: state.campaign.currentLayer + 1,
-          lastNodeId: nodeId,
-          currentNode: null
+      const event = state.campaignEvent
+      const isRelic = event?.type === 'relic-minor' || event?.type === 'relic-major'
+      const nodeId = event?.nodeId || state.campaign.currentNode?.id
+
+      let newCampaign = { ...state.campaign, currentNode: null }
+
+      if (!isRelic) {
+        newCampaign.currentLayer = state.campaign.currentLayer + 1
+        newCampaign.lastNodeId = nodeId
+      }
+
+      if (event?.type === 'relic-major' && state.campaign.act < ACTS.length - 1) {
+        const nextAct = state.campaign.act + 1
+        newCampaign = {
+          ...newCampaign,
+          act: nextAct,
+          map: generateCampaignMap(nextAct),
+          currentLayer: 0,
+          lastNodeId: null,
+          visitedNodes: []
         }
       }
+
+      return { ...state, campaignEvent: null, campaign: newCampaign }
     }
 
     default:

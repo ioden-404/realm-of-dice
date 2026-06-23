@@ -2105,6 +2105,105 @@ body {
   color: var(--color-text-muted);
 }
 
+.cmap-xp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cmap-xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cmap-xp-label {
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--color-gold-light);
+}
+
+.cmap-xp-next {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.cmap-xp-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.cmap-xp-fill {
+  height: 100%;
+  background: var(--color-gold);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.cmap-xp-pip {
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--color-stone-dark);
+  border: 1px solid var(--color-border);
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.cmap-xp-pip-done {
+  background: var(--color-gold);
+  border-color: var(--color-gold-light);
+}
+
+.cmap-xp-pip-evo {
+  width: 8px;
+  height: 16px;
+  top: -4px;
+  border-radius: 4px;
+  border-color: #ff9800;
+}
+
+.cmap-xp-pip-evo.cmap-xp-pip-done {
+  background: #ff9800;
+  box-shadow: 0 0 6px rgba(255, 152, 0, 0.5);
+}
+
+.cmap-relics {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.cmap-relic {
+  font-size: 20px;
+  background: rgba(201, 168, 76, 0.15);
+  border: 1px solid var(--color-gold);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.cmap-evo-banner {
+  text-align: center;
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.reward-major {
+  border-color: var(--color-gold) !important;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), var(--color-stone-dark)) !important;
+}
+
 .cmap-banner {
   text-align: center;
   font-family: var(--font-ui);
