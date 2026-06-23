@@ -7,7 +7,7 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
 import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
 
 function createCharacter(classId, team, index) {
@@ -664,7 +664,8 @@ function gameReducer(state, action) {
       let execPendingPaliers = state.pendingPaliers
       let execCombatResult = state.combatResult
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
-        execChars = { ...finalChars, ...applyCampaignRest(finalChars, 0.3) }
+        const hasHeal = teamHasHealer(finalChars)
+        execChars = { ...finalChars, ...applyCampaignRest(finalChars, hasHeal ? 0.3 : 0.45) }
         const nodeType = state.campaign.currentNode?.type
         const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
         const newXp = (state.campaign.xp || 0) + xpGain
@@ -764,7 +765,8 @@ function gameReducer(state, action) {
         let endPendingPaliers = state.pendingPaliers
         let endCombatResult = state.combatResult
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
-          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, 0.3) }
+          const hasHeal2 = teamHasHealer(updatedChars)
+          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, hasHeal2 ? 0.3 : 0.45) }
           const nodeType = state.campaign.currentNode?.type
           const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
           const newXp = (state.campaign.xp || 0) + xpGain
@@ -912,7 +914,8 @@ function gameReducer(state, action) {
       const newVisited = [...campaign.visitedNodes, node.id]
 
       if (node.type === 'rest') {
-        const healed = { ...state.characters, ...applyCampaignRest(state.characters, 0.5) }
+        const hasHealRest = teamHasHealer(state.characters)
+        const healed = { ...state.characters, ...applyCampaignRest(state.characters, hasHealRest ? 0.5 : 0.7) }
         return {
           ...state,
           characters: healed,
@@ -979,7 +982,12 @@ function gameReducer(state, action) {
           { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
         ],
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
-        combatInventory: state.combatInventory || []
+        combatInventory: (() => {
+          const inv = [...(state.combatInventory || [])]
+          const allies = Object.values(characters).filter(c => c.team === TEAMS.ALLY)
+          if (!allies.some(c => c.classId === 'clerc')) inv.push({ ...SURVIVAL_POTION })
+          return inv
+        })()
       }
     }
 

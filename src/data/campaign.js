@@ -162,6 +162,21 @@ export function generateRewardChoices(count = 3) {
   return shuffle([...SHOP_ITEMS].filter(i => i.cost <= 12)).slice(0, count)
 }
 
+export function teamHasHealer(characters) {
+  return Object.values(characters).some(c => c.team === 'ally' && !c.isDead && c.classId === 'clerc')
+}
+
+export const SURVIVAL_POTION = {
+  id: 'survival-potion',
+  name: 'Potion d\'urgence',
+  emoji: '🧪',
+  description: 'Instinct de survie — soigne 2d4+2 PV.',
+  actionType: 'bonus',
+  targetType: 'self',
+  effect: 'heal',
+  healDice: '2d4+2'
+}
+
 export function applyCampaignRest(characters, healFactor = 0.3) {
   const updated = {}
   for (const [id, char] of Object.entries(characters)) {
