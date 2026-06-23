@@ -137,17 +137,25 @@ export function generateCampaignMap(actIndex) {
   return layers
 }
 
-export const REWARD_POOL = [
-  { id: 'hp-team', name: '+4 PV max', description: 'Toute l\'équipe gagne +4 PV max', icon: '❤️' },
-  { id: 'heal-half', name: 'Soins 50%', description: 'Récupère 50% des PV manquants', icon: '💚' },
-  { id: 'heal-full', name: 'Soin complet', description: 'Toute l\'équipe soignée à 100%', icon: '✨' },
-  { id: 'atk-boost', name: '+1 Attaque', description: '+1 au bonus d\'attaque', icon: '⚔️' },
-  { id: 'ac-boost', name: '+1 CA', description: '+1 à la CA de l\'équipe', icon: '🛡️' },
-  { id: 'move-boost', name: '+1 Mouvement', description: '+1 case de mouvement', icon: '🏃' }
+// ============ GOLD & SHOP ============
+
+export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18 }
+
+export const SHOP_ITEMS = [
+  { id: 'potion-soin', name: 'Potion de soin', desc: 'Soigne 50% PV d\'un allié', icon: '🧪', cost: 12, effect: 'healAlly', value: 0.5 },
+  { id: 'potion-grand-soin', name: 'Grand soin', desc: 'Soigne 100% PV d\'un allié', icon: '💊', cost: 22, effect: 'fullHealAlly', value: 1 },
+  { id: 'elixir-rez', name: 'Élixir de vie', desc: 'Revive un allié à 50% PV', icon: '⚗️', cost: 28, effect: 'reviveAlly', value: 0.5 },
+  { id: 'parchemin-bouclier', name: 'Parchemin bouclier', desc: '+8 bouclier au prochain combat (équipe)', icon: '📜', cost: 15, effect: 'teamShield', value: 8 },
+  { id: 'potion-rage', name: 'Potion de rage', desc: 'Rage 3 tours au prochain combat (équipe)', icon: '🔥', cost: 18, effect: 'teamRage', value: 3 },
+  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe', icon: '🌿', cost: 10, effect: 'teamHeal', value: 0.3 },
 ]
 
+export function generateShopItems() {
+  return shuffle([...SHOP_ITEMS]).slice(0, 4)
+}
+
 export function generateRewardChoices(count = 3) {
-  return shuffle([...REWARD_POOL]).slice(0, count)
+  return shuffle([...SHOP_ITEMS].filter(i => i.cost <= 15)).slice(0, count)
 }
 
 export function applyCampaignRest(characters, healFactor = 0.3) {
@@ -173,32 +181,56 @@ export function applyCampaignRest(characters, healFactor = 0.3) {
   return updated
 }
 
-export function applyReward(characters, reward) {
+export function applyConsumable(characters, item) {
   const updated = { ...characters }
-  for (const [id, char] of Object.entries(updated)) {
-    if (char.team !== 'ally') continue
-    switch (reward.id) {
-      case 'hp-team':
-        updated[id] = { ...char, maxHp: char.maxHp + 4, hp: char.hp + 4 }
-        break
-      case 'heal-half': {
+  const allies = Object.entries(updated).filter(([, c]) => c.team === 'ally')
+
+  switch (item.effect) {
+    case 'teamHeal':
+      for (const [id, char] of allies) {
         const missing = char.maxHp - char.hp
-        updated[id] = { ...char, hp: char.hp + Math.floor(missing * 0.5) }
-        break
+        updated[id] = { ...char, hp: char.hp + Math.floor(missing * item.value) }
       }
-      case 'heal-full':
-        updated[id] = { ...char, hp: char.maxHp }
-        break
-      case 'atk-boost':
-        updated[id] = { ...char, attackBonus: char.attackBonus + 1 }
-        break
-      case 'ac-boost':
-        updated[id] = { ...char, ac: char.ac + 1 }
-        break
-      case 'move-boost':
-        updated[id] = { ...char, movement: char.movement + 1 }
-        break
+      break
+    case 'healAlly': {
+      const hurt = allies.filter(([, c]) => c.hp < c.maxHp && !c.isDead).sort((a, b) => a[1].hp / a[1].maxHp - b[1].hp / b[1].maxHp)
+      if (hurt.length > 0) {
+        const [id, char] = hurt[0]
+        const missing = char.maxHp - char.hp
+        updated[id] = { ...char, hp: char.hp + Math.floor(missing * item.value) }
+      }
+      break
     }
+    case 'fullHealAlly': {
+      const hurt = allies.filter(([, c]) => c.hp < c.maxHp && !c.isDead).sort((a, b) => a[1].hp / a[1].maxHp - b[1].hp / b[1].maxHp)
+      if (hurt.length > 0) {
+        const [id, char] = hurt[0]
+        updated[id] = { ...char, hp: char.maxHp }
+      }
+      break
+    }
+    case 'reviveAlly': {
+      const dead = allies.find(([, c]) => c.isDead)
+      if (dead) {
+        const [id, char] = dead
+        updated[id] = { ...char, isDead: false, hp: Math.floor(char.maxHp * item.value) }
+      }
+      break
+    }
+    case 'teamShield':
+      for (const [id, char] of allies) {
+        if (!char.isDead) {
+          updated[id] = { ...char, statuses: [...char.statuses, { type: 'shield', absorption: item.value }] }
+        }
+      }
+      break
+    case 'teamRage':
+      for (const [id, char] of allies) {
+        if (!char.isDead) {
+          updated[id] = { ...char, statuses: [...char.statuses, { type: 'rage', duration: item.value }] }
+        }
+      }
+      break
   }
   return updated
 }

@@ -999,6 +999,18 @@ body {
   display: block;
 }
 
+.token-terrain-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 3px;
+  padding: 0 2px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
 .anim-shake {
   animation: shake 0.3s ease-in-out;
 }
@@ -1967,6 +1979,30 @@ body {
   flex-wrap: wrap;
 }
 
+.charcard-terrain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+  padding-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.charcard-terrain-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.charcard-evolved {
+  font-family: var(--font-title);
+  font-size: 11px;
+  color: #ff9800;
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+  padding-top: 6px;
+}
+
 /* ========== TERRAIN CARD ========== */
 
 .terrain-card {
@@ -2188,15 +2224,59 @@ body {
   padding: 2px 6px;
 }
 
-.cmap-evo-banner {
+.cmap-gold {
   text-align: center;
   font-family: var(--font-title);
+  font-size: 14px;
+  color: var(--color-gold-light);
+}
+
+.cmap-evo-banner {
+  font-family: var(--font-ui);
   font-size: 12px;
   color: #ff9800;
   background: rgba(255, 152, 0, 0.1);
   border: 1px solid rgba(255, 152, 0, 0.3);
   border-radius: 6px;
-  padding: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cmap-evo-title {
+  font-family: var(--font-title);
+  font-size: 13px;
+  text-align: center;
+}
+
+.cmap-evo-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.cmap-evo-change {
+  color: rgba(255, 152, 0, 0.7);
+  font-size: 10px;
+}
+
+.cmap-event-gold {
+  text-align: center;
+  font-family: var(--font-title);
+  font-size: 24px;
+  color: var(--color-gold-light);
+  margin: 8px 0;
+}
+
+.reward-cost {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--color-gold);
+  white-space: nowrap;
+  margin-left: auto;
+  padding-left: 8px;
 }
 
 .reward-major {

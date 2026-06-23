@@ -234,6 +234,7 @@ export default function App() {
         initiativeOrder={state.initiativeOrder}
         currentTurnIndex={state.currentTurnIndex}
         round={state.round}
+        encounterName={state.campaign.active ? state.campaign.currentNode?.encounter?.name : null}
       >
         <CombatMenu
           volume={audio.volume}
@@ -297,6 +298,7 @@ export default function App() {
       {inspectedCharId && state.characters[inspectedCharId] && (
         <CharacterCard
           character={state.characters[inspectedCharId]}
+          terrain={state.terrain}
           onClose={() => setInspectedCharId(null)}
         />
       )}

@@ -1,7 +1,16 @@
 import StatusBadge from './StatusBadge.jsx'
 import { CLASS_COLORS } from '../data/config.js'
 
-export default function CharacterCard({ character, onClose }) {
+const TERRAIN_LABELS = {
+  cover: { icon: '🛡️', label: 'Couvert', desc: '+2 CA contre tirs à distance' },
+  hazard: { icon: '🔥', label: 'Zone de danger', desc: '4 dégâts en début de tour' },
+  difficult: { icon: '🐌', label: 'Terrain difficile', desc: 'Coûte 2 pts de mouvement' },
+  blocking: { icon: '⛔', label: 'Terrain bloquant', desc: 'Infranchissable' }
+}
+
+export default function CharacterCard({ character, terrain, onClose }) {
+  const terrainCell = terrain ? terrain[`${character.position.x},${character.position.y}`] : null
+  const terrainInfo = terrainCell ? TERRAIN_LABELS[terrainCell.type] : null
   if (!character) return null
 
   const hpPercent = character.hp / character.maxHp
@@ -84,6 +93,17 @@ export default function CharacterCard({ character, onClose }) {
               ))}
             </div>
           </div>
+        )}
+
+        {terrainInfo && (
+          <div className="charcard-terrain">
+            <span>{terrainInfo.icon} {terrainInfo.label}</span>
+            <span className="charcard-terrain-desc">{terrainInfo.desc}</span>
+          </div>
+        )}
+
+        {character.evolved && (
+          <div className="charcard-evolved">⚡ Classe évoluée</div>
         )}
       </div>
     </div>

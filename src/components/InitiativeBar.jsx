@@ -1,9 +1,9 @@
 import { CLASS_COLORS } from '../data/config.js'
 
-export default function InitiativeBar({ characters, initiativeOrder, currentTurnIndex, round, children }) {
+export default function InitiativeBar({ characters, initiativeOrder, currentTurnIndex, round, encounterName, children }) {
   return (
     <div className="initiative-bar">
-      <span className="initiative-label">Initiative</span>
+      <span className="initiative-label">{encounterName || 'Initiative'}</span>
       <div className="initiative-tokens">
         {initiativeOrder.map((id, idx) => {
           const char = characters[id]

@@ -7,7 +7,7 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { ACTS, generateCampaignMap, generateRewardChoices, applyCampaignRest, applyReward, applyNewPaliers, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS } from '../data/campaign.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -160,7 +160,7 @@ const initialState = {
   terrain: {},
   terrainTheme: null,
   terrainThemeName: '',
-  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [] },
+  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: [] },
   campaignEvent: null,
   campaignMode: false
 }
@@ -490,7 +490,7 @@ function gameReducer(state, action) {
 
       const newCooldowns = { ...current.cooldowns }
       if (ability.cooldown > 0) {
-        newCooldowns[ability.id] = ability.cooldown
+        newCooldowns[ability.id] = ability.cooldown + 1
       }
 
       const newUses = { ...current.uses }
@@ -554,7 +554,8 @@ function gameReducer(state, action) {
         const newXp = (state.campaign.xp || 0) + xpGain
         const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
         execChars = palierResult.characters
-        execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved }
+        const goldGain = nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+        execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         } else if (nodeType === 'boss') {
@@ -643,7 +644,8 @@ function gameReducer(state, action) {
           const newXp = (state.campaign.xp || 0) + xpGain
           const palierResult = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
           restChars = palierResult.characters
-          endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved }
+          const goldGain2 = nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+          endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
@@ -766,7 +768,7 @@ function gameReducer(state, action) {
           map: generateCampaignMap(0),
           currentLayer: 0, lastNodeId: null,
           visitedNodes: [], currentNode: null,
-          rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: []
+          rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: []
         },
         campaignEvent: null,
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
@@ -788,17 +790,19 @@ function gameReducer(state, action) {
       }
 
       if (node.type === 'treasure') {
+        const goldGain = GOLD_REWARDS.treasure
         return {
           ...state,
-          campaignEvent: { type: 'treasure', rewards: generateRewardChoices(3), rewardSelected: false, nodeId: node.id },
-          campaign: { ...campaign, visitedNodes: newVisited }
+          campaignEvent: { type: 'treasure', goldGain, nodeId: node.id },
+          campaign: { ...campaign, visitedNodes: newVisited, gold: (campaign.gold || 0) + goldGain,
+            currentLayer: campaign.currentLayer + 1, lastNodeId: node.id, currentNode: null }
         }
       }
 
       if (node.type === 'merchant') {
         return {
           ...state,
-          campaignEvent: { type: 'merchant', rewards: generateRewardChoices(5), rewardSelected: false, nodeId: node.id },
+          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id },
           campaign: { ...campaign, visitedNodes: newVisited }
         }
       }
@@ -853,19 +857,24 @@ function gameReducer(state, action) {
       const event = state.campaignEvent
       const isRelic = event?.type === 'relic-minor' || event?.type === 'relic-major'
 
-      const updatedChars = isRelic
-        ? applyRelicEffects(state.characters, reward)
-        : applyReward(state.characters, reward)
+      let updatedChars = state.characters
+      let newCampaign = { ...state.campaign }
 
-      const newRelics = isRelic
-        ? [...(state.campaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon }]
-        : (state.campaign.relics || [])
+      if (isRelic) {
+        updatedChars = applyRelicEffects(state.characters, reward)
+        newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon }]
+      } else if (event?.type === 'merchant') {
+        if ((newCampaign.gold || 0) < reward.cost) return state
+        updatedChars = applyConsumable(state.characters, reward)
+        newCampaign.gold = (newCampaign.gold || 0) - reward.cost
+        newCampaign.inventory = [...(newCampaign.inventory || []), reward.id]
+      }
 
       return {
         ...state,
         characters: updatedChars,
         campaignEvent: { ...event, rewardSelected: true },
-        campaign: { ...state.campaign, relics: newRelics, rewards: [...state.campaign.rewards, reward.id] }
+        campaign: newCampaign
       }
     }
 

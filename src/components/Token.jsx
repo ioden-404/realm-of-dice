@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { CLASS_COLORS } from '../data/config.js'
 
-export default function Token({ character, isActive, onClick }) {
+const TERRAIN_BADGES = {
+  cover: '🛡️',
+  hazard: '🔥',
+  difficult: '🐌'
+}
+
+export default function Token({ character, isActive, terrainType, onClick }) {
   const tokenRef = useRef(null)
 
   useEffect(() => {
@@ -74,6 +80,9 @@ export default function Token({ character, isActive, onClick }) {
         {isDodging && <span className="status-icon">💨</span>}
         {hasRage && <span className="status-icon">💢</span>}
       </div>
+      {terrainType && TERRAIN_BADGES[terrainType] && (
+        <div className="token-terrain-badge">{TERRAIN_BADGES[terrainType]}</div>
+      )}
     </div>
   )
 }

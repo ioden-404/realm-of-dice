@@ -48,6 +48,7 @@ export default function Board({
             <Token
               character={charHere}
               isActive={charHere.id === currentCharId}
+              terrainType={terrainCell?.type}
               onClick={(e) => {
                 e.stopPropagation()
                 onTokenClick(charHere.id)

@@ -1,4 +1,12 @@
-import { ACTS, NODE_TYPES, XP_PALIERS } from '../data/campaign.js'
+import { ACTS, NODE_TYPES, XP_PALIERS, SHOP_ITEMS } from '../data/campaign.js'
+
+const EVOLUTION_DETAILS = {
+  guerrier: { from: 'Guerrier', to: 'Chevalier', change: 'Attaque puissante : CD réduit' },
+  mage: { from: 'Mage', to: 'Archimage', change: 'Sort mineur : 1d8+3 dégâts' },
+  voleur: { from: 'Voleur', to: 'Assassin', change: 'Coup fatal : seuil 30%' },
+  rodeur: { from: 'Rôdeur', to: 'Traqueur', change: 'Tir précis : portée 6' },
+  clerc: { from: 'Clerc', to: 'Haut-Clerc', change: 'Soin divin : CD réduit' }
+}
 import { CLASS_COLORS } from '../data/config.js'
 
 const LAYER_H = 70
@@ -126,6 +134,10 @@ export default function CampaignMap({
           </div>
         </div>
 
+        <div className="cmap-gold">
+          <span>🪙 {campaign.gold || 0} or</span>
+        </div>
+
         {campaign.relics && campaign.relics.length > 0 && (
           <div className="cmap-relics">
             {campaign.relics.map((r, i) => (
@@ -135,7 +147,18 @@ export default function CampaignMap({
         )}
 
         {campaign.evolved && (
-          <div className="cmap-evo-banner">⚡ Classes évoluées !</div>
+          <div className="cmap-evo-banner">
+            <div className="cmap-evo-title">⚡ Classes évoluées !</div>
+            {allies.map(char => {
+              const evo = EVOLUTION_DETAILS[char.classId]
+              return evo ? (
+                <div key={char.id} className="cmap-evo-line">
+                  <span>{char.emoji} {evo.from} → <strong>{evo.to}</strong></span>
+                  <span className="cmap-evo-change">{evo.change}</span>
+                </div>
+              ) : null
+            })}
+          </div>
         )}
 
         <div className="cmap-grid" style={{ height: mapHeight }}>
@@ -194,37 +217,72 @@ export default function CampaignMap({
       </div>
 
       {campaignEvent && (
-        <div className="cmap-event-overlay" onClick={campaignEvent.rewardSelected ? onEventDone : undefined}>
+        <div className="cmap-event-overlay" onClick={
+          (campaignEvent.type === 'treasure' || campaignEvent.rewardSelected) ? onEventDone : undefined
+        }>
           <div className="cmap-event" onClick={e => e.stopPropagation()}>
-            <h3 className="cmap-event-title">
-              {campaignEvent.type === 'treasure' && '🎁 Trésor trouvé !'}
-              {campaignEvent.type === 'merchant' && '🛒 Marchand ambulant !'}
-              {campaignEvent.type === 'relic-minor' && '💀 Relique trouvée !'}
-              {campaignEvent.type === 'relic-major' && '👹 Relique majeure !'}
-            </h3>
-            <p className="cmap-event-desc">
-              {(campaignEvent.type === 'relic-minor' || campaignEvent.type === 'relic-major')
-                ? 'Choisissez une relique'
-                : 'Choisissez une amélioration'}
-            </p>
-            <div className="cmap-event-rewards">
-              {(campaignEvent.relics || campaignEvent.rewards || []).map(r => (
-                <button
-                  key={r.id}
-                  className={`campaign-reward ${campaignEvent.type === 'relic-major' ? 'reward-major' : ''} ${campaignEvent.rewardSelected ? 'reward-disabled' : ''}`}
-                  onClick={() => !campaignEvent.rewardSelected && onSelectReward(r)}
-                  disabled={campaignEvent.rewardSelected}
-                >
-                  <span className="reward-icon">{r.icon}</span>
-                  <div className="reward-info">
-                    <span className="reward-name">{r.name}</span>
-                    <span className="reward-desc">{r.desc || r.description}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-            {campaignEvent.rewardSelected && (
-              <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
+            {campaignEvent.type === 'treasure' && (
+              <>
+                <h3 className="cmap-event-title">🎁 Trésor trouvé !</h3>
+                <p className="cmap-event-gold">+{campaignEvent.goldGain} 🪙</p>
+                <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
+              </>
+            )}
+
+            {campaignEvent.type === 'merchant' && (
+              <>
+                <h3 className="cmap-event-title">🛒 Marchand ambulant</h3>
+                <p className="cmap-event-desc">🪙 {campaign.gold || 0} or disponible</p>
+                <div className="cmap-event-rewards">
+                  {(campaignEvent.items || []).map(item => {
+                    const canAfford = (campaign.gold || 0) >= item.cost
+                    return (
+                      <button
+                        key={item.id}
+                        className={`campaign-reward ${!canAfford ? 'reward-disabled' : ''}`}
+                        onClick={() => canAfford && onSelectReward(item)}
+                        disabled={!canAfford || campaignEvent.rewardSelected}
+                      >
+                        <span className="reward-icon">{item.icon}</span>
+                        <div className="reward-info">
+                          <span className="reward-name">{item.name}</span>
+                          <span className="reward-desc">{item.desc}</span>
+                        </div>
+                        <span className="reward-cost">🪙 {item.cost}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button className="campaign-next-btn" onClick={onEventDone}>Quitter la boutique</button>
+              </>
+            )}
+
+            {(campaignEvent.type === 'relic-minor' || campaignEvent.type === 'relic-major') && (
+              <>
+                <h3 className="cmap-event-title">
+                  {campaignEvent.type === 'relic-minor' ? '💀 Relique trouvée !' : '👹 Relique majeure !'}
+                </h3>
+                <p className="cmap-event-desc">Choisissez une relique</p>
+                <div className="cmap-event-rewards">
+                  {(campaignEvent.relics || []).map(r => (
+                    <button
+                      key={r.id}
+                      className={`campaign-reward ${campaignEvent.type === 'relic-major' ? 'reward-major' : ''} ${campaignEvent.rewardSelected ? 'reward-disabled' : ''}`}
+                      onClick={() => !campaignEvent.rewardSelected && onSelectReward(r)}
+                      disabled={campaignEvent.rewardSelected}
+                    >
+                      <span className="reward-icon">{r.icon}</span>
+                      <div className="reward-info">
+                        <span className="reward-name">{r.name}</span>
+                        <span className="reward-desc">{r.desc}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {campaignEvent.rewardSelected && (
+                  <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
+                )}
+              </>
             )}
           </div>
         </div>
