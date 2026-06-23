@@ -18,6 +18,11 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
     logs.push('🌫️ Vue obstruée - désavantage !')
   }
 
+  if (atkRange > 1 && isAdjacent(attacker.position, target.position)) {
+    hasDisadvantage = true
+    logs.push('⚠️ Tir au contact - désavantage !')
+  }
+
   if (hasStatus(target, 'dodge')) {
     hasDisadvantage = true
   }
