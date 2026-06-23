@@ -237,6 +237,7 @@ export default function App() {
         validTargets={state.validTargets}
         turnState={state.turnState}
         terrain={state.terrain}
+        terrainTheme={state.terrainTheme}
         onCellClick={() => {}}
         onTokenClick={handleTokenInspect}
         onTerrainClick={(cell) => setInspectedTerrain(cell)}

@@ -808,6 +808,48 @@ body {
   pointer-events: none;
 }
 
+/* ========== BOARD THEMES ========== */
+
+.board-theme-forest .board-border {
+  background: linear-gradient(135deg, #1a2e1a, #0e1f0e);
+  border-color: #2d5a2d;
+}
+.board-theme-forest .board { background: #0a150a; }
+.board-theme-forest .cell-dark { background: #1e3020; }
+.board-theme-forest .cell-light { background: #263a28; }
+
+.board-theme-crypt .board-border {
+  background: linear-gradient(135deg, #1a1a2e, #0e0e1f);
+  border-color: #3a3a6a;
+}
+.board-theme-crypt .board { background: #0a0a15; }
+.board-theme-crypt .cell-dark { background: #1e1e30; }
+.board-theme-crypt .cell-light { background: #26263a; }
+
+.board-theme-volcano .board-border {
+  background: linear-gradient(135deg, #2e1a1a, #1f0e0e);
+  border-color: #6a2a2a;
+}
+.board-theme-volcano .board { background: #150a0a; }
+.board-theme-volcano .cell-dark { background: #301e1e; }
+.board-theme-volcano .cell-light { background: #3a2626; }
+
+.board-theme-ruins .board-border {
+  background: linear-gradient(135deg, #2a2520, #1f1a15);
+  border-color: #5a4a30;
+}
+.board-theme-ruins .board { background: #141008; }
+.board-theme-ruins .cell-dark { background: #332a20; }
+.board-theme-ruins .cell-light { background: #3d3428; }
+
+.board-theme-swamp .board-border {
+  background: linear-gradient(135deg, #1a2220, #0e1815);
+  border-color: #2a4a3a;
+}
+.board-theme-swamp .board { background: #0a1210; }
+.board-theme-swamp .cell-dark { background: #1e2a26; }
+.board-theme-swamp .cell-light { background: #263430; }
+
 /* ========== TERRAIN ========== */
 
 .cell-terrain-icon {

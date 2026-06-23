@@ -30,12 +30,12 @@ export default function Hub({ onNavigate }) {
           <span className="hub-tab-label">Combat</span>
         </button>
         <button className="hub-tab hub-tab-active" onClick={() => onNavigate('campaign')}>
-          <span className="hub-tab-icon">📜</span>
-          <span className="hub-tab-label">Campagne</span>
+          <span className="hub-tab-icon">🏗️</span>
+          <span className="hub-tab-label">Étages</span>
         </button>
         <button className="hub-tab hub-tab-locked" disabled>
-          <span className="hub-tab-icon">🛒</span>
-          <span className="hub-tab-label">Boutique</span>
+          <span className="hub-tab-icon">📜</span>
+          <span className="hub-tab-label">Campagne</span>
           <span className="hub-tab-lock">🔒</span>
         </button>
         <button className="hub-tab" onClick={() => onNavigate('settings')}>

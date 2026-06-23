@@ -8,6 +8,7 @@ export default function Board({
   validTargets,
   turnState,
   terrain = {},
+  terrainTheme,
   onCellClick,
   onTokenClick,
   onTerrainClick
@@ -62,7 +63,7 @@ export default function Board({
   }
 
   return (
-    <div className="board-container">
+    <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''}`}>
       <div className="board-border">
         <div className="board" style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}>
           {cells}
