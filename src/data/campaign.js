@@ -139,7 +139,7 @@ export function generateCampaignMap(actIndex) {
 
 // ============ GOLD & SHOP ============
 
-export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18 }
+export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18, boss: 35 }
 
 export const SHOP_ITEMS = [
   { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },

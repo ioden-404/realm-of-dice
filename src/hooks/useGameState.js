@@ -653,11 +653,11 @@ function gameReducer(state, action) {
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
         execChars = { ...finalChars, ...applyCampaignRest(finalChars, 0.3) }
         const nodeType = state.campaign.currentNode?.type
-        const xpGain = nodeType === 'elite' ? 2 : 1
+        const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
         const newXp = (state.campaign.xp || 0) + xpGain
         const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
         execChars = palierResult.characters
-        const goldGain = nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+        const goldGain = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
@@ -748,11 +748,11 @@ function gameReducer(state, action) {
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
           restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, 0.3) }
           const nodeType = state.campaign.currentNode?.type
-          const xpGain = nodeType === 'elite' ? 2 : 1
+          const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
           const newXp = (state.campaign.xp || 0) + xpGain
           const palierResult2 = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
           restChars = palierResult2.characters
-          const goldGain2 = nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
+          const goldGain2 = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
