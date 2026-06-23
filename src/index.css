@@ -917,6 +917,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 75%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--team-color);
 }
 
 .token-emoji {
