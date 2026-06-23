@@ -197,13 +197,13 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
   }
 
   if (ability.effect === 'dodge') {
-    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'dodge', duration: 1 } })
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'dodge', duration: 2 } })
     logs.push(`🛡️ ${attacker.name} esquive ! Désavantage sur les attaques entrantes`)
     return { logs, effects }
   }
 
   if (ability.effect === 'defensePosture') {
-    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'defensePosture', duration: 1, acBonus: ability.acBonus } })
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'defensePosture', duration: 2, acBonus: ability.acBonus } })
     logs.push(`🛡️ ${attacker.name} prend une posture défensive (+${ability.acBonus} CA)`)
     return { logs, effects }
   }

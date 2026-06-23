@@ -173,7 +173,7 @@ function resolveItemUse(character, item, targetCell, terrain, characters) {
       logs.push(`🧪 ${character.name} boit une potion — +${heal} PV`)
     }
   } else if (item.effect === 'acBoost') {
-    effects.push({ type: 'addStatus', targetId: character.id, status: { type: 'defensePosture', acBonus: item.acBonus, duration: item.duration } })
+    effects.push({ type: 'addStatus', targetId: character.id, status: { type: 'defensePosture', acBonus: item.acBonus, duration: (item.duration || 3) + 1 } })
     logs.push(`🛡️ ${character.name} boit une potion de résistance — +${item.acBonus} CA`)
   } else if (item.effect === 'purify') {
     effects.push({ type: 'removeStatus', targetId: character.id, statusType: 'poison' })
