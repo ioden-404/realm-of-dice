@@ -905,8 +905,7 @@ function gameReducer(state, action) {
         return {
           ...state,
           campaignEvent: { type: 'treasure', goldGain, nodeId: node.id },
-          campaign: { ...campaign, visitedNodes: newVisited, gold: (campaign.gold || 0) + goldGain,
-            currentLayer: campaign.currentLayer + 1, lastNodeId: node.id, currentNode: null }
+          campaign: { ...campaign, visitedNodes: newVisited, gold: (campaign.gold || 0) + goldGain }
         }
       }
 
