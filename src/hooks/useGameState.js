@@ -726,6 +726,7 @@ function gameReducer(state, action) {
           for (const id of Object.keys(updatedChars)) {
             updatedChars[id] = { ...updatedChars[id], reactionUsed: false }
           }
+          updatedTerrain = tickDynamicTerrain(updatedTerrain)
         }
       }
 
@@ -958,7 +959,8 @@ function gameReducer(state, action) {
           { text: `🗺️ ${themeName}`, type: 'system' },
           { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
         ],
-        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
+        combatInventory: state.combatInventory || []
       }
     }
 

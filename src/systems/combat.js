@@ -8,9 +8,14 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
   let hasAdvantage = hasStatus(attacker, 'advantage')
   let hasDisadvantage = false
 
-  if (ability.magical && !checkLineOfSight(attacker, target, characters, terrain)) {
+  const los = checkLineOfSight(attacker, target, characters, terrain)
+  if (ability.magical && los === false) {
     hasDisadvantage = true
     logs.push('👁️ Ligne de vue bloquée - désavantage !')
+  }
+  if (los === 'smoke') {
+    hasDisadvantage = true
+    logs.push('🌫️ Fumée - désavantage !')
   }
 
   if (hasStatus(target, 'dodge')) {

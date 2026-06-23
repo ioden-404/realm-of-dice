@@ -33,6 +33,33 @@ const TERRAIN_INFO = {
       '🌀 Dégâts si projeté dessus',
       '🏃 Mouvement normal'
     ]
+  },
+  oil: {
+    title: 'Huile',
+    color: '#8b7b2a',
+    effects: [
+      '🛢️ Zone inflammable',
+      '🔥 Explose si touchée par du feu ou un sort de feu',
+      '🏃 Mouvement normal'
+    ]
+  },
+  fire: {
+    title: 'Feu',
+    color: '#cc4400',
+    effects: [
+      '🔥 6 dégâts en début de tour',
+      '⏳ Disparaît après quelques tours',
+      '🏃 Mouvement normal'
+    ]
+  },
+  smoke: {
+    title: 'Fumée',
+    color: '#666666',
+    effects: [
+      '🌫️ Désavantage sur les attaques à travers',
+      '🌫️ Désavantage pour attaquer depuis l\'intérieur',
+      '⏳ Se dissipe après quelques tours'
+    ]
   }
 }
 

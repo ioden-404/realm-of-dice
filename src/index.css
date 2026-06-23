@@ -854,11 +854,13 @@ body {
 
 .cell-terrain-icon {
   position: absolute;
-  font-size: 20px;
+  font-size: 14px;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.9;
+  opacity: 0.7;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  bottom: 1px;
+  right: 1px;
 }
 
 .cell-terrain-blocking {
@@ -1023,12 +1025,12 @@ body {
 
 .token-terrain-badge {
   position: absolute;
-  bottom: -6px;
-  right: -6px;
-  font-size: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 3px;
-  padding: 0 2px;
+  bottom: -4px;
+  right: -4px;
+  font-size: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 2px;
+  padding: 0 1px;
   line-height: 1.2;
   pointer-events: none;
 }

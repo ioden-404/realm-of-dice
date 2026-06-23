@@ -146,14 +146,25 @@ export function checkLineOfSight(attacker, target, characters, terrain = {}) {
   const dy = target.position.y - attacker.position.y
   const steps = Math.max(Math.abs(dx), Math.abs(dy))
 
-  if (steps <= 1) return true
+  if (steps <= 1) {
+    const attackerInSmoke = terrain[`${attacker.position.x},${attacker.position.y}`]?.type === TERRAIN_TYPES.SMOKE
+    const targetInSmoke = terrain[`${target.position.x},${target.position.y}`]?.type === TERRAIN_TYPES.SMOKE
+    if (attackerInSmoke || targetInSmoke) return 'smoke'
+    return true
+  }
+
+  let hasSmoke = false
+  const attackerInSmoke = terrain[`${attacker.position.x},${attacker.position.y}`]?.type === TERRAIN_TYPES.SMOKE
+  const targetInSmoke = terrain[`${target.position.x},${target.position.y}`]?.type === TERRAIN_TYPES.SMOKE
+  if (attackerInSmoke || targetInSmoke) hasSmoke = true
 
   for (let i = 1; i < steps; i++) {
     const checkX = Math.round(attacker.position.x + (dx * i) / steps)
     const checkY = Math.round(attacker.position.y + (dy * i) / steps)
 
     const terrainCell = terrain[`${checkX},${checkY}`]
-    if (terrainCell && (terrainCell.type === TERRAIN_TYPES.BLOCKING || terrainCell.type === TERRAIN_TYPES.SMOKE)) return false
+    if (terrainCell && terrainCell.type === TERRAIN_TYPES.BLOCKING) return false
+    if (terrainCell && terrainCell.type === TERRAIN_TYPES.SMOKE) hasSmoke = true
 
     for (const char of Object.values(characters)) {
       if (char.isDead) continue
@@ -164,7 +175,7 @@ export function checkLineOfSight(attacker, target, characters, terrain = {}) {
     }
   }
 
-  return true
+  return hasSmoke ? 'smoke' : true
 }
 
 export function getValidTargets(attacker, ability, characters) {
