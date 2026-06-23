@@ -21,8 +21,11 @@ export default function Board({
       const charHere = Object.values(characters).find(
         c => !c.isDead && c.position.x === x && c.position.y === y
       )
-      const deadHere = !charHere && Object.values(characters).find(
+      const deadHere = Object.values(characters).find(
         c => c.isDead && c.position.x === x && c.position.y === y
+      )
+      const showDead = deadHere && !charHere && !Object.values(characters).some(
+        c => !c.isDead && c.position.x === x && c.position.y === y
       )
       const isValidTarget = charHere && validTargets.includes(charHere.id)
       const isCorner = (x === 0 || x === BOARD_COLS - 1) && (y === 0 || y === BOARD_ROWS - 1)
@@ -55,7 +58,7 @@ export default function Board({
               }}
             />
           )}
-          {deadHere && (
+          {showDead && (
             <Token character={deadHere} isActive={false} />
           )}
         </div>

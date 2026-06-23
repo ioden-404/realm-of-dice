@@ -7,7 +7,7 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS } from '../data/campaign.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -162,6 +162,8 @@ const initialState = {
   terrainThemeName: '',
   campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: [] },
   campaignEvent: null,
+  pendingPaliers: [],
+  combatResult: null,
   campaignMode: false
 }
 
@@ -574,7 +576,9 @@ function gameReducer(state, action) {
         validTargets: [],
         phase: resolvedPhase2 || state.phase,
         campaign: execCampaign,
-        campaignEvent: execEvent
+        campaignEvent: execEvent,
+        pendingPaliers: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? (palierResult?.pendingChoices || []) : state.pendingPaliers,
+        combatResult: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? { victory: true, gold: goldGain, xp: xpGain } : state.combatResult
       }
     }
 
@@ -642,10 +646,10 @@ function gameReducer(state, action) {
           const nodeType = state.campaign.currentNode?.type
           const xpGain = nodeType === 'elite' ? 2 : 1
           const newXp = (state.campaign.xp || 0) + xpGain
-          const palierResult = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
-          restChars = palierResult.characters
+          const palierResult2 = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
+          restChars = palierResult2.characters
           const goldGain2 = nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
-          endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
+          endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
@@ -658,6 +662,8 @@ function gameReducer(state, action) {
           phase: resolvedPhase,
           campaign: endCampaign,
           campaignEvent: endEvent,
+          pendingPaliers: resolvedPhase === PHASES.CAMPAIGN_MAP ? (palierResult2?.pendingChoices || []) : state.pendingPaliers,
+          combatResult: resolvedPhase === PHASES.CAMPAIGN_MAP ? { victory: true, gold: goldGain2, xp: xpGain } : state.combatResult,
           currentTurnIndex: nextIndex,
           round: newRound,
           log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
@@ -876,6 +882,17 @@ function gameReducer(state, action) {
         campaignEvent: { ...event, rewardSelected: true },
         campaign: newCampaign
       }
+    }
+
+    case 'CAMPAIGN_APPLY_PALIER': {
+      const { palier, characterId } = action.payload
+      const updatedChars = applyPalierToCharacter(state.characters, palier, characterId)
+      const remaining = state.pendingPaliers.filter(p => p.id !== palier.id)
+      return { ...state, characters: updatedChars, pendingPaliers: remaining }
+    }
+
+    case 'CAMPAIGN_DISMISS_RESULT': {
+      return { ...state, combatResult: null }
     }
 
     case 'CAMPAIGN_EVENT_DONE': {

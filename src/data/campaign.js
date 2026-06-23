@@ -283,6 +283,7 @@ export function applyNewPaliers(characters, xp, appliedPaliers) {
   let updated = { ...characters }
   const newApplied = [...appliedPaliers]
   let didEvolve = false
+  const pendingChoices = []
 
   for (const palier of XP_PALIERS) {
     if (xp >= palier.xp && !appliedPaliers.includes(palier.id)) {
@@ -292,14 +293,18 @@ export function applyNewPaliers(characters, xp, appliedPaliers) {
           if (char.team === 'ally') updated[id] = evolveCharacter(char)
         }
         didEvolve = true
-      } else {
-        for (const [id, char] of Object.entries(updated)) {
-          if (char.team === 'ally') updated[id] = applyStatEffects(char, palier.effects)
-        }
+      } else if (palier.effects && palier.effects.length > 0) {
+        pendingChoices.push(palier)
       }
     }
   }
-  return { characters: updated, appliedPaliers: newApplied, didEvolve }
+  return { characters: updated, appliedPaliers: newApplied, didEvolve, pendingChoices }
+}
+
+export function applyPalierToCharacter(characters, palier, characterId) {
+  const char = characters[characterId]
+  if (!char || char.team !== 'ally') return characters
+  return { ...characters, [characterId]: applyStatEffects(char, palier.effects) }
 }
 
 // ============ RELICS ============

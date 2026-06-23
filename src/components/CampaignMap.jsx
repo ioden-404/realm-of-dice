@@ -24,7 +24,9 @@ function getNodeY(layerIdx) {
 
 export default function CampaignMap({
   campaign, characters, campaignEvent, stats,
-  onSelectNode, onSelectReward, onEventDone, onAbandon
+  pendingPaliers, combatResult,
+  onSelectNode, onSelectReward, onEventDone, onAbandon,
+  onApplyPalier, onDismissResult
 }) {
   const { map, currentLayer, lastNodeId, visitedNodes } = campaign
   const act = ACTS[campaign.act]
@@ -284,6 +286,43 @@ export default function CampaignMap({
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {combatResult && !campaignEvent && pendingPaliers.length === 0 && (
+        <div className="cmap-event-overlay" onClick={onDismissResult}>
+          <div className="cmap-event" onClick={e => e.stopPropagation()}>
+            <h3 className="cmap-event-title">{combatResult.victory ? '⚔️ Victoire !' : '💀 Défaite...'}</h3>
+            <div className="cmap-result-gains">
+              <span>+{combatResult.xp} XP</span>
+              <span>+{combatResult.gold} 🪙</span>
+            </div>
+            <button className="campaign-next-btn" onClick={onDismissResult}>Continuer</button>
+          </div>
+        </div>
+      )}
+
+      {pendingPaliers.length > 0 && !campaignEvent && !combatResult && (
+        <div className="cmap-event-overlay">
+          <div className="cmap-event" onClick={e => e.stopPropagation()}>
+            <h3 className="cmap-event-title">⬆️ Nouveau palier XP !</h3>
+            <p className="cmap-event-desc">{pendingPaliers[0].label} — Choisissez un personnage</p>
+            <div className="cmap-event-rewards">
+              {allies.map(char => (
+                <button
+                  key={char.id}
+                  className="campaign-reward"
+                  onClick={() => onApplyPalier(pendingPaliers[0], char.id)}
+                >
+                  <span className="reward-icon">{char.emoji}</span>
+                  <div className="reward-info">
+                    <span className="reward-name">{char.name}</span>
+                    <span className="reward-desc">{char.classData.name} — {char.hp}/{char.maxHp} PV</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

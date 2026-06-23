@@ -2279,6 +2279,16 @@ body {
   padding-left: 8px;
 }
 
+.cmap-result-gains {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  color: var(--color-gold-light);
+  margin: 8px 0;
+}
+
 .reward-major {
   border-color: var(--color-gold) !important;
   background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), var(--color-stone-dark)) !important;

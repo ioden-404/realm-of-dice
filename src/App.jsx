@@ -183,6 +183,8 @@ export default function App() {
           characters={state.characters}
           campaignEvent={state.campaignEvent}
           stats={state.stats}
+          pendingPaliers={state.pendingPaliers || []}
+          combatResult={state.combatResult}
           onSelectNode={(node) => {
             if (node.type === 'combat' || node.type === 'elite' || node.type === 'boss') {
               startTransition(() => dispatch({ type: 'CAMPAIGN_SELECT_NODE', payload: { node } }))
@@ -192,6 +194,8 @@ export default function App() {
           }}
           onSelectReward={(reward) => dispatch({ type: 'CAMPAIGN_EVENT_REWARD', payload: { reward } })}
           onEventDone={() => dispatch({ type: 'CAMPAIGN_EVENT_DONE' })}
+          onApplyPalier={(palier, charId) => dispatch({ type: 'CAMPAIGN_APPLY_PALIER', payload: { palier, characterId: charId } })}
+          onDismissResult={() => dispatch({ type: 'CAMPAIGN_DISMISS_RESULT' })}
           onAbandon={() => dispatch({ type: 'RESTART' })}
         />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
