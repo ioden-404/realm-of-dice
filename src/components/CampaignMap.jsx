@@ -247,14 +247,17 @@ export default function CampaignMap({
                 <p className="cmap-event-desc"><span className="gold-icon">⬤</span> {campaign.gold || 0} or disponible</p>
                 <div className="cmap-event-rewards">
                   {(campaignEvent.items || []).map(item => {
-                    const canAfford = (campaign.gold || 0) >= item.cost
+                    const discount = (campaign.gloryUpgrades?.['merchant-discount'] || 0) * 0.1
+                    const shopMult = campaignEvent.shopCostMult || 1
+                    const finalCost = Math.max(1, Math.floor(item.cost * shopMult * (1 - discount)))
+                    const canAfford = (campaign.gold || 0) >= finalCost
                     const alreadyBought = (campaignEvent.purchasedIds || []).includes(item.id)
                     const canBuy = canAfford && !alreadyBought
                     return (
                       <button
                         key={item.id}
                         className={`campaign-reward ${!canBuy ? 'reward-disabled' : ''} ${alreadyBought ? 'reward-bought' : ''}`}
-                        onClick={() => canBuy && onSelectReward(item)}
+                        onClick={() => canBuy && onSelectReward({ ...item, cost: finalCost })}
                         disabled={!canBuy}
                       >
                         <span className="reward-icon">{item.icon}</span>
@@ -262,7 +265,7 @@ export default function CampaignMap({
                           <span className="reward-name">{item.name}</span>
                           <span className="reward-desc">{item.desc}</span>
                         </div>
-                        <span className="reward-cost"><span className="gold-icon">⬤</span> {item.cost}</span>
+                        <span className="reward-cost"><span className="gold-icon">⬤</span> {finalCost}</span>
                       </button>
                     )
                   })}

@@ -688,10 +688,12 @@ function gameReducer(state, action) {
       let execCombatResult = state.combatResult
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
         const hasHeal = teamHasHealer(finalChars)
-        execChars = { ...finalChars, ...applyCampaignRest(finalChars, hasHeal ? 0.3 : 0.45) }
+        const restBonus1 = (state.campaign.gloryUpgrades?.['rest-bonus'] || 0) * 0.05
+        execChars = { ...finalChars, ...applyCampaignRest(finalChars, (hasHeal ? 0.3 : 0.45) + restBonus1) }
         const nodeType = state.campaign.currentNode?.type
-        const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
-        const newXp = (state.campaign.xp || 0) + xpGain
+        const eliteXpBonus = nodeType === 'elite' ? (state.campaign.gloryUpgrades?.['xp-boost'] || 0) : 0
+        const xpGain = (nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1) + eliteXpBonus
+        const newXp = (state.campaign.xp || 0) + Math.floor(xpGain * runMods.xpMult)
         const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
         execChars = palierResult.characters
         const runMods = resolveModifiers(state.campaign.modifiers)
@@ -791,10 +793,12 @@ function gameReducer(state, action) {
         let endCombatResult = state.combatResult
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
           const hasHeal2 = teamHasHealer(updatedChars)
-          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, hasHeal2 ? 0.3 : 0.45) }
+          const restBonus2 = (state.campaign.gloryUpgrades?.['rest-bonus'] || 0) * 0.05
+          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, (hasHeal2 ? 0.3 : 0.45) + restBonus2) }
           const nodeType = state.campaign.currentNode?.type
-          const xpGain = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
-          const newXp = (state.campaign.xp || 0) + xpGain
+          const eliteXpBonus2 = nodeType === 'elite' ? (state.campaign.gloryUpgrades?.['xp-boost'] || 0) : 0
+          const xpGain = (nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1) + eliteXpBonus2
+          const newXp = (state.campaign.xp || 0) + Math.floor(xpGain * runMods2.xpMult)
           const palierResult2 = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
           restChars = palierResult2.characters
           const runMods2 = resolveModifiers(state.campaign.modifiers)
@@ -946,7 +950,8 @@ function gameReducer(state, action) {
           currentLayer: 0, lastNodeId: null,
           visitedNodes: [], currentNode: null,
           rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: startGold, inventory: [],
-          modifiers
+          modifiers,
+          gloryUpgrades: glory.upgrades || {}
         },
         campaignEvent: null,
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
@@ -961,7 +966,8 @@ function gameReducer(state, action) {
       if (node.type === 'rest') {
         const hasHealRest = teamHasHealer(state.characters)
         const restMods = resolveModifiers(campaign.modifiers)
-        const restFactor = (hasHealRest ? 0.5 : 0.7) * restMods.restHealMult
+        const restGloryBonus = (campaign.gloryUpgrades?.['rest-bonus'] || 0) * 0.05
+        const restFactor = ((hasHealRest ? 0.5 : 0.7) + restGloryBonus) * restMods.restHealMult
         const healed = { ...state.characters, ...applyCampaignRest(state.characters, restFactor) }
         return {
           ...state,
@@ -983,7 +989,7 @@ function gameReducer(state, action) {
       if (node.type === 'merchant') {
         return {
           ...state,
-          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id },
+          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id, shopCostMult: resolveModifiers(campaign.modifiers).shopCostMult },
           campaign: { ...campaign, visitedNodes: newVisited }
         }
       }
@@ -1038,7 +1044,10 @@ function gameReducer(state, action) {
         combatInventory: (() => {
           const inv = [...(state.combatInventory || [])]
           const allies = Object.values(characters).filter(c => c.team === TEAMS.ALLY)
-          if (!allies.some(c => c.classId === 'clerc')) inv.push({ ...SURVIVAL_POTION })
+          if (!allies.some(c => c.classId === 'clerc')) {
+            const extraPotions = 1 + (state.campaign.gloryUpgrades?.['potion-slot'] || 0)
+            for (let p = 0; p < extraPotions; p++) inv.push({ ...SURVIVAL_POTION, id: `survival-potion-${p}` })
+          }
           return inv
         })()
       }
