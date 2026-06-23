@@ -223,10 +223,11 @@ export default function CampaignMap({
           )}
         </div>
 
-        <button className="cmap-abandon-btn" onClick={onAbandon}>
-          🚪 Abandonner
-        </button>
       </div>
+
+      <button className="cmap-abandon-btn" onClick={onAbandon}>
+        🚪 Abandonner
+      </button>
 
       {campaignEvent && (
         <div className="cmap-event-overlay" onClick={

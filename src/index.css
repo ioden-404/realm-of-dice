@@ -2389,8 +2389,9 @@ body {
 }
 
 .cmap-abandon-btn {
-  background: none;
+  background: rgba(26, 18, 8, 0.9);
   border: none;
+  border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-family: var(--font-ui);
   font-size: 12px;
@@ -2399,8 +2400,7 @@ body {
   text-align: center;
   width: 100%;
   opacity: 0.7;
-  position: relative;
-  z-index: 10;
+  flex-shrink: 0;
 }
 
 .cmap-lines {
