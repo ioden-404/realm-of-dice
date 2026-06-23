@@ -306,7 +306,7 @@ export default function CampaignMap({
         </div>
       )}
 
-      {combatResult && !campaignEvent && pendingPaliers.length === 0 && (
+      {combatResult && !campaignEvent && (
         <div className="cmap-event-overlay" onClick={onDismissResult}>
           <div className="cmap-event" onClick={e => e.stopPropagation()}>
             <h3 className="cmap-event-title">{combatResult.victory ? '⚔️ Victoire !' : '💀 Défaite...'}</h3>

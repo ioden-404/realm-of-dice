@@ -194,8 +194,8 @@ export default function ActionPanel({
           <span className="action-sub">{character.movement - character.movementUsed} cases</span>
         </button>
         <button
-          className={`action-btn ${character.bonusActionUsed ? 'action-used' : ''}`}
-          disabled={character.bonusActionUsed}
+          className={`action-btn ${character.bonusActionUsed || classData.abilities.bonusActions.length === 0 ? 'action-used' : ''}`}
+          disabled={character.bonusActionUsed || classData.abilities.bonusActions.length === 0}
           onClick={() => onSelectCategory('bonusActions')}
         >
           ✨ Bonus

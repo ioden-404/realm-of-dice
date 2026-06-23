@@ -2,7 +2,7 @@ import { useReducer, useCallback, useRef } from 'react'
 import { CLASSES } from '../data/classes.js'
 import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
-import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks, resolveAllyReactions } from '../systems/combat.js'
+import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks, resolveAllyReactions, processGuardianDamage } from '../systems/combat.js'
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
@@ -850,6 +850,11 @@ function gameReducer(state, action) {
       const isEnemy = nextChar?.team === TEAMS.ENEMY
 
       const startResult = nextChar ? processStartOfTurn(nextChar, state.terrain) : { logs: [], effects: [] }
+      if (nextChar) {
+        const guardianResult = processGuardianDamage(nextChar, updatedChars)
+        startResult.logs.push(...guardianResult.logs)
+        startResult.effects.push(...guardianResult.effects)
+      }
       if (startResult.effects.length > 0) {
         const applied = applyEffects({ characters: updatedChars, stats: state.stats }, startResult.effects)
         updatedChars = applied.characters

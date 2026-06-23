@@ -485,6 +485,25 @@ export function processStartOfTurn(character, terrain = {}) {
   return { logs, effects }
 }
 
+export function processGuardianDamage(character, characters) {
+  const logs = []
+  const effects = []
+  if (character.team === 'enemy') {
+    for (const ally of Object.values(characters)) {
+      if (ally.isDead || ally.team === character.team) continue
+      if (!ally.statuses?.some(s => s.type === 'guardianOfFaith')) continue
+      const dist = Math.max(Math.abs(character.position.x - ally.position.x), Math.abs(character.position.y - ally.position.y))
+      if (dist <= 1) {
+        const dmg = ally.statuses.find(s => s.type === 'guardianOfFaith')?.damage || 7
+        effects.push({ type: 'damage', targetId: character.id, amount: dmg })
+        logs.push(`✨ ${character.name} subit ${dmg} dégâts du Gardien de la foi !`)
+        break
+      }
+    }
+  }
+  return { logs, effects }
+}
+
 export function processEndOfTurn(character) {
   const effects = []
 
@@ -503,6 +522,20 @@ export function resolveAllyReactions(targetId, attackerId, damage, characters) {
 
   const fell = target.hp <= 0
   const team = target.team
+
+  const selfChar = characters[targetId]
+  if (selfChar && !selfChar.isDead && !selfChar.reactionUsed) {
+    const selfReactions = selfChar.classData?.abilities?.reactions || []
+    for (const reaction of selfReactions) {
+      if (reaction.trigger === 'onDamage' && damage > 0) {
+        const reduced = Math.floor(damage / 2)
+        logs.push(`🛡️ ${selfChar.name} — ${reaction.name} ! Dégâts réduits`)
+        effects.push({ type: 'heal', targetId: selfChar.id, amount: reduced })
+        effects.push({ type: 'useReaction', targetId: selfChar.id })
+        break
+      }
+    }
+  }
 
   for (const char of Object.values(characters)) {
     if (char.isDead || char.id === targetId || char.team !== team || char.reactionUsed) continue
