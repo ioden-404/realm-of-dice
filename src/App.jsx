@@ -21,6 +21,7 @@ import RunModifiers from './components/RunModifiers.jsx'
 import GloryScreen from './components/GloryScreen.jsx'
 import NarrativeEvent from './components/NarrativeEvent.jsx'
 import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
+import LevelUpScreen from './components/LevelUpScreen.jsx'
 
 const B = import.meta.env.BASE_URL
 const TRACKS = {
@@ -261,6 +262,13 @@ export default function App() {
           }}
           onAbandon={() => dispatch({ type: 'RESTART' })}
         />
+        {state.pendingLevelUps?.length > 0 && !state.campaignEvent && !state.combatResult && (state.pendingPaliers || []).length === 0 && (
+          <LevelUpScreen
+            character={state.characters[state.pendingLevelUps[0]?.characterId]}
+            level={state.pendingLevelUps[0]?.level}
+            onChoose={(charId, ability) => dispatch({ type: 'LEVEL_UP_CHOOSE', payload: { characterId: charId, ability } })}
+          />
+        )}
         {narrativeEvent && (
           <NarrativeEvent
             event={narrativeEvent}

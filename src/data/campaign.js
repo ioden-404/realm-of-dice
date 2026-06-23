@@ -1,3 +1,5 @@
+import { LEVEL_UP_TREES } from './levelUpTrees.js'
+
 export const ACTS = [
   {
     name: 'Acte I — Forêt maudite',
@@ -276,25 +278,28 @@ function applyStatEffects(char, effects) {
   return patched
 }
 
-const EVOLUTIONS = {
-  guerrier: { name: 'Chevalier', patches: { 'attaque-puissante': { cooldown: 1 } } },
-  mage: { name: 'Archimage', patches: { 'sort-mineur': { damage: '1d8+3' } } },
-  voleur: { name: 'Assassin', patches: { 'coup-fatal': { executeThreshold: 0.30 } } },
-  rodeur: { name: 'Traqueur', patches: { 'tir-precis': { range: 6 } } },
-  clerc: { name: 'Haut-Clerc', patches: { 'soin-divin': { cooldown: 3 } } }
+const EVOLUTION_NAMES = {
+  guerrier: 'Chevalier', mage: 'Archimage', voleur: 'Assassin', rodeur: 'Traqueur', clerc: 'Haut-Clerc'
 }
 
 function evolveCharacter(char) {
-  const evo = EVOLUTIONS[char.classId]
-  if (!evo) return char
+  const evoName = EVOLUTION_NAMES[char.classId]
+  if (!evoName) return char
   const newClassData = JSON.parse(JSON.stringify(char.classData))
-  newClassData.name = evo.name
-  for (const [abilityId, patches] of Object.entries(evo.patches)) {
-    for (const cat of ['actions', 'bonusActions', 'reactions']) {
-      const ab = newClassData.abilities[cat]?.find(a => a.id === abilityId)
-      if (ab) Object.assign(ab, patches)
+  newClassData.name = evoName
+
+  const tree = LEVEL_UP_TREES[char.classId]
+  if (tree?.evolution && char.chosenAbilities?.length > 0) {
+    const firstChoice = char.chosenAbilities[0]
+    const patches = tree.evolution[firstChoice]
+    if (patches) {
+      for (const cat of ['actions', 'bonusActions', 'reactions']) {
+        const ab = newClassData.abilities[cat]?.find(a => a.id === firstChoice)
+        if (ab) Object.assign(ab, patches)
+      }
     }
   }
+
   return { ...char, classData: newClassData, evolved: true }
 }
 

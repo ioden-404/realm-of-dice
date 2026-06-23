@@ -9,6 +9,7 @@ import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
 import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
 import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
+import { LEVEL_UP_TREES, LEVEL_THRESHOLDS } from '../data/levelUpTrees.js'
 import { NARRATIVE_EVENTS, RUN_MODIFIERS } from '../data/modifiers.js'
 
 function resolveModifiers(modifierIds = []) {
@@ -114,6 +115,50 @@ function createMonster(monsterId, index, allMonsterIds) {
     isDead: false,
     initiative: 0,
     animation: null
+  }
+}
+
+function stripToBaseKit(character) {
+  const tree = LEVEL_UP_TREES[character.classId]
+  if (!tree) return character
+  const newClassData = JSON.parse(JSON.stringify(character.classData))
+  newClassData.abilities = {
+    actions: [...tree.baseKit.actions],
+    bonusActions: [...tree.baseKit.bonusActions],
+    reactions: [...tree.baseKit.reactions]
+  }
+  return { ...character, classData: newClassData, level: 1, chosenAbilities: [] }
+}
+
+function checkLevelUps(xp, characters) {
+  const allies = Object.values(characters).filter(c => c.team === 'ally')
+  const pending = []
+  for (const char of allies) {
+    const currentLevel = char.level || 1
+    for (const threshold of LEVEL_THRESHOLDS) {
+      if (xp >= threshold.xp && currentLevel < threshold.level) {
+        pending.push({ characterId: char.id, level: threshold.level })
+        break
+      }
+    }
+  }
+  return pending
+}
+
+function applyLevelUpAbility(characters, characterId, ability) {
+  const char = characters[characterId]
+  if (!char) return characters
+  const newClassData = JSON.parse(JSON.stringify(char.classData))
+  const cat = ability.category || 'actions'
+  newClassData.abilities[cat] = [...newClassData.abilities[cat], { ...ability }]
+  return {
+    ...characters,
+    [characterId]: {
+      ...char,
+      classData: newClassData,
+      level: (char.level || 1) + 1,
+      chosenAbilities: [...(char.chosenAbilities || []), ability.id]
+    }
   }
 }
 
@@ -286,6 +331,7 @@ const initialState = {
   campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: [] },
   campaignEvent: null,
   pendingPaliers: [],
+  pendingLevelUps: [],
   combatResult: null,
   combatInventory: [],
   campaignMode: false
@@ -371,6 +417,15 @@ function applyEffects(state, effects) {
       }
       case 'setConcentration': {
         newChars = { ...newChars, [char.id]: { ...char, concentration: effect.spell } }
+        break
+      }
+      case 'resetAction': {
+        newChars = { ...newChars, [char.id]: { ...char, actionUsed: false } }
+        break
+      }
+      case 'resetCooldowns': {
+        const resetCDs = {}
+        newChars = { ...newChars, [char.id]: { ...char, cooldowns: resetCDs } }
         break
       }
     }
@@ -702,6 +757,7 @@ function gameReducer(state, action) {
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         execPendingPaliers = palierResult.pendingChoices || []
         execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
+        const lvlUps1 = checkLevelUps(newXp, execChars)
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         } else if (nodeType === 'boss') {
@@ -723,6 +779,7 @@ function gameReducer(state, action) {
         campaign: execCampaign,
         campaignEvent: execEvent,
         pendingPaliers: execPendingPaliers,
+        pendingLevelUps: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? (lvlUps1 || []) : state.pendingLevelUps,
         combatResult: execCombatResult
       }
     }
@@ -807,6 +864,7 @@ function gameReducer(state, action) {
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           endPendingPaliers = palierResult2.pendingChoices || []
           endCombatResult = { victory: true, gold: goldGain2, xp: xpGain }
+          const lvlUps2 = checkLevelUps(newXp, restChars)
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
@@ -820,6 +878,7 @@ function gameReducer(state, action) {
           campaign: endCampaign,
           campaignEvent: endEvent,
           pendingPaliers: endPendingPaliers,
+          pendingLevelUps: resolvedPhase === PHASES.CAMPAIGN_MAP ? (lvlUps2 || []) : state.pendingLevelUps,
           combatResult: endCombatResult,
           currentTurnIndex: nextIndex,
           round: newRound,
@@ -922,7 +981,8 @@ function gameReducer(state, action) {
       const characters = {}
 
       allyClasses.forEach((classId, i) => {
-        const char = createCharacter(classId, TEAMS.ALLY, i)
+        let char = createCharacter(classId, TEAMS.ALLY, i)
+        char = stripToBaseKit(char)
         char.uses = initUses(char)
         characters[char.id] = char
       })
@@ -1125,6 +1185,13 @@ function gameReducer(state, action) {
         validTargets: [],
         validMoves: []
       }
+    }
+
+    case 'LEVEL_UP_CHOOSE': {
+      const { characterId, ability } = action.payload
+      const updatedChars = applyLevelUpAbility(state.characters, characterId, ability)
+      const remaining = state.pendingLevelUps.slice(1)
+      return { ...state, characters: updatedChars, pendingLevelUps: remaining }
     }
 
     case 'NARRATIVE_CHOICE': {

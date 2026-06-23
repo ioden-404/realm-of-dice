@@ -27,6 +27,10 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
     hasDisadvantage = true
   }
 
+  if (hasStatus(attacker, 'frighten')) {
+    hasDisadvantage = true
+  }
+
   if (ability.sneakAttack) {
     const adjacentAllies = getAdjacentAllies(target.position, characters, attacker.team, attacker.id)
     if (adjacentAllies.length > 0 || hasAdvantage) {
@@ -326,6 +330,90 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
   if (ability.effect === 'execute') {
     effects.push({ type: 'damage', targetId: target.id, amount: target.hp })
     logs.push(`💀 ${attacker.name} exécute ${target.name} ! COUP FATAL !`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'frighten') {
+    effects.push({ type: 'addStatus', targetId: target.id, status: { type: 'frighten', duration: (ability.frightenDuration || 2) + 1, source: attacker.id } })
+    logs.push(`😨 ${target.name} est effrayé ! Désavantage sur ses attaques`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'whirlwind') {
+    const adjacent = Object.values(characters).filter(c => !c.isDead && c.team !== attacker.team && isAdjacent(attacker.position, c.position))
+    if (adjacent.length === 0) { logs.push('❌ Aucun ennemi adjacent'); return { logs, effects } }
+    for (const enemy of adjacent) {
+      const result = resolveAttack(attacker, enemy, { ...ability, effect: undefined }, characters, terrain)
+      logs.push(...result.logs)
+      effects.push(...result.effects)
+    }
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'shieldWall') {
+    const allies = getAdjacentAllies(attacker.position, characters, attacker.team, attacker.id)
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'defensePosture', acBonus: ability.acBonus || 2, duration: (ability.duration || 2) + 1 } })
+    for (const ally of allies) {
+      effects.push({ type: 'addStatus', targetId: ally.id, status: { type: 'defensePosture', acBonus: ability.acBonus || 2, duration: (ability.duration || 2) + 1 } })
+    }
+    logs.push(`🛡️ ${attacker.name} lève un mur de boucliers ! +${ability.acBonus || 2} CA`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'actionSurge') {
+    effects.push({ type: 'resetAction', targetId: attacker.id })
+    logs.push(`⚡ ${attacker.name} — Sursaut d'action !`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'arcaneRecovery') {
+    effects.push({ type: 'resetCooldowns', targetId: attacker.id })
+    logs.push(`✨ ${attacker.name} — Transfert arcanique ! Cooldowns réinitialisés`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'ambush') {
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'extraMovement', amount: ability.extraMove || 2, duration: 0 } })
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'advantage', duration: 1 } })
+    logs.push(`🗡️ ${attacker.name} — Embuscade parfaite !`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'aoe' && ability.damage) {
+    const mainResult = resolveAttack(attacker, target, { ...ability, effect: undefined }, characters, terrain)
+    logs.push(...mainResult.logs)
+    effects.push(...mainResult.effects)
+    const adjacent = Object.values(characters).filter(c => !c.isDead && c.team !== attacker.team && c.id !== target.id && isAdjacent(target.position, c.position))
+    for (const enemy of adjacent) {
+      logs.push(`--- Dégâts de zone sur ${enemy.name} ---`)
+      const aoeResult = resolveAttack(attacker, enemy, { ...ability, effect: undefined }, characters, terrain)
+      logs.push(...aoeResult.logs)
+      effects.push(...aoeResult.effects)
+    }
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'massHeal' && ability.heal) {
+    const allies = Object.values(characters).filter(c => c.team === attacker.team && !c.isDead && getDistance(attacker.position, c.position) <= (ability.range || 3))
+    for (const ally of allies) {
+      const healResult = resolveHeal(attacker, ally, ability)
+      logs.push(...healResult.logs)
+      effects.push(...healResult.effects)
+    }
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'guardianOfFaith') {
+    const gx = attacker.position.x
+    const gy = attacker.position.y
+    const newEffects = []
+    const adjacent = Object.values(characters).filter(c => !c.isDead && c.team !== attacker.team && isAdjacent(attacker.position, c.position))
+    for (const enemy of adjacent) {
+      newEffects.push({ type: 'damage', targetId: enemy.id, amount: ability.guardianDamage || 7 })
+    }
+    effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'guardianOfFaith', duration: (ability.guardianDuration || 3) + 1, damage: ability.guardianDamage || 7 } })
+    effects.push(...newEffects)
+    logs.push(`✨ ${attacker.name} invoque un Gardien de la foi !`)
     return { logs, effects }
   }
 
