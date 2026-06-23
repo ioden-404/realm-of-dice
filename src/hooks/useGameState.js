@@ -419,6 +419,7 @@ function gameReducer(state, action) {
         terrain,
         terrainTheme,
         terrainThemeName: themeName,
+        combatInventory: [],
         log: [
           { text: `🗺️ ${themeName}`, type: 'system' },
           { text: '⚔️ Le combat commence !', type: 'system' },
@@ -586,6 +587,16 @@ function gameReducer(state, action) {
       const target = targetId ? state.characters[targetId] : current
 
       const result = resolveAbility(current, target, ability, state.characters, state.terrain)
+
+      let terrainAfterAbility = state.terrain
+      if (ability.magical && target) {
+        const fireCheck = checkFireOnMagicAttack(ability, target, state.terrain)
+        if (fireCheck.terrain !== state.terrain) {
+          terrainAfterAbility = fireCheck.terrain
+          result.logs.push(...fireCheck.logs)
+        }
+      }
+
       const { characters: newChars, stats: newStats } = applyEffects(
         { characters: state.characters, stats: state.stats },
         result.effects
@@ -669,6 +680,7 @@ function gameReducer(state, action) {
       return {
         ...state,
         characters: execChars,
+        terrain: terrainAfterAbility,
         stats: newStats,
         log: newLog.slice(-50),
         turnState: gameEnd ? TURN_STATES.IDLE : TURN_STATES.IDLE,

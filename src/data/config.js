@@ -29,7 +29,8 @@ export const TURN_STATES = {
   SELECTING_ACTION: 'selecting-action',
   SELECTING_TARGET: 'selecting-target',
   ENEMY_TURN: 'enemy-turn',
-  ANIMATING: 'animating'
+  ANIMATING: 'animating',
+  SELECTING_CELL: 'selecting-cell'
 }
 
 export const ACTION_TYPES = {

@@ -61,6 +61,7 @@ export default function App() {
     else if (phase === PHASES.VICTORY || phase === PHASES.CAMPAIGN_COMPLETE) audio.switchTrack('victory')
     else if (phase === PHASES.DEFEAT || phase === PHASES.CAMPAIGN_DEFEAT) audio.switchTrack('defeat')
     else audio.switchTrack('hub')
+    if (phase !== PHASES.COMBAT) setPendingItem(null)
   }, [state.phase])
 
   useEffect(() => {
@@ -315,7 +316,7 @@ export default function App() {
           onUseItem={(item) => {
             if (item.targetType === 'cell') {
               setPendingItem(item)
-              dispatch({ type: 'SET_TURN_STATE', payload: { turnState: 'selecting-cell' } })
+              dispatch({ type: 'SET_TURN_STATE', payload: { turnState: TURN_STATES.SELECTING_CELL } })
             } else {
               dispatch({ type: 'USE_ITEM', payload: { item, targetCell: null } })
             }

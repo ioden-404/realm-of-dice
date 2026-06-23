@@ -41,6 +41,7 @@ function fadeOut(audio, duration = FADE_MS) {
 
 function fadeIn(audio, targetVol, duration = FADE_MS) {
   if (!audio) return
+  if (targetVol <= 0) { audio.volume = 0; audio.play().catch(() => {}); return }
   audio.volume = 0
   audio.play().catch(() => {})
   const steps = duration / FADE_STEP
