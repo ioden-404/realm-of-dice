@@ -661,6 +661,8 @@ function gameReducer(state, action) {
       let execChars = finalChars
       let execCampaign = state.campaign
       let execEvent = state.campaignEvent
+      let execPendingPaliers = state.pendingPaliers
+      let execCombatResult = state.combatResult
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
         execChars = { ...finalChars, ...applyCampaignRest(finalChars, 0.3) }
         const nodeType = state.campaign.currentNode?.type
@@ -670,6 +672,8 @@ function gameReducer(state, action) {
         execChars = palierResult.characters
         const goldGain = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
+        execPendingPaliers = palierResult.pendingChoices || []
+        execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         } else if (nodeType === 'boss') {
@@ -690,8 +694,8 @@ function gameReducer(state, action) {
         phase: resolvedPhase2 || state.phase,
         campaign: execCampaign,
         campaignEvent: execEvent,
-        pendingPaliers: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? (palierResult?.pendingChoices || []) : state.pendingPaliers,
-        combatResult: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? { victory: true, gold: goldGain, xp: xpGain } : state.combatResult
+        pendingPaliers: execPendingPaliers,
+        combatResult: execCombatResult
       }
     }
 
@@ -757,6 +761,8 @@ function gameReducer(state, action) {
         let restChars = updatedChars
         let endCampaign = state.campaign
         let endEvent = state.campaignEvent
+        let endPendingPaliers = state.pendingPaliers
+        let endCombatResult = state.combatResult
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
           restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, 0.3) }
           const nodeType = state.campaign.currentNode?.type
@@ -766,6 +772,8 @@ function gameReducer(state, action) {
           restChars = palierResult2.characters
           const goldGain2 = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
+          endPendingPaliers = palierResult2.pendingChoices || []
+          endCombatResult = { victory: true, gold: goldGain2, xp: xpGain }
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
@@ -778,8 +786,8 @@ function gameReducer(state, action) {
           phase: resolvedPhase,
           campaign: endCampaign,
           campaignEvent: endEvent,
-          pendingPaliers: resolvedPhase === PHASES.CAMPAIGN_MAP ? (palierResult2?.pendingChoices || []) : state.pendingPaliers,
-          combatResult: resolvedPhase === PHASES.CAMPAIGN_MAP ? { victory: true, gold: goldGain2, xp: xpGain } : state.combatResult,
+          pendingPaliers: endPendingPaliers,
+          combatResult: endCombatResult,
           currentTurnIndex: nextIndex,
           round: newRound,
           log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
