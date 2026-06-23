@@ -71,7 +71,7 @@ function generateEnemyTeam(allyClasses) {
 }
 
 const initialState = {
-  phase: PHASES.TEAM_SELECT,
+  phase: PHASES.HUB,
   selectedClasses: [],
   characters: {},
   initiativeOrder: [],
@@ -184,6 +184,14 @@ function checkGameEnd(characters) {
 
 function gameReducer(state, action) {
   switch (action.type) {
+    case 'GO_TO_TEAM_SELECT': {
+      return { ...state, phase: PHASES.TEAM_SELECT, selectedClasses: [] }
+    }
+
+    case 'GO_TO_HUB': {
+      return { ...state, phase: PHASES.HUB, selectedClasses: [] }
+    }
+
     case 'TOGGLE_CLASS': {
       const { classId } = action.payload
       const selected = state.selectedClasses.includes(classId)
@@ -555,7 +563,7 @@ function gameReducer(state, action) {
     }
 
     case 'RESTART': {
-      return { ...initialState }
+      return { ...initialState, phase: PHASES.HUB }
     }
 
     default:

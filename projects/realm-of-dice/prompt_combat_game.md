@@ -395,9 +395,35 @@ si elle a la capacité disponible.
 
 ---
 
-## Écrans du jeu
+## Navigation et écrans du jeu
 
-### Écran de sélection d'équipe (avant le combat)
+### Hub (page d'accueil)
+Le hub est l'écran central du jeu. On le quitte en entrant en combat (full screen),
+on y revient après le combat. Pas de nav bar persistante en combat.
+
+**Fond :**
+- Dégradé radial du brun nuit (#1a1208) vers un brun plus chaud au centre (#2a1f0e)
+- Vignette sombre sur les bords
+- Prévu pour accueillir une texture parchemin en overlay plus tard
+
+**Titre :**
+- "Realm of Dice" en Cinzel, couleur dorée (#c9a84c)
+- text-shadow doré subtil pour effet lumineux
+- Emplacement réservé pour un logo stylisé futur
+
+**Nav bar en bas (4 onglets) :**
+| Onglet       | Icône  | État V1                          |
+|--------------|--------|----------------------------------|
+| Combat       | ⚔️     | Actif → mène à sélection d'équipe |
+| Campagne     | 📜     | Grisé (#9a8a6a) + cadenas 🔒, non cliquable |
+| Boutique     | 🛒     | Grisé (#9a8a6a) + cadenas 🔒, non cliquable |
+| Paramètres   | ⚙️     | Actif → langue, son on/off       |
+
+- Style : icône au-dessus du label, police Inter
+- Onglets grisés : opacité réduite, curseur désactivé
+- Hauteur minimum 56px pour zone tactile mobile
+
+### Écran de sélection d'équipe (depuis onglet Combat)
 - Le joueur choisit 3 classes parmi les 5
 - Affichage de la composition choisie avec stats
 - Bouton "Lancer le combat", génère une équipe ennemie aléatoire

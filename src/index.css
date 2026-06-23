@@ -108,28 +108,249 @@ body {
   50% { opacity: 0.6; }
 }
 
+/* ========== HUB ========== */
+
+.hub {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #2a1f0e 0%, #1a1208 70%);
+}
+
+.hub-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.hub-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.hub-class-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 8px;
+}
+
+.hub-class-icon {
+  position: absolute;
+  font-size: 24px;
+  top: 50%;
+  left: 50%;
+  --angle: calc(var(--i) * (360deg / var(--total)) - 90deg);
+  transform: translate(-50%, -50%)
+             rotate(var(--angle))
+             translateY(-48px)
+             rotate(calc(-1 * var(--angle)));
+  animation: hub-float 3s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.3s);
+}
+
+.hub-d20 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.4));
+}
+
+.hub-title {
+  font-family: var(--font-title);
+  font-size: 36px;
+  color: var(--color-gold);
+  text-shadow: 0 2px 12px rgba(201, 168, 76, 0.4),
+               0 0 40px rgba(201, 168, 76, 0.15);
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.hub-subtitle {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+@keyframes hub-float {
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-48px) rotate(calc(-1 * var(--angle))); }
+  50% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-52px) rotate(calc(-1 * var(--angle))); }
+}
+
+/* Hub nav bar */
+.hub-nav {
+  display: flex;
+  border-top: 2px solid var(--color-border);
+  background: linear-gradient(0deg, #1a1208, #221a0c);
+}
+
+.hub-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 4px;
+  min-height: 56px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  font-family: var(--font-ui);
+}
+
+.hub-tab:active:not(:disabled) {
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.hub-tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.hub-tab-label {
+  font-size: 11px;
+  color: var(--color-text-primary);
+  letter-spacing: 0.3px;
+}
+
+.hub-tab-active .hub-tab-label {
+  color: var(--color-gold);
+}
+
+.hub-tab-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--color-gold);
+  border-radius: 0 0 2px 2px;
+}
+
+.hub-tab-locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hub-tab-locked .hub-tab-label {
+  color: var(--color-text-muted);
+}
+
+.hub-tab-lock {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font-size: 10px;
+}
+
+/* ========== TRANSITION ========== */
+
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.transition-parchment {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    #3d3428 0%,
+    #4a3f30 15%,
+    #3d3428 50%,
+    #4a3f30 85%,
+    #3d3428 100%
+  );
+  transform-origin: top center;
+}
+
+.transition-cover .transition-parchment {
+  animation: parchment-cover 0.5s ease-in forwards;
+}
+
+.transition-reveal .transition-parchment {
+  animation: parchment-reveal 0.5s ease-out forwards;
+}
+
+@keyframes parchment-cover {
+  0% { clip-path: inset(0 0 100% 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes parchment-reveal {
+  0% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(100% 0 0 0); }
+}
+
 /* ========== TEAM SELECT ========== */
 
 .team-select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 16px;
-  gap: 16px;
+  padding: 12px 16px 24px;
+  gap: 12px;
   overflow-y: auto;
   height: 100%;
 }
 
+.team-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(90, 74, 48, 0.3);
+}
+
+.team-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-gold);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.team-back-btn:active {
+  opacity: 0.7;
+}
+
+.team-header-label {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-right: 48px;
+}
+
 .team-title {
   font-family: var(--font-title);
-  font-size: 32px;
+  font-size: 24px;
   color: var(--color-gold);
   text-shadow: 0 2px 8px rgba(201, 168, 76, 0.3);
 }
 
 .team-subtitle {
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 13px;
+  margin-top: -8px;
 }
 
 .class-grid {
@@ -211,9 +432,61 @@ body {
   font-size: 14px;
 }
 
-.team-selected-info {
+.team-slots-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+}
+
+.team-slots-label {
+  font-family: var(--font-title);
+  font-size: 12px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.team-slots {
+  display: flex;
+  gap: 16px;
+}
+
+.team-slot {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px dashed var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 18, 8, 0.5);
+  transition: transform 0.2s, border-style 0.2s;
+}
+
+.team-slot-filled {
+  border-style: solid;
+  background: radial-gradient(circle, #3d3428, #2a1f0e);
+  animation: slot-fill 0.3s ease-out;
+}
+
+.team-slot-emoji {
+  font-size: 24px;
+}
+
+.team-slot-empty {
+  font-family: var(--font-title);
+  font-size: 18px;
+  color: rgba(201, 168, 76, 0.3);
+}
+
+@keyframes slot-fill {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .team-start-btn {

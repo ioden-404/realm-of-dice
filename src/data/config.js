@@ -13,6 +13,7 @@ export const TEAMS = {
 }
 
 export const PHASES = {
+  HUB: 'hub',
   TEAM_SELECT: 'team-select',
   COMBAT: 'combat',
   VICTORY: 'victory',

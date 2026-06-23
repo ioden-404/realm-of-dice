@@ -1,7 +1,9 @@
 import { useEffect, useCallback, useState } from 'react'
 import { PHASES, TURN_STATES } from './data/config.js'
 import { useGameState } from './hooks/useGameState.js'
+import Hub from './components/Hub.jsx'
 import TeamSelect from './components/TeamSelect.jsx'
+import Transition from './components/Transition.jsx'
 import Board from './components/Board.jsx'
 import InitiativeBar from './components/InitiativeBar.jsx'
 import ActionPanel from './components/ActionPanel.jsx'
@@ -14,6 +16,8 @@ import CharacterCard from './components/CharacterCard.jsx'
 export default function App() {
   const { state, dispatch, getAbilityState, executeAITurn } = useGameState()
   const [inspectedCharId, setInspectedCharId] = useState(null)
+  const [transitioning, setTransitioning] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null)
 
   const currentChar = state.phase === PHASES.COMBAT
     ? state.characters[state.initiativeOrder[state.currentTurnIndex]]
@@ -27,6 +31,25 @@ export default function App() {
     const timeout = setTimeout(() => executeAITurn(), 600)
     return () => clearTimeout(timeout)
   }, [state.turnState, state.currentTurnIndex])
+
+  const startTransition = useCallback((action) => {
+    setPendingAction(() => action)
+    setTransitioning(true)
+  }, [])
+
+  const handleTransitionComplete = useCallback(() => {
+    setTransitioning(false)
+    if (pendingAction) {
+      pendingAction()
+      setPendingAction(null)
+    }
+  }, [pendingAction])
+
+  const handleStartCombat = useCallback((classes) => {
+    startTransition(() => {
+      dispatch({ type: 'START_COMBAT', payload: { allyClasses: classes } })
+    })
+  }, [dispatch, startTransition])
 
   const handleSelectAbility = useCallback((ability, isBonusAction) => {
     if (ability.targetType === 'self') {
@@ -65,14 +88,27 @@ export default function App() {
     }
   }, [state.selectedAbility, state.validTargets, handleTargetClick])
 
+  if (state.phase === PHASES.HUB) {
+    return (
+      <div className="app">
+        <Hub onNavigate={(tab) => {
+          if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
+        }} />
+        <Transition active={transitioning} onComplete={handleTransitionComplete} />
+      </div>
+    )
+  }
+
   if (state.phase === PHASES.TEAM_SELECT) {
     return (
       <div className="app">
         <TeamSelect
           selectedClasses={state.selectedClasses}
           onToggle={(classId) => dispatch({ type: 'TOGGLE_CLASS', payload: { classId } })}
-          onStart={(classes) => dispatch({ type: 'START_COMBAT', payload: { allyClasses: classes } })}
+          onStart={handleStartCombat}
+          onBack={() => dispatch({ type: 'GO_TO_HUB' })}
         />
+        <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )
   }
@@ -151,6 +187,8 @@ export default function App() {
           onClose={() => setInspectedCharId(null)}
         />
       )}
+
+      <Transition active={transitioning} onComplete={handleTransitionComplete} />
     </div>
   )
 }

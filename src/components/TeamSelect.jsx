@@ -1,11 +1,18 @@
 import { CLASSES, CLASS_LIST } from '../data/classes.js'
-import { CLASS_COLORS } from '../data/config.js'
+import { CLASS_COLORS, CLASS_EMOJIS } from '../data/config.js'
 
-export default function TeamSelect({ selectedClasses, onToggle, onStart }) {
+export default function TeamSelect({ selectedClasses, onToggle, onStart, onBack }) {
+  const slots = [0, 1, 2]
+
   return (
     <div className="team-select">
-      <h1 className="team-title">Realm of Dice</h1>
-      <p className="team-subtitle">Choisis 3 classes pour ton équipe</p>
+      <div className="team-header">
+        <button className="team-back-btn" onClick={onBack}>← Retour</button>
+        <span className="team-header-label">COMBAT</span>
+      </div>
+
+      <h2 className="team-title">Choisis tes champions</h2>
+      <p className="team-subtitle">3 sur 5</p>
 
       <div className="class-grid">
         {CLASS_LIST.map(cls => {
@@ -35,8 +42,22 @@ export default function TeamSelect({ selectedClasses, onToggle, onStart }) {
         })}
       </div>
 
-      <div className="team-selected-info">
-        <span>{selectedClasses.length}/3 classes sélectionnées</span>
+      <div className="team-slots-section">
+        <span className="team-slots-label">Ton équipe</span>
+        <div className="team-slots">
+          {slots.map(i => {
+            const classId = selectedClasses[i]
+            return (
+              <div key={i} className={`team-slot ${classId ? 'team-slot-filled' : ''}`}>
+                {classId ? (
+                  <span className="team-slot-emoji">{CLASS_EMOJIS[classId]}</span>
+                ) : (
+                  <span className="team-slot-empty">?</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <button
@@ -44,7 +65,7 @@ export default function TeamSelect({ selectedClasses, onToggle, onStart }) {
         disabled={selectedClasses.length !== 3}
         onClick={() => onStart(selectedClasses)}
       >
-        Lancer le combat
+        ⚔️ Lancer le combat
       </button>
     </div>
   )
