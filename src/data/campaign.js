@@ -71,7 +71,7 @@ export const NODE_TYPES = {
 }
 
 const MAP_TEMPLATE = [
-  ['combat', 'combat', 'treasure'],
+  ['combat', 'combat', 'combat'],
   ['rest', 'combat', 'elite'],
   ['combat', 'merchant', 'combat'],
   ['combat', 'treasure', 'combat'],

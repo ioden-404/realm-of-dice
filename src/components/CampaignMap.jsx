@@ -22,6 +22,8 @@ function getNodeY(layerIdx) {
   return layerIdx * LAYER_H + NODE_R + 10
 }
 
+import { useState } from 'react'
+
 export default function CampaignMap({
   campaign, characters, campaignEvent, stats,
   pendingPaliers, combatResult,
@@ -30,6 +32,7 @@ export default function CampaignMap({
 }) {
   const { map, currentLayer, lastNodeId, visitedNodes } = campaign
   const act = ACTS[campaign.act]
+  const [xpTooltip, setXpTooltip] = useState(null)
   const allies = Object.values(characters).filter(c => c.team === 'ally')
   const mapHeight = map.length * LAYER_H + 30
 
@@ -119,17 +122,23 @@ export default function CampaignMap({
               return next ? <span className="cmap-xp-next">Prochain : {next.label} ({next.xp} XP)</span> : <span className="cmap-xp-next">Max !</span>
             })()}
           </div>
-          <div className="cmap-xp-bar">
+          <div className="cmap-xp-bar" onClick={() => setXpTooltip(null)}>
             {XP_PALIERS.map(p => {
               const reached = (campaign.appliedPaliers || []).includes(p.id)
               const pct = Math.min((p.xp / 15) * 100, 100)
               return (
-                <div
+                <button
                   key={p.id}
                   className={`cmap-xp-pip ${reached ? 'cmap-xp-pip-done' : ''} ${p.isEvolution ? 'cmap-xp-pip-evo' : ''}`}
                   style={{ left: `${pct}%` }}
-                  title={`${p.xp} XP : ${p.label}`}
-                />
+                  onClick={(e) => { e.stopPropagation(); setXpTooltip(xpTooltip === p.id ? null : p.id) }}
+                >
+                  {xpTooltip === p.id && (
+                    <div className="cmap-xp-tooltip">
+                      <strong>{p.xp} XP</strong> — {p.label}
+                    </div>
+                  )}
+                </button>
               )
             })}
             <div className="cmap-xp-fill" style={{ width: `${Math.min(((campaign.xp || 0) / 15) * 100, 100)}%` }} />
@@ -164,7 +173,7 @@ export default function CampaignMap({
         )}
 
         <div className="cmap-grid" style={{ height: mapHeight }}>
-          <svg className="cmap-lines" viewBox={`0 0 100 ${mapHeight}`} preserveAspectRatio="none">
+          <svg className="cmap-lines" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
             {map.map((layer, li) =>
               layer.map(node =>
                 node.connections.map(ci => {
@@ -179,7 +188,8 @@ export default function CampaignMap({
                   return (
                     <line
                       key={`${node.id}-${ci}`}
-                      x1={x1} y1={y1} x2={x2} y2={y2}
+                      x1={`${x1}%`} y1={y1}
+                      x2={`${x2}%`} y2={y2}
                       className={`cmap-line ${isVisitedPath ? 'cmap-line-visited' : ''} ${isNextPath ? 'cmap-line-available' : ''}`}
                     />
                   )

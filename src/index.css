@@ -2215,13 +2215,32 @@ body {
 .cmap-xp-pip {
   position: absolute;
   top: -3px;
-  width: 6px;
+  width: 8px;
   height: 14px;
   border-radius: 3px;
   background: var(--color-stone-dark);
   border: 1px solid var(--color-border);
   transform: translateX(-50%);
   z-index: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cmap-xp-tooltip {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a1f0e;
+  border: 1px solid var(--color-gold);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
 }
 
 .cmap-xp-pip-done {
@@ -2343,28 +2362,23 @@ body {
 }
 
 .cmap-lines {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
 }
 
 .cmap-line {
   stroke: rgba(90, 74, 48, 0.3);
-  stroke-width: 0.8;
-  vector-effect: non-scaling-stroke;
+  stroke-width: 2;
 }
 
 .cmap-line-visited {
   stroke: var(--color-gold);
-  stroke-width: 1.5;
+  stroke-width: 2;
   opacity: 0.6;
 }
 
 .cmap-line-available {
   stroke: var(--color-gold-light);
-  stroke-width: 1.5;
+  stroke-width: 2;
   opacity: 0.8;
 }
 
