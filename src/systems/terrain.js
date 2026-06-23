@@ -107,11 +107,11 @@ function isTraversable(terrain) {
   return false
 }
 
-export function generateTerrain(attempt = 0) {
+export function generateTerrain(forceTheme = null, attempt = 0) {
   if (attempt > 20) return { terrain: {}, theme: 'plains', themeName: 'Plaines' }
 
   const themeKeys = Object.keys(MAP_THEMES)
-  const themeKey = themeKeys[Math.floor(Math.random() * themeKeys.length)]
+  const themeKey = (forceTheme && MAP_THEMES[forceTheme]) ? forceTheme : themeKeys[Math.floor(Math.random() * themeKeys.length)]
   const theme = MAP_THEMES[themeKey]
 
   const terrain = {}
@@ -143,7 +143,7 @@ export function generateTerrain(attempt = 0) {
   }
 
   if (!isTraversable(terrain)) {
-    return generateTerrain(attempt + 1)
+    return generateTerrain(forceTheme, attempt + 1)
   }
 
   return { terrain, theme: themeKey, themeName: theme.name }

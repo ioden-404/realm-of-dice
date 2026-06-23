@@ -327,7 +327,20 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
     if (ability.hits && ability.hits > 1) {
       return resolveMultiHit(attacker, target, ability, characters, terrain)
     }
-    return resolveAttack(attacker, target, ability, characters, terrain)
+    const result = resolveAttack(attacker, target, ability, characters, terrain)
+
+    if (ability.pushOnHit && result.hit) {
+      const newPos = findPushDestination(target, attacker, ability.pushDistance || 2, characters, terrain)
+      result.effects.push({ type: 'move', characterId: target.id, position: newPos })
+      result.logs.push(`🌀 ${target.name} est repoussé !`)
+      const destTerrain = terrain[`${newPos.x},${newPos.y}`]
+      if (destTerrain && destTerrain.type === TERRAIN_TYPES.HAZARD) {
+        result.effects.push({ type: 'damage', targetId: target.id, amount: HAZARD_DAMAGE })
+        result.logs.push(`🔥 ${target.name} atterrit dans ${destTerrain.label} ! ${HAZARD_DAMAGE} dégâts !`)
+      }
+    }
+
+    return result
   }
 
   return { logs, effects }

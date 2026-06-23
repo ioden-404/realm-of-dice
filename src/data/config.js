@@ -17,7 +17,10 @@ export const PHASES = {
   TEAM_SELECT: 'team-select',
   COMBAT: 'combat',
   VICTORY: 'victory',
-  DEFEAT: 'defeat'
+  DEFEAT: 'defeat',
+  CAMPAIGN_REST: 'campaign-rest',
+  CAMPAIGN_COMPLETE: 'campaign-complete',
+  CAMPAIGN_DEFEAT: 'campaign-defeat'
 }
 
 export const TURN_STATES = {

@@ -1,10 +1,11 @@
-export default function VictoryScreen({ isVictory, stats, onRestart }) {
+export default function VictoryScreen({ isVictory, stats, onRestart, title, subtitle }) {
   return (
     <div className="victory-overlay">
       <div className={`victory-scroll ${isVictory ? 'victory-win' : 'victory-lose'}`}>
         <h1 className="victory-title">
-          {isVictory ? 'VICTOIRE' : 'DÉFAITE'}
+          {title || (isVictory ? 'VICTOIRE' : 'DÉFAITE')}
         </h1>
+        {subtitle && <p className="victory-subtitle">{subtitle}</p>}
         <div className="victory-stats">
           <div className="victory-stat">
             <span className="victory-stat-label">Rounds</span>

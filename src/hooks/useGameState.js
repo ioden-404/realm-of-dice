@@ -6,6 +6,8 @@ import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
+import { MONSTERS } from '../data/monsters.js'
+import { CAMPAIGN_DATA, generateRewardChoices, applyCampaignRest, applyReward } from '../data/campaign.js'
 
 function createCharacter(classId, team, index) {
   const classData = CLASSES[classId]
@@ -47,6 +49,63 @@ function createCharacter(classId, team, index) {
     initiative: 0,
     animation: null
   }
+}
+
+function createMonster(monsterId, index, allMonsterIds) {
+  const monsterData = MONSTERS[monsterId]
+  const sameTypeCount = allMonsterIds.filter(m => m === monsterId).length
+  const sameTypeIndex = allMonsterIds.slice(0, index + 1).filter(m => m === monsterId).length
+  const name = sameTypeCount > 1
+    ? `${monsterData.name} ${'ABCDE'[sameTypeIndex - 1]}`
+    : monsterData.name
+  const id = `enemy-${monsterId}-${index}`
+
+  const positions = [
+    { x: 6, y: 1 }, { x: 6, y: 3 }, { x: 5, y: 0 },
+    { x: 5, y: 4 }, { x: 5, y: 2 }
+  ]
+
+  return {
+    id,
+    name,
+    classId: monsterData.aiProfile,
+    classData: monsterData,
+    team: TEAMS.ENEMY,
+    emoji: monsterData.emoji,
+    hp: monsterData.hp,
+    maxHp: monsterData.hp,
+    ac: monsterData.ac,
+    attackBonus: monsterData.attackBonus,
+    movement: monsterData.movement,
+    range: monsterData.range,
+    position: positions[index] || { x: 6, y: index },
+    actionUsed: false,
+    bonusActionUsed: false,
+    reactionUsed: false,
+    movementUsed: 0,
+    statuses: monsterData.initialStatuses ? monsterData.initialStatuses.map(s => ({ ...s })) : [],
+    cooldowns: {},
+    uses: {},
+    concentration: null,
+    isDead: false,
+    initiative: 0,
+    animation: null
+  }
+}
+
+function getAllyPosition(index) {
+  const positions = [{ x: 0, y: 1 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 4 }, { x: 1, y: 2 }]
+  return positions[index] || { x: 0, y: index }
+}
+
+function resolveCampaignPhase(state, gameEnd) {
+  if (!gameEnd || !state.campaign.active) return gameEnd
+  if (gameEnd === PHASES.DEFEAT) return PHASES.CAMPAIGN_DEFEAT
+  const acts = CAMPAIGN_DATA.acts
+  const isLastEncounter = state.campaign.encounter >= acts[state.campaign.act].encounters.length - 1
+  const isLastAct = state.campaign.act >= acts.length - 1
+  if (isLastEncounter && isLastAct) return PHASES.CAMPAIGN_COMPLETE
+  return PHASES.CAMPAIGN_REST
 }
 
 function initUses(character) {
@@ -91,7 +150,11 @@ const initialState = {
   pendingAO: null,
   terrain: {},
   terrainTheme: null,
-  terrainThemeName: ''
+  terrainThemeName: '',
+  campaign: { active: false, act: 0, encounter: 0, rewards: [] },
+  campaignRewards: [],
+  campaignRewardSelected: false,
+  campaignMode: false
 }
 
 function applyEffects(state, effects) {
@@ -194,7 +257,7 @@ function checkGameEnd(characters) {
 function gameReducer(state, action) {
   switch (action.type) {
     case 'GO_TO_TEAM_SELECT': {
-      return { ...state, phase: PHASES.TEAM_SELECT, selectedClasses: [] }
+      return { ...state, phase: PHASES.TEAM_SELECT, selectedClasses: [], campaignMode: action.payload?.campaignMode || false }
     }
 
     case 'GO_TO_HUB': {
@@ -315,7 +378,7 @@ function gameReducer(state, action) {
           turnState: TURN_STATES.IDLE,
           movementRemaining: 0,
           validMoves: [],
-          phase: gameEnd || state.phase
+          phase: resolveCampaignPhase(state, gameEnd) || state.phase
         }
       }
 
@@ -472,16 +535,26 @@ function gameReducer(state, action) {
               text.includes('Raté') ? 'miss' : 'info'
       }))]
 
+      const resolvedPhase2 = resolveCampaignPhase(state, gameEnd)
+      let execChars = finalChars
+      let execRewards = state.campaignRewards
+      if (resolvedPhase2 === PHASES.CAMPAIGN_REST) {
+        execChars = { ...finalChars, ...applyCampaignRest(finalChars) }
+        execRewards = generateRewardChoices()
+      }
+
       return {
         ...state,
-        characters: finalChars,
+        characters: execChars,
         stats: newStats,
         log: newLog.slice(-50),
         turnState: gameEnd ? TURN_STATES.IDLE : TURN_STATES.IDLE,
         selectedAbility: null,
         selectedCategory: null,
         validTargets: [],
-        phase: gameEnd || state.phase
+        phase: resolvedPhase2 || state.phase,
+        campaignRewards: execRewards,
+        campaignRewardSelected: resolvedPhase2 === PHASES.CAMPAIGN_REST ? false : state.campaignRewardSelected
       }
     }
 
@@ -540,10 +613,19 @@ function gameReducer(state, action) {
 
       const gameEnd = checkGameEnd(updatedChars)
       if (gameEnd) {
+        const resolvedPhase = resolveCampaignPhase(state, gameEnd)
+        let restChars = updatedChars
+        let rewards = state.campaignRewards
+        if (resolvedPhase === PHASES.CAMPAIGN_REST) {
+          restChars = { ...updatedChars, ...applyCampaignRest(updatedChars) }
+          rewards = generateRewardChoices()
+        }
         return {
           ...state,
-          characters: updatedChars,
-          phase: gameEnd,
+          characters: restChars,
+          phase: resolvedPhase,
+          campaignRewards: rewards,
+          campaignRewardSelected: false,
           currentTurnIndex: nextIndex,
           round: newRound,
           log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
@@ -592,7 +674,7 @@ function gameReducer(state, action) {
           ...state,
           characters: updatedChars,
           log: [...state.log, ...aoLogs].slice(-50),
-          phase: gameEnd || state.phase
+          phase: resolveCampaignPhase(state, gameEnd) || state.phase
         }
       }
 
@@ -633,6 +715,133 @@ function gameReducer(state, action) {
 
     case 'RESTART': {
       return { ...initialState, phase: PHASES.HUB }
+    }
+
+    case 'START_CAMPAIGN': {
+      const { allyClasses } = action.payload
+      const characters = {}
+
+      allyClasses.forEach((classId, i) => {
+        const char = createCharacter(classId, TEAMS.ALLY, i)
+        char.uses = initUses(char)
+        characters[char.id] = char
+      })
+
+      const act = CAMPAIGN_DATA.acts[0]
+      const encounter = act.encounters[0]
+
+      encounter.monsters.forEach((monsterId, i) => {
+        const monster = createMonster(monsterId, i, encounter.monsters)
+        monster.uses = initUses(monster)
+        characters[monster.id] = monster
+      })
+
+      const initiativeOrder = rollInitiative(characters)
+      const firstChar = characters[initiativeOrder[0]]
+      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
+      const { terrain, theme: terrainTheme, themeName } = generateTerrain(act.terrainTheme)
+
+      return {
+        ...state,
+        phase: PHASES.COMBAT,
+        characters,
+        initiativeOrder,
+        currentTurnIndex: 0,
+        round: 1,
+        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        terrain,
+        terrainTheme,
+        terrainThemeName: themeName,
+        campaign: { active: true, act: 0, encounter: 0, rewards: [] },
+        campaignRewards: [],
+        campaignRewardSelected: false,
+        log: [
+          { text: `📜 ${act.name}`, type: 'system' },
+          { text: `⚔️ ${encounter.name}`, type: 'system' },
+          { text: `🗺️ ${themeName}`, type: 'system' },
+          { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
+        ],
+        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+      }
+    }
+
+    case 'CAMPAIGN_SELECT_REWARD': {
+      const { reward } = action.payload
+      const updatedChars = applyReward(state.characters, reward)
+      return {
+        ...state,
+        characters: updatedChars,
+        campaign: { ...state.campaign, rewards: [...state.campaign.rewards, reward.id] },
+        campaignRewardSelected: true
+      }
+    }
+
+    case 'CAMPAIGN_NEXT_COMBAT': {
+      let nextAct = state.campaign.act
+      let nextEncounter = state.campaign.encounter + 1
+      const acts = CAMPAIGN_DATA.acts
+
+      if (nextEncounter >= acts[nextAct].encounters.length) {
+        nextAct++
+        nextEncounter = 0
+      }
+
+      const act = acts[nextAct]
+      const encounter = act.encounters[nextEncounter]
+      const characters = {}
+
+      const allies = Object.values(state.characters).filter(c => c.team === TEAMS.ALLY)
+      allies.forEach((char, i) => {
+        characters[char.id] = {
+          ...char,
+          position: getAllyPosition(i),
+          actionUsed: false,
+          bonusActionUsed: false,
+          reactionUsed: false,
+          movementUsed: 0,
+          cooldowns: {},
+          animation: null,
+          uses: initUses(char)
+        }
+      })
+
+      encounter.monsters.forEach((monsterId, i) => {
+        const monster = createMonster(monsterId, i, encounter.monsters)
+        monster.uses = initUses(monster)
+        characters[monster.id] = monster
+      })
+
+      const initiativeOrder = rollInitiative(characters)
+      const firstChar = characters[initiativeOrder[0]]
+      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
+      const { terrain, theme: terrainTheme, themeName } = generateTerrain(act.terrainTheme)
+
+      return {
+        ...state,
+        phase: PHASES.COMBAT,
+        characters,
+        initiativeOrder,
+        currentTurnIndex: 0,
+        round: 1,
+        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        terrain,
+        terrainTheme,
+        terrainThemeName: themeName,
+        campaign: { ...state.campaign, act: nextAct, encounter: nextEncounter },
+        campaignRewards: [],
+        campaignRewardSelected: false,
+        selectedAbility: null,
+        selectedCategory: null,
+        validTargets: [],
+        validMoves: [],
+        log: [
+          { text: `📜 ${act.name}`, type: 'system' },
+          { text: `⚔️ ${encounter.name}`, type: 'system' },
+          { text: `🗺️ ${themeName}`, type: 'system' },
+          { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
+        ],
+        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+      }
     }
 
     default:

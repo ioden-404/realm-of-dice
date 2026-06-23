@@ -15,6 +15,7 @@ import StatusBadge from './components/StatusBadge.jsx'
 import VictoryScreen from './components/VictoryScreen.jsx'
 import CharacterCard from './components/CharacterCard.jsx'
 import TerrainCard from './components/TerrainCard.jsx'
+import CampaignRest from './components/CampaignRest.jsx'
 
 const MUSIC_SRC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
 
@@ -70,9 +71,13 @@ export default function App() {
 
   const handleStartCombat = useCallback((classes) => {
     startTransition(() => {
-      dispatch({ type: 'START_COMBAT', payload: { allyClasses: classes } })
+      if (state.campaignMode) {
+        dispatch({ type: 'START_CAMPAIGN', payload: { allyClasses: classes } })
+      } else {
+        dispatch({ type: 'START_COMBAT', payload: { allyClasses: classes } })
+      }
     })
-  }, [dispatch, startTransition])
+  }, [dispatch, startTransition, state.campaignMode])
 
   const handleSelectAbility = useCallback((ability, isBonusAction) => {
     if (ability.targetType === 'self') {
@@ -130,6 +135,7 @@ export default function App() {
       <div className="app">
         <Hub onNavigate={(tab) => {
           if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
+          if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
           if (tab === 'settings') setShowSettings(true)
         }} />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
@@ -157,6 +163,54 @@ export default function App() {
         <VictoryScreen
           isVictory={state.phase === PHASES.VICTORY}
           stats={state.stats}
+          onRestart={() => dispatch({ type: 'RESTART' })}
+        />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.CAMPAIGN_REST) {
+    return (
+      <div className="app">
+        <CampaignRest
+          characters={state.characters}
+          campaign={state.campaign}
+          rewards={state.campaignRewards}
+          rewardSelected={state.campaignRewardSelected}
+          stats={state.stats}
+          onSelectReward={(reward) => dispatch({ type: 'CAMPAIGN_SELECT_REWARD', payload: { reward } })}
+          onNextCombat={() => {
+            startTransition(() => dispatch({ type: 'CAMPAIGN_NEXT_COMBAT' }))
+          }}
+          onAbandon={() => dispatch({ type: 'RESTART' })}
+        />
+        <Transition active={transitioning} onComplete={handleTransitionComplete} />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.CAMPAIGN_COMPLETE) {
+    return (
+      <div className="app">
+        <VictoryScreen
+          isVictory={true}
+          stats={state.stats}
+          title="CAMPAGNE TERMINÉE !"
+          subtitle="Vous avez vaincu le Dragon et sauvé le royaume !"
+          onRestart={() => dispatch({ type: 'RESTART' })}
+        />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.CAMPAIGN_DEFEAT) {
+    return (
+      <div className="app">
+        <VictoryScreen
+          isVictory={false}
+          stats={state.stats}
+          title="CAMPAGNE ÉCHOUÉE"
+          subtitle="Votre équipe a été vaincue..."
           onRestart={() => dispatch({ type: 'RESTART' })}
         />
       </div>
