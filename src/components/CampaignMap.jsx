@@ -72,8 +72,10 @@ export default function CampaignMap({
     return reachableFromAvailable
   }
 
+  const themeClass = `cmap-theme-${act.terrainTheme || 'forest'}`
+
   return (
-    <div className="cmap">
+    <div className={`cmap ${themeClass}`}>
       <div className="cmap-scroll">
         <div className="cmap-header">
           <h2 className="cmap-title">{act.name}</h2>

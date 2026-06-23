@@ -2094,6 +2094,44 @@ body {
   gap: 6px;
 }
 
+/* ========== MAP THEMES ========== */
+
+.cmap-theme-forest {
+  background: linear-gradient(180deg, #0a1a0a, #12220e, #0a1a0a);
+}
+.cmap-theme-forest .cmap-node { border-color: #2d5a2d; background: #1a2e1a; }
+.cmap-theme-forest .cmap-node-available { border-color: #4caf50; box-shadow: 0 0 12px rgba(76, 175, 80, 0.5); }
+.cmap-theme-forest .cmap-node-visited { border-color: #2d5a2d; background: rgba(45, 90, 45, 0.2); }
+.cmap-theme-forest .cmap-line { stroke: rgba(45, 90, 45, 0.3); }
+.cmap-theme-forest .cmap-line-visited { stroke: #4caf50; }
+.cmap-theme-forest .cmap-line-available { stroke: #81c784; }
+.cmap-theme-forest .cmap-title { color: #81c784; text-shadow: 0 2px 8px rgba(76, 175, 80, 0.4); }
+.cmap-theme-forest .cmap-banner { color: #81c784; background: rgba(76, 175, 80, 0.1); border-color: rgba(76, 175, 80, 0.2); }
+
+.cmap-theme-crypt {
+  background: linear-gradient(180deg, #0a0a1a, #0e1222, #0a0a1a);
+}
+.cmap-theme-crypt .cmap-node { border-color: #3a3a6a; background: #1a1a2e; }
+.cmap-theme-crypt .cmap-node-available { border-color: #7b68ee; box-shadow: 0 0 12px rgba(123, 104, 238, 0.5); }
+.cmap-theme-crypt .cmap-node-visited { border-color: #3a3a6a; background: rgba(58, 58, 106, 0.2); }
+.cmap-theme-crypt .cmap-line { stroke: rgba(58, 58, 106, 0.3); }
+.cmap-theme-crypt .cmap-line-visited { stroke: #7b68ee; }
+.cmap-theme-crypt .cmap-line-available { stroke: #9f8fff; }
+.cmap-theme-crypt .cmap-title { color: #9f8fff; text-shadow: 0 2px 8px rgba(123, 104, 238, 0.4); }
+.cmap-theme-crypt .cmap-banner { color: #9f8fff; background: rgba(123, 104, 238, 0.1); border-color: rgba(123, 104, 238, 0.2); }
+
+.cmap-theme-volcano {
+  background: linear-gradient(180deg, #1a0a0a, #221010, #1a0a0a);
+}
+.cmap-theme-volcano .cmap-node { border-color: #6a2a2a; background: #2e1515; }
+.cmap-theme-volcano .cmap-node-available { border-color: #ff6b35; box-shadow: 0 0 12px rgba(255, 107, 53, 0.5); }
+.cmap-theme-volcano .cmap-node-visited { border-color: #6a2a2a; background: rgba(106, 42, 42, 0.2); }
+.cmap-theme-volcano .cmap-line { stroke: rgba(106, 42, 42, 0.3); }
+.cmap-theme-volcano .cmap-line-visited { stroke: #ff6b35; }
+.cmap-theme-volcano .cmap-line-available { stroke: #ff9a6c; }
+.cmap-theme-volcano .cmap-title { color: #ff9a6c; text-shadow: 0 2px 8px rgba(255, 107, 53, 0.4); }
+.cmap-theme-volcano .cmap-banner { color: #ff9a6c; background: rgba(255, 107, 53, 0.1); border-color: rgba(255, 107, 53, 0.2); }
+
 /* ========== SHARED CAMPAIGN REWARDS ========== */
 
 .campaign-reward {
