@@ -756,6 +756,7 @@ function gameReducer(state, action) {
       let execEvent = state.campaignEvent
       let execPendingPaliers = state.pendingPaliers
       let execCombatResult = state.combatResult
+      let execLevelUps = state.pendingLevelUps
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
         const runMods = resolveModifiers(state.campaign.modifiers)
         const hasHeal = teamHasHealer(finalChars)
@@ -772,7 +773,7 @@ function gameReducer(state, action) {
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         execPendingPaliers = palierResult.pendingChoices || []
         execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
-        const lvlUps1 = checkLevelUps(newXp, execChars)
+        execLevelUps = checkLevelUps(newXp, execChars)
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         } else if (nodeType === 'boss') {
@@ -794,7 +795,7 @@ function gameReducer(state, action) {
         campaign: execCampaign,
         campaignEvent: execEvent,
         pendingPaliers: execPendingPaliers,
-        pendingLevelUps: resolvedPhase2 === PHASES.CAMPAIGN_MAP ? (lvlUps1 || []) : state.pendingLevelUps,
+        pendingLevelUps: execLevelUps,
         combatResult: execCombatResult
       }
     }
@@ -868,6 +869,7 @@ function gameReducer(state, action) {
         let endEvent = state.campaignEvent
         let endPendingPaliers = state.pendingPaliers
         let endCombatResult = state.combatResult
+        let endLevelUps = state.pendingLevelUps
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
           const runMods2 = resolveModifiers(state.campaign.modifiers)
           const hasHeal2 = teamHasHealer(updatedChars)
@@ -884,7 +886,7 @@ function gameReducer(state, action) {
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }
           endPendingPaliers = palierResult2.pendingChoices || []
           endCombatResult = { victory: true, gold: goldGain2, xp: xpGain }
-          const lvlUps2 = checkLevelUps(newXp, restChars)
+          endLevelUps = checkLevelUps(newXp, restChars)
           if (nodeType === 'elite') {
             endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
@@ -898,7 +900,7 @@ function gameReducer(state, action) {
           campaign: endCampaign,
           campaignEvent: endEvent,
           pendingPaliers: endPendingPaliers,
-          pendingLevelUps: resolvedPhase === PHASES.CAMPAIGN_MAP ? (lvlUps2 || []) : state.pendingLevelUps,
+          pendingLevelUps: endLevelUps,
           combatResult: endCombatResult,
           currentTurnIndex: nextIndex,
           round: newRound,
