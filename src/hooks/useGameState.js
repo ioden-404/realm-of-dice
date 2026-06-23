@@ -742,6 +742,7 @@ function gameReducer(state, action) {
       let execPendingPaliers = state.pendingPaliers
       let execCombatResult = state.combatResult
       if (resolvedPhase2 === PHASES.CAMPAIGN_MAP) {
+        const runMods = resolveModifiers(state.campaign.modifiers)
         const hasHeal = teamHasHealer(finalChars)
         const restBonus1 = (state.campaign.gloryUpgrades?.['rest-bonus'] || 0) * 0.05
         execChars = { ...finalChars, ...applyCampaignRest(finalChars, (hasHeal ? 0.3 : 0.45) + restBonus1) }
@@ -751,7 +752,6 @@ function gameReducer(state, action) {
         const newXp = (state.campaign.xp || 0) + Math.floor(xpGain * runMods.xpMult)
         const palierResult = applyNewPaliers(execChars, newXp, state.campaign.appliedPaliers || [])
         execChars = palierResult.characters
-        const runMods = resolveModifiers(state.campaign.modifiers)
         const baseGold = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
         const goldGain = Math.floor(baseGold * runMods.goldMult * (nodeType !== 'boss' && nodeType !== 'elite' ? runMods.combatGoldMult : 1))
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
@@ -849,6 +849,7 @@ function gameReducer(state, action) {
         let endPendingPaliers = state.pendingPaliers
         let endCombatResult = state.combatResult
         if (resolvedPhase === PHASES.CAMPAIGN_MAP) {
+          const runMods2 = resolveModifiers(state.campaign.modifiers)
           const hasHeal2 = teamHasHealer(updatedChars)
           const restBonus2 = (state.campaign.gloryUpgrades?.['rest-bonus'] || 0) * 0.05
           restChars = { ...updatedChars, ...applyCampaignRest(updatedChars, (hasHeal2 ? 0.3 : 0.45) + restBonus2) }
@@ -858,7 +859,6 @@ function gameReducer(state, action) {
           const newXp = (state.campaign.xp || 0) + Math.floor(xpGain * runMods2.xpMult)
           const palierResult2 = applyNewPaliers(restChars, newXp, state.campaign.appliedPaliers || [])
           restChars = palierResult2.characters
-          const runMods2 = resolveModifiers(state.campaign.modifiers)
           const baseGold2 = nodeType === 'boss' ? GOLD_REWARDS.boss : nodeType === 'elite' ? GOLD_REWARDS.elite : GOLD_REWARDS.combat
           const goldGain2 = Math.floor(baseGold2 * runMods2.goldMult * (nodeType !== 'boss' && nodeType !== 'elite' ? runMods2.combatGoldMult : 1))
           endCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult2.appliedPaliers, evolved: palierResult2.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain2 }

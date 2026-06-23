@@ -339,6 +339,23 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
     return { logs, effects }
   }
 
+  if (ability.effect === 'cleave') {
+    const mainResult = resolveAttack(attacker, target, { ...ability, effect: undefined }, characters, terrain)
+    logs.push(...mainResult.logs)
+    effects.push(...mainResult.effects)
+    if (mainResult.hit) {
+      const adjacent = Object.values(characters).filter(c => !c.isDead && c.team !== attacker.team && c.id !== target.id && isAdjacent(target.position, c.position))
+      if (adjacent.length > 0) {
+        const secondary = adjacent[0]
+        logs.push(`⚔️ Enchaînement sur ${secondary.name} !`)
+        const cleaveResult = resolveAttack(attacker, secondary, { ...ability, effect: undefined }, characters, terrain)
+        logs.push(...cleaveResult.logs)
+        effects.push(...cleaveResult.effects)
+      }
+    }
+    return { logs, effects }
+  }
+
   if (ability.effect === 'whirlwind') {
     const adjacent = Object.values(characters).filter(c => !c.isDead && c.team !== attacker.team && isAdjacent(attacker.position, c.position))
     if (adjacent.length === 0) { logs.push('❌ Aucun ennemi adjacent'); return { logs, effects } }
