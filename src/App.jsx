@@ -218,6 +218,7 @@ export default function App() {
           onSelectAbility={handleSelectAbility}
           onEndTurn={() => dispatch({ type: 'END_TURN' })}
           onBack={() => dispatch({ type: 'BACK_TO_IDLE' })}
+          onAbandon={() => dispatch({ type: 'RESTART' })}
         />
       )}
 

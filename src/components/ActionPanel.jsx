@@ -81,8 +81,10 @@ export default function ActionPanel({
   onSelectCategory,
   onSelectAbility,
   onEndTurn,
-  onBack
+  onBack,
+  onAbandon
 }) {
+  const [confirmAbandon, setConfirmAbandon] = useState(false)
   if (!character || character.team === 'enemy') return null
 
   const classData = character.classData
@@ -163,6 +165,17 @@ export default function ActionPanel({
           ⏭️ Fin du tour
         </button>
       </div>
+      {!confirmAbandon ? (
+        <button className="abandon-btn" onClick={() => setConfirmAbandon(true)}>
+          🚪 Abandonner
+        </button>
+      ) : (
+        <div className="abandon-confirm">
+          <span>Quitter le combat ?</span>
+          <button className="abandon-yes" onClick={onAbandon}>Oui</button>
+          <button className="abandon-no" onClick={() => setConfirmAbandon(false)}>Non</button>
+        </div>
+      )}
     </div>
   )
 }

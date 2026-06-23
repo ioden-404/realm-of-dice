@@ -1206,6 +1206,56 @@ body {
   background: linear-gradient(135deg, rgba(201, 168, 76, 0.15), var(--color-stone-dark));
 }
 
+.abandon-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 6px 0;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  opacity: 0.7;
+}
+
+.abandon-btn:active {
+  opacity: 1;
+}
+
+.abandon-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.abandon-yes {
+  background: rgba(139, 32, 32, 0.4);
+  border: 1px solid var(--color-crimson);
+  color: var(--color-crimson-light);
+  border-radius: 4px;
+  padding: 3px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.abandon-no {
+  background: rgba(90, 74, 48, 0.3);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: 4px;
+  padding: 3px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .action-header {
   display: flex;
   align-items: center;
