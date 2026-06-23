@@ -9,7 +9,8 @@ export default function Board({
   turnState,
   terrain = {},
   onCellClick,
-  onTokenClick
+  onTokenClick,
+  onTerrainClick
 }) {
   const cells = []
   for (let y = 0; y < BOARD_ROWS; y++) {
@@ -33,6 +34,7 @@ export default function Board({
           className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass}`}
           onClick={() => {
             if (isValidMove) onCellClick(x, y)
+            else if (terrainCell && !charHere) onTerrainClick(terrainCell)
           }}
         >
           {isCorner && <div className="cell-rune">᛭</div>}

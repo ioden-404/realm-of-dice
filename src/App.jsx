@@ -14,6 +14,7 @@ import CombatLog from './components/CombatLog.jsx'
 import StatusBadge from './components/StatusBadge.jsx'
 import VictoryScreen from './components/VictoryScreen.jsx'
 import CharacterCard from './components/CharacterCard.jsx'
+import TerrainCard from './components/TerrainCard.jsx'
 
 const MUSIC_SRC = import.meta.env.BASE_URL + 'Audio/Dawn of Asterhollow.mp3'
 
@@ -21,6 +22,7 @@ export default function App() {
   const { state, dispatch, getAbilityState, executeAITurn } = useGameState()
   const audio = useAudio(MUSIC_SRC)
   const [inspectedCharId, setInspectedCharId] = useState(null)
+  const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -179,6 +181,7 @@ export default function App() {
         terrain={state.terrain}
         onCellClick={() => {}}
         onTokenClick={handleTokenInspect}
+        onTerrainClick={(cell) => setInspectedTerrain(cell)}
       />
 
       <CombatLog log={state.log} />
@@ -222,6 +225,13 @@ export default function App() {
         <CharacterCard
           character={state.characters[inspectedCharId]}
           onClose={() => setInspectedCharId(null)}
+        />
+      )}
+
+      {inspectedTerrain && (
+        <TerrainCard
+          terrainCell={inspectedTerrain}
+          onClose={() => setInspectedTerrain(null)}
         />
       )}
 

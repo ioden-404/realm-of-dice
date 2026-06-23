@@ -1751,3 +1751,67 @@ body {
   gap: 4px;
   flex-wrap: wrap;
 }
+
+/* ========== TERRAIN CARD ========== */
+
+.terrain-card {
+  background: linear-gradient(145deg, #2a1f0e, #3d3428, #2a1f0e);
+  border: 2px solid var(--card-accent, var(--color-border));
+  border-radius: 10px;
+  padding: 16px;
+  max-width: 280px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 8px color-mix(in srgb, var(--card-accent) 30%, transparent);
+}
+
+.terrain-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.terrain-card-emoji {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid var(--card-accent);
+}
+
+.terrain-card-identity {
+  display: flex;
+  flex-direction: column;
+}
+
+.terrain-card-name {
+  font-family: var(--font-title);
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+
+.terrain-card-type {
+  font-size: 11px;
+  color: var(--card-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.terrain-card-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+  padding-top: 10px;
+}
+
+.terrain-card-effect {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+}
