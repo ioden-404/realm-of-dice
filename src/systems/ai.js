@@ -21,6 +21,20 @@ function canKill(attacker, enemy, ability) {
   return avgDmg >= enemy.hp
 }
 
+function estimateAODamage(adjEnemies) {
+  let total = 0
+  for (const enemy of adjEnemies) {
+    if (enemy.reactionUsed) continue
+    const ao = enemy.classData?.abilities?.reactions?.find(r => r.trigger === 'enemyLeaves')
+    if (!ao?.damage) continue
+    const match = ao.damage.match(/(\d+)d(\d+)(?:\+(\d+))?/)
+    if (match) {
+      total += (parseInt(match[1]) * (parseInt(match[2]) + 1) / 2 + (parseInt(match[3]) || 0)) * 0.6
+    }
+  }
+  return Math.round(total)
+}
+
 function assessBattlefield(allies, enemies, difficulty) {
   if (difficulty < 2) return { strategy: 'BASIC', focusTarget: null }
 
@@ -69,6 +83,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
 
   const decision = { movement: null, action: null, actionTarget: null, bonusAction: null, bonusActionTarget: null }
 
+  const classId = character.classId
   const adjEnemiesNow = getAdjacentEnemies(character.position, characters, character.team)
   const inMelee = adjEnemiesNow.length > 0
 
@@ -76,52 +91,51 @@ export function decideAction(character, characters, getAbilityState, terrain = {
 
   const hasFreeDisengage = decision.bonusAction?.effect === 'disengage' || hasStatus(character, 'disengaged')
 
-  let bestEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
-  let bestPos = null
+  const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
+  let best = { score: stayEval.score, action: stayEval.action, target: stayEval.target, movement: null }
+
+  const aoDmg = inMelee && !hasFreeDisengage ? estimateAODamage(adjEnemiesNow) : 0
+  const wouldDieFromAO = aoDmg >= character.hp
 
   const accessible = getAccessibleCells(character.position, character.movement, characters, character.id, terrain)
+  const isMeleeClass = classId === 'guerrier' || classId === 'voleur'
 
   for (const cell of accessible) {
     const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
 
+    let moveCost = 0
     if (inMelee && !hasFreeDisengage) {
-      eval_.score -= 15
+      if (wouldDieFromAO) continue
+      moveCost = (aoDmg / character.maxHp) * 50
     }
 
-    if (eval_.score > bestEval.score) {
-      bestEval = eval_
-      bestPos = cell
+    const netScore = eval_.score - moveCost
+    if (netScore > best.score) {
+      best = { score: netScore, action: eval_.action, target: eval_.target, movement: cell, rawScore: eval_.score, moveCost }
     }
   }
 
-  decision.movement = bestPos
-  decision.action = bestEval.action
-  decision.actionTarget = bestEval.target
+  if (best.movement && inMelee && !hasFreeDisengage && best.moveCost > 0) {
+    const disengage = findAbilityByEffect(character, 'disengage', 'actions', getAbilityState)
+    if (disengage) {
+      const moveGainWithoutAO = best.rawScore - stayEval.score
+      const stayActionValue = stayEval.action?.damage ? 8 : 0
+      if (moveGainWithoutAO > stayActionValue) {
+        best.action = disengage
+        best.target = null
+      }
+    } else if (!isMeleeClass && best.moveCost > 15) {
+      best = { score: stayEval.score, action: stayEval.action, target: stayEval.target, movement: null }
+    }
+  }
+
+  decision.movement = best.movement
+  decision.action = best.action
+  decision.actionTarget = best.target
 
   if (!decision.action && !character.actionUsed) {
     const dodgeAbility = findAbilityByEffect(character, 'dodge', 'actions', getAbilityState)
     if (dodgeAbility) decision.action = dodgeAbility
-  }
-
-  if (inMelee && bestPos && !hasFreeDisengage) {
-    const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
-    const moveGain = bestEval.score + 15 - stayEval.score
-
-    if (moveGain > 10) {
-      const disengage = findAbilityByEffect(character, 'disengage', 'actions', getAbilityState)
-      if (disengage) {
-        decision.action = disengage
-        decision.actionTarget = null
-      } else {
-        decision.movement = null
-        decision.action = stayEval.action
-        decision.actionTarget = stayEval.target
-      }
-    } else {
-      decision.movement = null
-      decision.action = stayEval.action
-      decision.actionTarget = stayEval.target
-    }
   }
 
   return decision
