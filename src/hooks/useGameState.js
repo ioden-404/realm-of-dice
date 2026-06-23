@@ -676,9 +676,9 @@ function gameReducer(state, action) {
         execPendingPaliers = palierResult.pendingChoices || []
         execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
         if (nodeType === 'elite') {
-          execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+          execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         } else if (nodeType === 'boss') {
-          execEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+          execEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
         }
       }
 
@@ -777,9 +777,9 @@ function gameReducer(state, action) {
           endPendingPaliers = palierResult2.pendingChoices || []
           endCombatResult = { victory: true, gold: goldGain2, xp: xpGain }
           if (nodeType === 'elite') {
-            endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+            endEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           } else if (nodeType === 'boss') {
-            endEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2), rewardSelected: false, nodeId: state.campaign.currentNode.id }
+            endEvent = { type: 'relic-major', relics: pickRelics(MAJOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
           }
         }
         return {
@@ -1013,9 +1013,10 @@ function gameReducer(state, action) {
           terrainLabel: reward.terrainLabel, aoeSize: reward.aoeSize, range: reward.range,
           fireDamage: reward.fireDamage, fireDuration: reward.fireDuration
         }]
+        const purchased = [...(event.purchasedIds || []), reward.id]
         return {
           ...state,
-          campaignEvent: { ...event, rewardSelected: false },
+          campaignEvent: { ...event, purchasedIds: purchased },
           campaign: newCampaign,
           combatInventory: newInventory
         }

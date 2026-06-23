@@ -2553,6 +2553,11 @@ body {
   cursor: default;
 }
 
+.reward-bought {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+
 .reward-icon {
   font-size: 22px;
 }

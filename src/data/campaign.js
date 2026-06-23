@@ -334,19 +334,20 @@ export const MINOR_RELICS = [
   { id: 'swift-boots', name: 'Bottes rapides', icon: '🏃', desc: '+1 mouvement', effects: [{ stat: 'movement', value: 1 }] },
   { id: 'rage-stone', name: 'Pierre de rage', icon: '💢', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
   { id: 'vitality-gem', name: 'Gemme de vitalité', icon: '❤️', desc: '+4 PV max', effects: [{ stat: 'maxHp', value: 4 }] },
-  { id: 'sharp-eye', name: 'Œil de faucon', icon: '🎯', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
+  { id: 'war-horn', name: 'Cor de guerre', icon: '📯', desc: '+1 ATK, +2 PV max', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'maxHp', value: 2 }] },
 ]
 
 export const MAJOR_RELICS = [
   { id: 'destiny-blade', name: 'Lame du destin', icon: '🔥', desc: '+2 ATK', effects: [{ stat: 'attackBonus', value: 2 }] },
   { id: 'phoenix-heart', name: 'Cœur du phénix', icon: '❤️', desc: '+6 PV max + soin complet', effects: [{ stat: 'maxHp', value: 6 }, { stat: 'fullHeal' }] },
   { id: 'kings-crown', name: 'Couronne du roi', icon: '👑', desc: '+1 ATK, +4 PV max, +1 mouvement', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'maxHp', value: 4 }, { stat: 'movement', value: 1 }] },
-  { id: 'war-banner', name: 'Bannière de guerre', icon: '⚔️', desc: '+2 ATK', effects: [{ stat: 'attackBonus', value: 2 }] },
+  { id: 'shadow-cloak', name: 'Cape d\'ombre', icon: '🌑', desc: '+2 CA', effects: [{ stat: 'ac', value: 2 }] },
   { id: 'fortress-shield', name: 'Bouclier-forteresse', icon: '🏰', desc: '+1 CA, +4 PV max', effects: [{ stat: 'ac', value: 1 }, { stat: 'maxHp', value: 4 }] },
 ]
 
-export function pickRelics(pool, count) {
-  return shuffle([...pool]).slice(0, count)
+export function pickRelics(pool, count, ownedRelics = []) {
+  const available = pool.filter(r => !ownedRelics.some(o => o.id === r.id))
+  return shuffle(available.length >= count ? available : [...pool]).slice(0, count)
 }
 
 export function applyRelicEffects(characters, relic) {

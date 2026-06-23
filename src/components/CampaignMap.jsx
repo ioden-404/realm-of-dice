@@ -248,12 +248,14 @@ export default function CampaignMap({
                 <div className="cmap-event-rewards">
                   {(campaignEvent.items || []).map(item => {
                     const canAfford = (campaign.gold || 0) >= item.cost
+                    const alreadyBought = (campaignEvent.purchasedIds || []).includes(item.id)
+                    const canBuy = canAfford && !alreadyBought
                     return (
                       <button
                         key={item.id}
-                        className={`campaign-reward ${!canAfford ? 'reward-disabled' : ''}`}
-                        onClick={() => canAfford && onSelectReward(item)}
-                        disabled={!canAfford || campaignEvent.rewardSelected}
+                        className={`campaign-reward ${!canBuy ? 'reward-disabled' : ''} ${alreadyBought ? 'reward-bought' : ''}`}
+                        onClick={() => canBuy && onSelectReward(item)}
+                        disabled={!canBuy}
                       >
                         <span className="reward-icon">{item.icon}</span>
                         <div className="reward-info">
