@@ -223,7 +223,7 @@ export default function CampaignMap({
           )}
         </div>
 
-        <button className="abandon-btn" onClick={onAbandon} style={{ marginTop: 8 }}>
+        <button className="abandon-btn" onClick={onAbandon} style={{ marginTop: 8, position: 'relative', zIndex: 5 }}>
           🚪 Abandonner la campagne
         </button>
       </div>
