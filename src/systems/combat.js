@@ -495,6 +495,103 @@ export function processEndOfTurn(character) {
   return { effects }
 }
 
+export function resolveAllyReactions(targetId, attackerId, damage, characters) {
+  const logs = []
+  const effects = []
+  const target = characters[targetId]
+  if (!target) return { logs, effects }
+
+  const fell = target.hp <= 0
+  const team = target.team
+
+  for (const char of Object.values(characters)) {
+    if (char.isDead || char.id === targetId || char.team !== team || char.reactionUsed) continue
+
+    const reactions = char.classData?.abilities?.reactions || []
+    for (const reaction of reactions) {
+      if (reaction.trigger === 'allyHit' && !fell) {
+        const range = reaction.range || 1
+        const dist = Math.max(Math.abs(char.position.x - target.position.x), Math.abs(char.position.y - target.position.y))
+        if (dist > range) continue
+
+        if (reaction.damage) {
+          const attacker = characters[attackerId]
+          if (!attacker || attacker.isDead) continue
+          logs.push(`⚡ ${char.name} réagit pour protéger ${target.name} !`)
+          const d20 = rollD20()
+          const isCrit = d20 === 20
+          const isFail = d20 === 1
+          const total = d20 + char.attackBonus
+          const targetAC = attacker.ac
+          if (isFail) { logs.push(`🎲 d20 = 1 - Raté !`); effects.push({ type: 'useReaction', targetId: char.id }); break }
+          const hit = isCrit || total >= targetAC
+          logs.push(`🎲 d20+${char.attackBonus} = ${total} vs CA ${targetAC} - ${hit ? 'Touché !' : 'Raté !'}`)
+          if (hit) {
+            const dmgRoll = isCrit ? rollDiceCrit(reaction.damage) : rollDice(reaction.damage)
+            logs.push(`🔥 ${dmgRoll.total} dégâts de représailles`)
+            effects.push({ type: 'damage', targetId: attackerId, amount: dmgRoll.total })
+          }
+          effects.push({ type: 'useReaction', targetId: char.id })
+          break
+        }
+
+        if (reaction.reduction) {
+          const reductionRoll = rollDice(reaction.reduction)
+          logs.push(`🛡️ ${char.name} intervient ! -${reductionRoll.total} dégâts pour ${target.name}`)
+          effects.push({ type: 'heal', targetId: target.id, amount: Math.min(reductionRoll.total, damage) })
+          effects.push({ type: 'useReaction', targetId: char.id })
+          break
+        }
+
+        if (reaction.effect === 'intercept') {
+          const reduced = Math.floor(damage / 2)
+          logs.push(`🛡️ ${char.name} intercepte ! Prend ${reduced} dégâts à la place de ${target.name}`)
+          effects.push({ type: 'heal', targetId: target.id, amount: Math.min(reduced, damage) })
+          effects.push({ type: 'damage', targetId: char.id, amount: reduced })
+          effects.push({ type: 'useReaction', targetId: char.id })
+          break
+        }
+      }
+
+      if (reaction.trigger === 'allyFalls' && fell) {
+        if (reaction.heal) {
+          logs.push(`✨ ${char.name} — ${reaction.name} ! Sauve ${target.name} !`)
+          const healRoll = rollDice(reaction.heal)
+          effects.push({ type: 'heal', targetId: target.id, amount: healRoll.total })
+          effects.push({ type: 'revive', targetId: target.id, hp: healRoll.total })
+          effects.push({ type: 'useReaction', targetId: char.id })
+          break
+        }
+
+        if (reaction.damage) {
+          const attacker = characters[attackerId]
+          if (!attacker || attacker.isDead) continue
+          const atkRange = reaction.range || 1
+          const dist = reaction.range > 1
+            ? Math.abs(char.position.x - attacker.position.x) + Math.abs(char.position.y - attacker.position.y)
+            : Math.max(Math.abs(char.position.x - attacker.position.x), Math.abs(char.position.y - attacker.position.y))
+          if (dist > atkRange) continue
+          logs.push(`⚡ ${char.name} — ${reaction.name} !`)
+          const d20 = rollD20()
+          const total = d20 + char.attackBonus
+          const hit = d20 === 20 || total >= attacker.ac
+          if (hit) {
+            const dmgRoll = d20 === 20 ? rollDiceCrit(reaction.damage) : rollDice(reaction.damage)
+            logs.push(`🔥 ${dmgRoll.total} dégâts de représailles`)
+            effects.push({ type: 'damage', targetId: attackerId, amount: dmgRoll.total })
+          } else {
+            logs.push(`🎲 Raté !`)
+          }
+          effects.push({ type: 'useReaction', targetId: char.id })
+          break
+        }
+      }
+    }
+  }
+
+  return { logs, effects }
+}
+
 export function resolveOpportunityAttacks(mover, oldPosition, newPosition, characters) {
   const logs = []
   const effects = []

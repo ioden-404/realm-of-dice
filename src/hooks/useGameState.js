@@ -2,7 +2,7 @@ import { useReducer, useCallback, useRef } from 'react'
 import { CLASSES } from '../data/classes.js'
 import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
-import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks } from '../systems/combat.js'
+import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks, resolveAllyReactions } from '../systems/combat.js'
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
@@ -419,6 +419,12 @@ function applyEffects(state, effects) {
         newChars = { ...newChars, [char.id]: { ...char, concentration: effect.spell } }
         break
       }
+      case 'revive': {
+        if (char.isDead) {
+          newChars = { ...newChars, [char.id]: { ...char, isDead: false, hp: effect.hp || 1, animation: 'heal' } }
+        }
+        break
+      }
       case 'resetAction': {
         newChars = { ...newChars, [char.id]: { ...char, actionUsed: false } }
         break
@@ -724,6 +730,15 @@ function gameReducer(state, action) {
       if (rageEffects.length > 0) {
         const rageApplied = applyEffects({ characters: finalChars, stats: newStats }, rageEffects)
         finalChars = rageApplied.characters
+      }
+
+      if (targetId && ability.damage && current.team !== (state.characters[targetId]?.team)) {
+        const allyReact = resolveAllyReactions(targetId, current.id, result.damage || 0, finalChars)
+        if (allyReact.effects.length > 0) {
+          const reactApplied = applyEffects({ characters: finalChars, stats: newStats }, allyReact.effects)
+          finalChars = reactApplied.characters
+          extraLogs.push(...allyReact.logs)
+        }
       }
 
       const gameEnd = checkGameEnd(finalChars)
