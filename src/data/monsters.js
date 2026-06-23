@@ -120,7 +120,7 @@ export const MONSTERS = {
   zombie: {
     name: 'Zombie',
     emoji: '🧟',
-    hp: 36, ac: 8, attackBonus: 3, damageDice: '1d6+1',
+    hp: 36, ac: 10, attackBonus: 3, damageDice: '1d6+1',
     movement: 2, range: 1,
     aiProfile: 'guerrier',
     abilities: {
@@ -184,7 +184,7 @@ export const MONSTERS = {
     abilities: {
       actions: [
         { id: 'mino-axe', name: 'Grande hache', damage: '2d10+4', range: 1, targetType: 'enemy', cooldown: 0, maxUses: 0, description: 'Frappe dévastatrice à la hache' },
-        { id: 'mino-charge', name: 'Charge', damage: '2d10+6', range: 1, targetType: 'enemy', cooldown: 3, maxUses: 0, pushOnHit: true, pushDistance: 2, description: 'Charge et repousse la cible de 2 cases' },
+        { id: 'mino-charge', name: 'Charge', damage: '2d8+4', range: 1, targetType: 'enemy', cooldown: 3, maxUses: 0, pushOnHit: true, pushDistance: 2, description: 'Charge et repousse la cible de 2 cases' },
         { id: 'mino-dodge', name: 'Esquive', effect: 'dodge', targetType: 'self', cooldown: 0, maxUses: 0, description: 'Esquive' }
       ],
       bonusActions: [
@@ -282,10 +282,9 @@ export const MONSTERS = {
   youngDragon: {
     name: 'Jeune Dragon',
     emoji: '🐉',
-    hp: 75, ac: 18, attackBonus: 7, damageDice: '2d10+5',
+    hp: 65, ac: 17, attackBonus: 7, damageDice: '2d10+5',
     movement: 3, range: 1,
     aiProfile: 'guerrier',
-    initialStatuses: [{ type: 'rage', duration: 99 }],
     abilities: {
       actions: [
         { id: 'dragon-claw', name: 'Griffes', damage: '2d10+5', range: 1, targetType: 'enemy', cooldown: 0, maxUses: 0, description: 'Lacère avec ses griffes' },

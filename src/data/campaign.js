@@ -145,13 +145,13 @@ export function generateCampaignMap(actIndex) {
 export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18, boss: 35 }
 
 export const SHOP_ITEMS = [
-  { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },
-  { id: 'potion-resistance', name: 'Potion de résistance', desc: '+2 CA pendant 3 tours', icon: '🛡️', cost: 14, actionType: 'bonus', targetType: 'self', effect: 'acBoost', acBonus: 2, duration: 3 },
-  { id: 'antidote', name: 'Antidote', desc: 'Retire poison et malédictions', icon: '💊', cost: 8, actionType: 'bonus', targetType: 'self', effect: 'purify' },
-  { id: 'huile', name: 'Bouteille d\'huile', desc: 'Crée zone huile 2x2, inflammable !', icon: '🛢️', cost: 12, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'oil', terrainEmoji: '🟤', terrainLabel: 'Huile', aoeSize: 2, duration: 4 },
-  { id: 'torche', name: 'Torche', desc: 'Enflamme une zone (feu 6 dégâts/tour)', icon: '🔥', cost: 8, actionType: 'bonus', targetType: 'cell', range: 2, effect: 'ignite', fireDamage: 6, fireDuration: 3 },
-  { id: 'bombe-fumigene', name: 'Bombe fumigène', desc: 'Fumée 2x2 bloque la vue, 2 tours', icon: '💨', cost: 14, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'smoke', terrainEmoji: '🌫️', terrainLabel: 'Fumée', aoeSize: 2, duration: 2 },
-  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe (hors combat)', icon: '🌿', cost: 10, effect: 'teamHeal', value: 0.3 },
+  { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 12, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },
+  { id: 'potion-resistance', name: 'Potion de résistance', desc: '+1 CA pendant 3 tours', icon: '🛡️', cost: 18, actionType: 'bonus', targetType: 'self', effect: 'acBoost', acBonus: 1, duration: 3 },
+  { id: 'antidote', name: 'Antidote', desc: 'Retire poison et malédictions', icon: '💊', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'purify' },
+  { id: 'huile', name: 'Bouteille d\'huile', desc: 'Crée zone huile 2x2, inflammable !', icon: '🛢️', cost: 15, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'oil', terrainEmoji: '🟤', terrainLabel: 'Huile', aoeSize: 2, duration: 4 },
+  { id: 'torche', name: 'Torche', desc: 'Enflamme une zone (feu 6 dégâts/tour)', icon: '🔥', cost: 10, actionType: 'bonus', targetType: 'cell', range: 2, effect: 'ignite', fireDamage: 6, fireDuration: 3 },
+  { id: 'bombe-fumigene', name: 'Bombe fumigène', desc: 'Fumée 2x2, désavantage, 2 tours', icon: '💨', cost: 18, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'smoke', terrainEmoji: '🌫️', terrainLabel: 'Fumée', aoeSize: 2, duration: 2 },
+  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe (hors combat)', icon: '🌿', cost: 12, effect: 'teamHeal', value: 0.3 },
 ]
 
 export function generateShopItems() {
@@ -318,16 +318,16 @@ export const MINOR_RELICS = [
   { id: 'iron-ring', name: 'Anneau de fer', icon: '🛡️', desc: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
   { id: 'swift-boots', name: 'Bottes rapides', icon: '🏃', desc: '+1 mouvement', effects: [{ stat: 'movement', value: 1 }] },
   { id: 'rage-stone', name: 'Pierre de rage', icon: '💢', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
-  { id: 'vitality-gem', name: 'Gemme de vitalité', icon: '❤️', desc: '+5 PV max', effects: [{ stat: 'maxHp', value: 5 }] },
+  { id: 'vitality-gem', name: 'Gemme de vitalité', icon: '❤️', desc: '+4 PV max', effects: [{ stat: 'maxHp', value: 4 }] },
   { id: 'sharp-eye', name: 'Œil de faucon', icon: '🎯', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
 ]
 
 export const MAJOR_RELICS = [
-  { id: 'destiny-blade', name: 'Lame du destin', icon: '🔥', desc: '+2 ATK, +1 CA', effects: [{ stat: 'attackBonus', value: 2 }, { stat: 'ac', value: 1 }] },
-  { id: 'phoenix-heart', name: 'Cœur du phénix', icon: '❤️', desc: '+8 PV max + soin complet', effects: [{ stat: 'maxHp', value: 8 }, { stat: 'fullHeal' }] },
-  { id: 'kings-crown', name: 'Couronne du roi', icon: '👑', desc: '+1 ATK, +1 CA, +1 mouvement', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'ac', value: 1 }, { stat: 'movement', value: 1 }] },
-  { id: 'war-banner', name: 'Bannière de guerre', icon: '⚔️', desc: '+3 ATK', effects: [{ stat: 'attackBonus', value: 3 }] },
-  { id: 'fortress-shield', name: 'Bouclier-forteresse', icon: '🏰', desc: '+3 CA', effects: [{ stat: 'ac', value: 3 }] },
+  { id: 'destiny-blade', name: 'Lame du destin', icon: '🔥', desc: '+2 ATK', effects: [{ stat: 'attackBonus', value: 2 }] },
+  { id: 'phoenix-heart', name: 'Cœur du phénix', icon: '❤️', desc: '+6 PV max + soin complet', effects: [{ stat: 'maxHp', value: 6 }, { stat: 'fullHeal' }] },
+  { id: 'kings-crown', name: 'Couronne du roi', icon: '👑', desc: '+1 ATK, +4 PV max, +1 mouvement', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'maxHp', value: 4 }, { stat: 'movement', value: 1 }] },
+  { id: 'war-banner', name: 'Bannière de guerre', icon: '⚔️', desc: '+2 ATK', effects: [{ stat: 'attackBonus', value: 2 }] },
+  { id: 'fortress-shield', name: 'Bouclier-forteresse', icon: '🏰', desc: '+1 CA, +4 PV max', effects: [{ stat: 'ac', value: 1 }, { stat: 'maxHp', value: 4 }] },
 ]
 
 export function pickRelics(pool, count) {
