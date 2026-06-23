@@ -25,9 +25,10 @@ export default function Hub({ onNavigate }) {
       </div>
 
       <nav className="hub-nav">
-        <button className="hub-tab hub-tab-active" onClick={() => onNavigate('combat')}>
+        <button className="hub-tab hub-tab-locked" disabled>
           <span className="hub-tab-icon">⚔️</span>
           <span className="hub-tab-label">Combat</span>
+          <span className="hub-tab-lock">🔒</span>
         </button>
         <button className="hub-tab hub-tab-active" onClick={() => onNavigate('campaign')}>
           <span className="hub-tab-icon">🏗️</span>
