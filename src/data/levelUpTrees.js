@@ -1,8 +1,8 @@
 export const LEVEL_THRESHOLDS = [
-  { level: 2, xp: 3 },
-  { level: 3, xp: 9 },
-  { level: 4, xp: 16 },
-  { level: 5, xp: 23 }
+  { level: 2, xp: 2 },
+  { level: 3, xp: 7 },
+  { level: 4, xp: 14 },
+  { level: 5, xp: 22 }
 ]
 
 export const LEVEL_UP_TREES = {

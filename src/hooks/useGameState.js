@@ -554,9 +554,11 @@ function gameReducer(state, action) {
 
       const terrainKey = `${newX},${newY}`
       const terrainCell = state.terrain[terrainKey]
-      const moveCost = (terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT) ? 2 : 1
+      const isDifficultTerrain = terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT
+      const moveCost = isDifficultTerrain ? Math.min(2, state.movementRemaining) : 1
 
-      if (state.movementRemaining < moveCost) return state
+      if (state.movementRemaining < 1) return state
+      if (!isDifficultTerrain && state.movementRemaining < moveCost) return state
 
       const aoResult = resolveOpportunityAttacks(current, current.position, { x: newX, y: newY }, state.characters)
       let updatedChars = { ...state.characters }
@@ -1082,7 +1084,8 @@ function gameReducer(state, action) {
         return {
           ...state,
           characters: healed,
-          campaign: { ...campaign, currentLayer: campaign.currentLayer + 1, lastNodeId: node.id, visitedNodes: newVisited, currentNode: null }
+          campaignEvent: { type: 'rest', healPercent: Math.round(restFactor * 100), nodeId: node.id },
+          campaign: { ...campaign, visitedNodes: newVisited }
         }
       }
 

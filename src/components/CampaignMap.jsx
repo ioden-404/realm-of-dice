@@ -234,6 +234,14 @@ export default function CampaignMap({
           (campaignEvent.type === 'treasure' || campaignEvent.rewardSelected) ? onEventDone : undefined
         }>
           <div className="cmap-event" onClick={e => e.stopPropagation()}>
+            {campaignEvent.type === 'rest' && (
+              <>
+                <h3 className="cmap-event-title">⛺ Repos</h3>
+                <p className="cmap-event-desc">L'équipe récupère {campaignEvent.healPercent}% de ses PV manquants</p>
+                <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
+              </>
+            )}
+
             {campaignEvent.type === 'treasure' && (
               <>
                 <h3 className="cmap-event-title">🎁 Trésor trouvé !</h3>

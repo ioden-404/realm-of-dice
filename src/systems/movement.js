@@ -73,10 +73,11 @@ export function getAccessibleCells(position, movementRemaining, characters, char
 
       if (occupied[key] && occupied[key] !== characterId) continue
 
-      const moveCost = (terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT) ? 2 : 1
+      const isDifficult = terrainCell && terrainCell.type === TERRAIN_TYPES.DIFFICULT
+      const moveCost = isDifficult ? 2 : 1
       const newCost = current.cost + moveCost
 
-      if (newCost > movementRemaining) continue
+      if (newCost > movementRemaining && !(isDifficult && current.cost + 1 <= movementRemaining)) continue
 
       const prevCost = costs.get(key)
       if (prevCost !== undefined && prevCost <= newCost) continue
