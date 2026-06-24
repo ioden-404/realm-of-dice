@@ -801,7 +801,10 @@ function gameReducer(state, action) {
         pendingPaliers: execPendingPaliers,
         pendingLevelUps: execLevelUps,
         combatResult: execCombatResult,
-        visualEvents: [...(state.visualEvents || []), ...(newVisuals || [])]
+        visualEvents: [
+          ...(result.d20Roll ? [{ type: 'dice', value: result.d20Roll, isCrit: result.isCrit, isFail: result.isCritFail, id: `d20-${Date.now()}` }] : []),
+          ...(newVisuals || [])
+        ]
       }
     }
 

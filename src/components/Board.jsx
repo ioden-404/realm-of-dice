@@ -88,7 +88,14 @@ export default function Board({
         <div className="board" style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}>
           {cells}
         </div>
-        {floats.map(f => (
+        {floats.filter(f => f.type === 'dice').map(f => (
+          <div key={f.id} className={`d20-roll ${f.isCrit ? 'd20-crit' : ''} ${f.isFail ? 'd20-fail' : ''}`}>
+            <div className="d20-shape">
+              <span className="d20-value">{f.value}</span>
+            </div>
+          </div>
+        ))}
+        {floats.filter(f => f.type !== 'dice').map(f => (
           <div
             key={f.id}
             className={`float-number float-${f.type}`}

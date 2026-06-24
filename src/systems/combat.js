@@ -66,7 +66,7 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
 
   if (isCritFail) {
     logs.push(`🎲 d20 = 1 - Raté critique !`)
-    return { hit: false, logs, effects, isCrit: false, isCritFail: true }
+    return { hit: false, logs, effects, isCrit: false, isCritFail: true, d20Roll }
   }
 
   const hit = isCrit || attackTotal >= targetAC
@@ -78,7 +78,7 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
   }
 
   if (!hit) {
-    return { hit: false, logs, effects, isCrit: false, isCritFail: false }
+    return { hit: false, logs, effects, isCrit: false, isCritFail: false, d20Roll }
   }
 
   let totalDamage = 0
@@ -150,7 +150,7 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
     }
   }
 
-  return { hit: true, logs, effects, isCrit, isCritFail: false, damage: finalDamage }
+  return { hit: true, logs, effects, isCrit, isCritFail: false, damage: finalDamage, d20Roll }
 }
 
 export function resolveMultiHit(attacker, target, ability, characters, terrain = {}) {
