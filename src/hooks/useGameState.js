@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useRef } from 'react'
+import { useReducer, useCallback, useRef, useEffect } from 'react'
 import { CLASSES } from '../data/classes.js'
 import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS, BOARD_ROWS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
@@ -317,6 +317,41 @@ function generateEnemyTeam(allyClasses) {
   const allClasses = Object.keys(CLASSES)
   const shuffled = [...allClasses].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, 3)
+}
+
+const SAVE_KEY = 'rod-campaign-save'
+
+function saveCampaignState(state) {
+  try {
+    const data = {
+      characters: state.characters,
+      initiativeOrder: state.initiativeOrder,
+      campaign: state.campaign,
+      stats: state.stats,
+      selectedClasses: state.selectedClasses,
+      pendingPaliers: state.pendingPaliers,
+      pendingLevelUps: state.pendingLevelUps,
+      campaignEvent: state.campaignEvent,
+      combatResult: state.combatResult,
+      campaignMode: true,
+      phase: PHASES.CAMPAIGN_MAP
+    }
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+  } catch {}
+}
+
+function loadCampaignState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (!data.campaign?.active) return null
+    return data
+  } catch { return null }
+}
+
+function clearCampaignSave() {
+  try { localStorage.removeItem(SAVE_KEY) } catch {}
 }
 
 const initialState = {
@@ -1411,8 +1446,21 @@ function gameReducer(state, action) {
 }
 
 export function useGameState() {
-  const [state, dispatch] = useReducer(gameReducer, initialState)
+  const [state, dispatch] = useReducer(gameReducer, initialState, (init) => {
+    const saved = loadCampaignState()
+    if (saved) return { ...init, ...saved }
+    return init
+  })
   const aiTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    if (state.phase === PHASES.CAMPAIGN_MAP && state.campaign?.active) {
+      saveCampaignState(state)
+    }
+    if (state.phase === PHASES.HUB) {
+      clearCampaignSave()
+    }
+  }, [state.phase, state.campaignEvent, state.pendingPaliers, state.pendingLevelUps, state.combatResult])
 
   const getAbilityState = useCallback((characterId, ability) => {
     const char = state.characters[characterId]
