@@ -39,6 +39,7 @@ export default function App() {
   const [pendingItem, setPendingItem] = useState(null)
   const [screenShake, setScreenShake] = useState(false)
   const [placingCharId, setPlacingCharId] = useState(null)
+  const [turnSplash, setTurnSplash] = useState(null)
   const [glory, setGlory] = useState(() => loadGlory())
   const [narrativeEvent, setNarrativeEvent] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -84,6 +85,14 @@ export default function App() {
       return () => clearTimeout(timer)
     }
   }, [state.visualEvents])
+
+  useEffect(() => {
+    if (state.phase === PHASES.COMBAT && currentChar && state.turnState !== TURN_STATES.PLACING) {
+      setTurnSplash({ name: currentChar.name, emoji: currentChar.emoji, team: currentChar.team, id: `${currentChar.id}-${state.currentTurnIndex}-${state.round}` })
+      const timer = setTimeout(() => setTurnSplash(null), 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [state.currentTurnIndex, state.round, state.turnState])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
@@ -377,6 +386,13 @@ export default function App() {
         }}
         onTerrainClick={(cell) => setInspectedTerrain(cell)}
       />
+
+      {turnSplash && (
+        <div key={turnSplash.id} className={`turn-splash ${turnSplash.team === 'ally' ? 'turn-splash-ally' : 'turn-splash-enemy'}`}>
+          <span className="turn-splash-emoji">{turnSplash.emoji}</span>
+          <span className="turn-splash-name">{turnSplash.name}</span>
+        </div>
+      )}
 
       <CombatLog log={state.log} />
 

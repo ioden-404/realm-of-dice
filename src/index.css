@@ -779,6 +779,54 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* ========== TURN SPLASH ========== */
+
+.turn-splash {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 28px;
+  border-radius: 12px;
+  z-index: 60;
+  pointer-events: none;
+  animation: splash-appear 1.5s ease-out forwards;
+}
+
+.turn-splash-ally {
+  background: rgba(42, 31, 14, 0.92);
+  border: 2px solid var(--color-gold);
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.5);
+}
+
+.turn-splash-enemy {
+  background: rgba(42, 14, 14, 0.92);
+  border: 2px solid var(--color-crimson-light);
+  box-shadow: 0 0 30px rgba(200, 48, 48, 0.5);
+}
+
+.turn-splash-emoji {
+  font-size: 28px;
+}
+
+.turn-splash-name {
+  font-family: var(--font-title);
+  font-size: 20px;
+  color: var(--color-text-primary);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes splash-appear {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  30% { transform: translate(-50%, -50%) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9) translateY(-10px); }
+}
+
 /* ========== BOARD ========== */
 
 .board-container {
