@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { PHASES, TURN_STATES } from './data/config.js'
 import { useGameState } from './hooks/useGameState.js'
 import { useAudio } from './hooks/useAudio.js'
@@ -22,6 +22,7 @@ import GloryScreen from './components/GloryScreen.jsx'
 import NarrativeEvent from './components/NarrativeEvent.jsx'
 import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
 import LevelUpScreen from './components/LevelUpScreen.jsx'
+import CutIn from './components/CutIn.jsx'
 
 const B = import.meta.env.BASE_URL
 const TRACKS = {
@@ -42,6 +43,7 @@ export default function App() {
   const [turnSplash, setTurnSplash] = useState(null)
   const [glory, setGlory] = useState(() => loadGlory())
   const [narrativeEvent, setNarrativeEvent] = useState(null)
+  const [cutIn, setCutIn] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -94,12 +96,38 @@ export default function App() {
     }
   }, [state.currentTurnIndex, state.round])
 
+  const prevCharsRef = useRef({})
+  useEffect(() => {
+    if (state.phase !== PHASES.COMBAT || cutIn) return
+    const charId = state.initiativeOrder[state.currentTurnIndex]
+    const char = state.characters[charId]
+    if (!char || char.team !== 'ally') {
+      prevCharsRef.current = state.characters
+      return
+    }
+
+    const recentLogs = state.log?.slice(-5) || []
+    const isCrit = recentLogs.some(l => l.text?.includes('CRITIQUE'))
+
+    const enemyJustDied = Object.values(state.characters).some(c =>
+      c.team === 'enemy' && c.isDead && prevCharsRef.current[c.id] && !prevCharsRef.current[c.id].isDead
+    )
+
+    prevCharsRef.current = state.characters
+
+    if (enemyJustDied) {
+      setCutIn({ classId: char.classId, type: 'kill' })
+    } else if (isCrit) {
+      setCutIn({ classId: char.classId, type: 'crit' })
+    }
+  }, [state.log?.length, state.characters])
+
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
     if (state.turnState !== TURN_STATES.ENEMY_TURN) return
     if (!currentChar || currentChar.team !== 'enemy') return
 
-    const timeout = setTimeout(() => executeAITurn(), 600)
+    const timeout = setTimeout(() => executeAITurn(), cutIn ? 2000 : 600)
     return () => clearTimeout(timeout)
   }, [state.turnState, state.currentTurnIndex])
 
@@ -476,6 +504,14 @@ export default function App() {
         <TerrainCard
           terrainCell={inspectedTerrain}
           onClose={() => setInspectedTerrain(null)}
+        />
+      )}
+
+      {cutIn && (
+        <CutIn
+          classId={cutIn.classId}
+          type={cutIn.type}
+          onComplete={() => setCutIn(null)}
         />
       )}
 
