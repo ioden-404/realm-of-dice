@@ -337,13 +337,17 @@ export default function App() {
         />
       </InitiativeBar>
 
-      {currentChar && (
+      {state.turnState === TURN_STATES.PLACING ? (
+        <div className="turn-banner turn-placing">
+          📍 Phase de placement — Positionnez votre équipe
+        </div>
+      ) : currentChar ? (
         <div className={`turn-banner ${currentChar.team === 'ally' ? 'turn-ally' : 'turn-enemy'}`}>
           <span className="turn-emoji">{currentChar.emoji}</span>
           <span className="turn-name">{currentChar.name}</span>
           <span className="turn-class">({currentChar.classData?.name})</span>
         </div>
-      )}
+      ) : null}
 
       <Board
         characters={state.characters}
@@ -385,25 +389,27 @@ export default function App() {
       )}
 
       {state.turnState === TURN_STATES.PLACING ? (
-        <div className="action-panel">
-          <div className="placement-info">
-            {placingCharId
-              ? `📍 Cliquez une case (colonnes 1-2) pour placer ${state.characters[placingCharId]?.name}`
-              : '👆 Cliquez un allié pour le sélectionner, puis une case pour le placer'}
-          </div>
-          <div className="placement-chars">
+        <div className="action-panel placement-panel">
+          <div className="placement-list">
             {Object.values(state.characters).filter(c => c.team === 'ally').map(c => (
               <button
                 key={c.id}
                 className={`placement-char ${placingCharId === c.id ? 'placement-selected' : ''}`}
-                onClick={() => setPlacingCharId(c.id)}
+                onClick={() => setPlacingCharId(placingCharId === c.id ? null : c.id)}
               >
-                {c.emoji} {c.name}
+                <span className="placement-char-emoji">{c.emoji}</span>
+                <div className="placement-char-info">
+                  <span className="placement-char-name">{c.name}</span>
+                  <span className="placement-char-pos">{c.classData?.name}</span>
+                </div>
               </button>
             ))}
           </div>
+          <div className="placement-hint">
+            {placingCharId ? 'Cliquez une case sur les 2 premières colonnes' : 'Sélectionnez un personnage'}
+          </div>
           <button className="campaign-next-btn" onClick={() => { setPlacingCharId(null); dispatch({ type: 'CONFIRM_PLACEMENT' }) }}>
-            ⚔️ Commencer le combat
+            ⚔️ Lancer le combat
           </button>
         </div>
       ) : state.turnState === TURN_STATES.MOVING ? (
