@@ -731,9 +731,12 @@ function gameReducer(state, action) {
         }
       }
 
+      let allVisuals = [...(newVisuals || [])]
+
       if (rageEffects.length > 0) {
         const rageApplied = applyEffects({ characters: finalChars, stats: newStats }, rageEffects)
         finalChars = rageApplied.characters
+        allVisuals.push(...(rageApplied.visualEvents || []))
       }
 
       if (targetId && ability.damage && current.team !== (state.characters[targetId]?.team)) {
@@ -741,6 +744,7 @@ function gameReducer(state, action) {
         if (allyReact.effects.length > 0) {
           const reactApplied = applyEffects({ characters: finalChars, stats: newStats }, allyReact.effects)
           finalChars = reactApplied.characters
+          allVisuals.push(...(reactApplied.visualEvents || []))
           extraLogs.push(...allyReact.logs)
         }
       }
@@ -803,7 +807,7 @@ function gameReducer(state, action) {
         combatResult: execCombatResult,
         visualEvents: [
           ...(result.d20Roll ? [{ type: 'dice', value: result.d20Roll, isCrit: result.isCrit, isFail: result.isCritFail, id: `d20-${Date.now()}` }] : []),
-          ...(newVisuals || [])
+          ...allVisuals
         ]
       }
     }
@@ -864,9 +868,11 @@ function gameReducer(state, action) {
         startResult.logs.push(...guardianResult.logs)
         startResult.effects.push(...guardianResult.effects)
       }
+      let turnVisuals = []
       if (startResult.effects.length > 0) {
         const applied = applyEffects({ characters: updatedChars, stats: state.stats }, startResult.effects)
         updatedChars = applied.characters
+        turnVisuals = applied.visualEvents || []
       }
 
       const gameEnd = checkGameEnd(updatedChars)
@@ -910,6 +916,7 @@ function gameReducer(state, action) {
           pendingPaliers: endPendingPaliers,
           pendingLevelUps: endLevelUps,
           combatResult: endCombatResult,
+          visualEvents: turnVisuals,
           currentTurnIndex: nextIndex,
           round: newRound,
           log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
@@ -933,7 +940,8 @@ function gameReducer(state, action) {
           ...startResult.logs.map(t => ({ text: t, type: 'info' })),
           { text: `--- Tour de ${nextChar.name} (${nextChar.classData.name}) ---`, type: 'turn' }
         ].slice(-50),
-        stats: { ...state.stats, rounds: newRound }
+        stats: { ...state.stats, rounds: newRound },
+        visualEvents: turnVisuals
       }
     }
 

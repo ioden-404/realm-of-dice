@@ -17,16 +17,17 @@ export default function Board({
   onTerrainClick
 }) {
   const [floats, setFloats] = useState([])
+  const eventsKey = visualEvents.map(v => v.id).join(',')
 
   useEffect(() => {
     if (visualEvents.length > 0) {
-      setFloats(prev => [...prev, ...visualEvents])
-      const timer = setTimeout(() => {
-        setFloats(prev => prev.filter(f => !visualEvents.some(v => v.id === f.id)))
-      }, 1500)
+      setFloats(visualEvents)
+      const timer = setTimeout(() => setFloats([]), 1500)
       return () => clearTimeout(timer)
+    } else {
+      setFloats([])
     }
-  }, [visualEvents])
+  }, [eventsKey])
   const cells = []
   for (let y = 0; y < BOARD_ROWS; y++) {
     for (let x = 0; x < BOARD_COLS; x++) {
