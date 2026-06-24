@@ -41,13 +41,10 @@ function createCharacter(classId, team, index) {
 
   let position
   if (team === TEAMS.ALLY) {
-    const positions = [{ x: 0, y: 1 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 4 }, { x: 1, y: 2 }]
-    position = positions[index] || { x: 0, y: index }
+    const positions = [{ x: 0, y: 1 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 3 }, { x: 1, y: 2 }]
+    position = positions[index] || { x: 0, y: index % BOARD_ROWS }
   } else {
-    const enemySlots = []
-    for (let ex = 5; ex <= 6; ex++) for (let ey = 0; ey < 5; ey++) enemySlots.push({ x: ex, y: ey })
-    for (let i = enemySlots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [enemySlots[i], enemySlots[j]] = [enemySlots[j], enemySlots[i]] }
-    position = enemySlots[index] || { x: 6, y: index }
+    position = _enemySlots[index] || { x: 5, y: index % BOARD_ROWS }
   }
 
   return {
@@ -78,6 +75,19 @@ function createCharacter(classId, team, index) {
   }
 }
 
+let _enemySlots = []
+
+function shuffleEnemySlots() {
+  _enemySlots = []
+  for (let x = 4; x <= 5; x++) {
+    for (let y = 0; y < BOARD_ROWS; y++) _enemySlots.push({ x, y })
+  }
+  for (let i = _enemySlots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [_enemySlots[i], _enemySlots[j]] = [_enemySlots[j], _enemySlots[i]]
+  }
+}
+
 function createMonster(monsterId, index, allMonsterIds) {
   const monsterData = MONSTERS[monsterId]
   const sameTypeCount = allMonsterIds.filter(m => m === monsterId).length
@@ -86,16 +96,6 @@ function createMonster(monsterId, index, allMonsterIds) {
     ? `${monsterData.name} ${'ABCDE'[sameTypeIndex - 1]}`
     : monsterData.name
   const id = `enemy-${monsterId}-${index}`
-
-  const allEnemySlots = []
-  for (let x = 5; x <= 6; x++) {
-    for (let y = 0; y < 5; y++) allEnemySlots.push({ x, y })
-  }
-  for (let i = allEnemySlots.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allEnemySlots[i], allEnemySlots[j]] = [allEnemySlots[j], allEnemySlots[i]]
-  }
-  const positions = allEnemySlots
 
   return {
     id,
@@ -110,7 +110,7 @@ function createMonster(monsterId, index, allMonsterIds) {
     attackBonus: monsterData.attackBonus,
     movement: monsterData.movement,
     range: monsterData.range,
-    position: positions[index] || { x: 6, y: index },
+    position: _enemySlots[index] || { x: 5, y: index % BOARD_ROWS },
     actionUsed: false,
     bonusActionUsed: false,
     reactionUsed: false,
@@ -531,6 +531,7 @@ function gameReducer(state, action) {
         characters[char.id] = char
       })
 
+      shuffleEnemySlots()
       enemyClasses.forEach((classId, i) => {
         const char = createCharacter(classId, TEAMS.ENEMY, i)
         char.uses = initUses(char)
@@ -1193,6 +1194,7 @@ function gameReducer(state, action) {
       })
 
       const combatMods = resolveModifiers(campaign.modifiers)
+      shuffleEnemySlots()
       node.encounter.monsters.forEach((monsterId, i) => {
         const monster = createMonster(monsterId, i, node.encounter.monsters)
         monster.uses = initUses(monster)
