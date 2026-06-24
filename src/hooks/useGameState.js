@@ -1034,12 +1034,13 @@ function gameReducer(state, action) {
     }
 
     case 'CONFIRM_PLACEMENT': {
+      if (!state.initiativeOrder || state.initiativeOrder.length === 0) return state
       const firstChar = state.characters[state.initiativeOrder[0]]
-      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
+      if (!firstChar) return state
+      const firstIsEnemy = firstChar.team === TEAMS.ENEMY
       return {
         ...state,
         turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
-        placingCharIndex: undefined,
         log: [...state.log, { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }]
       }
     }
@@ -1175,8 +1176,7 @@ function gameReducer(state, action) {
         log: [
           { text: `📜 ${act.name}`, type: 'system' },
           { text: `⚔️ ${node.encounter.name}`, type: 'system' },
-          { text: `🗺️ ${themeName}`, type: 'system' },
-          { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
+          { text: `🗺️ ${themeName}`, type: 'system' }
         ],
         stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
         combatInventory: (() => {
