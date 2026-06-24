@@ -47,13 +47,15 @@ export default function Board({
       const terrainCell = terrain[`${x},${y}`]
       const terrainClass = terrainCell ? `cell-terrain-${terrainCell.type}` : ''
       const isSelectingCell = turnState === 'selecting-cell'
+      const isPlacing = turnState === 'placing' && x <= 1
 
       cells.push(
         <div
           key={`${x}-${y}`}
-          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''}`}
+          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''} ${isPlacing ? 'cell-placement' : ''}`}
           onClick={() => {
-            if (isSelectingCell) onCellClick(x, y)
+            if (isPlacing) onCellClick(x, y)
+            else if (isSelectingCell) onCellClick(x, y)
             else if (isValidMove) onCellClick(x, y)
             else if (terrainCell && !charHere) onTerrainClick(terrainCell)
           }}

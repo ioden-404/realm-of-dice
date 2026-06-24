@@ -89,8 +89,9 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
     totalDamage += damageRoll.total
 
     if (ability.sneakAttack && ability.bonusDamage) {
-      const adjacentAllies = getAdjacentAllies(target.position, characters, attacker.team, attacker.id)
-      if (adjacentAllies.length > 0 || hasAdvantage) {
+      const sneakAllies = getAdjacentAllies(target.position, characters, attacker.team, attacker.id)
+      const sneakCondition = sneakAllies.length > 0 || hasAdvantage
+      if (sneakCondition) {
         const sneakRoll = isCrit ? rollDiceCrit(ability.bonusDamage) : rollDice(ability.bonusDamage)
         totalDamage += sneakRoll.total
         logs.push(`🗡️ Attaque sournoise ! +${sneakRoll.total} dégâts`)

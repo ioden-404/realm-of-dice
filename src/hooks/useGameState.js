@@ -1,6 +1,6 @@
 import { useReducer, useCallback, useRef } from 'react'
 import { CLASSES } from '../data/classes.js'
-import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS } from '../data/config.js'
+import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS, BOARD_ROWS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
 import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks, resolveAllyReactions, processGuardianDamage } from '../systems/combat.js'
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
@@ -1020,6 +1020,30 @@ function gameReducer(state, action) {
       return { ...initialState, phase: PHASES.HUB }
     }
 
+    case 'PLACE_CHARACTER': {
+      const { characterId, x, y } = action.payload
+      if (x > 1 || y >= BOARD_ROWS) return state
+      const occupied = Object.values(state.characters).some(c => !c.isDead && c.position.x === x && c.position.y === y && c.id !== characterId)
+      if (occupied) return state
+      const char = state.characters[characterId]
+      if (!char || char.team !== TEAMS.ALLY) return state
+      return {
+        ...state,
+        characters: { ...state.characters, [characterId]: { ...char, position: { x, y } } }
+      }
+    }
+
+    case 'CONFIRM_PLACEMENT': {
+      const firstChar = state.characters[state.initiativeOrder[0]]
+      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
+      return {
+        ...state,
+        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        placingCharIndex: undefined,
+        log: [...state.log, { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }]
+      }
+    }
+
     case 'CLEAR_VISUALS': {
       return { ...state, visualEvents: [] }
     }
@@ -1141,7 +1165,8 @@ function gameReducer(state, action) {
         phase: PHASES.COMBAT,
         characters, initiativeOrder,
         currentTurnIndex: 0, round: 1,
-        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        turnState: TURN_STATES.PLACING,
+        placingCharIndex: 0,
         terrain, terrainTheme, terrainThemeName: themeName,
         campaign: { ...campaign, currentNode: node, visitedNodes: newVisited },
         campaignEvent: null,

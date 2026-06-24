@@ -32,7 +32,8 @@ export const TURN_STATES = {
   SELECTING_TARGET: 'selecting-target',
   ENEMY_TURN: 'enemy-turn',
   ANIMATING: 'animating',
-  SELECTING_CELL: 'selecting-cell'
+  SELECTING_CELL: 'selecting-cell',
+  PLACING: 'placing'
 }
 
 export const ACTION_TYPES = {

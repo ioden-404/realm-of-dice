@@ -38,6 +38,7 @@ export default function App() {
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [pendingItem, setPendingItem] = useState(null)
   const [screenShake, setScreenShake] = useState(false)
+  const [placingCharId, setPlacingCharId] = useState(null)
   const [glory, setGlory] = useState(() => loadGlory())
   const [narrativeEvent, setNarrativeEvent] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -336,6 +337,14 @@ export default function App() {
         />
       </InitiativeBar>
 
+      {currentChar && (
+        <div className={`turn-banner ${currentChar.team === 'ally' ? 'turn-ally' : 'turn-enemy'}`}>
+          <span className="turn-emoji">{currentChar.emoji}</span>
+          <span className="turn-name">{currentChar.name}</span>
+          <span className="turn-class">({currentChar.classData?.name})</span>
+        </div>
+      )}
+
       <Board
         characters={state.characters}
         currentCharId={currentChar?.id}
@@ -347,12 +356,21 @@ export default function App() {
         visualEvents={state.visualEvents || []}
         screenShake={screenShake}
         onCellClick={(x, y) => {
-          if (pendingItem) {
+          if (state.turnState === TURN_STATES.PLACING && placingCharId && x <= 1) {
+            dispatch({ type: 'PLACE_CHARACTER', payload: { characterId: placingCharId, x, y } })
+            setPlacingCharId(null)
+          } else if (pendingItem) {
             dispatch({ type: 'USE_ITEM', payload: { item: pendingItem, targetCell: { x, y } } })
             setPendingItem(null)
           }
         }}
-        onTokenClick={handleTokenInspect}
+        onTokenClick={(charId) => {
+          if (state.turnState === TURN_STATES.PLACING && state.characters[charId]?.team === 'ally') {
+            setPlacingCharId(charId)
+          } else {
+            handleTokenInspect(charId)
+          }
+        }}
         onTerrainClick={(cell) => setInspectedTerrain(cell)}
       />
 
@@ -366,7 +384,29 @@ export default function App() {
         </div>
       )}
 
-      {state.turnState === TURN_STATES.MOVING ? (
+      {state.turnState === TURN_STATES.PLACING ? (
+        <div className="action-panel">
+          <div className="placement-info">
+            {placingCharId
+              ? `📍 Cliquez une case (colonnes 1-2) pour placer ${state.characters[placingCharId]?.name}`
+              : '👆 Cliquez un allié pour le sélectionner, puis une case pour le placer'}
+          </div>
+          <div className="placement-chars">
+            {Object.values(state.characters).filter(c => c.team === 'ally').map(c => (
+              <button
+                key={c.id}
+                className={`placement-char ${placingCharId === c.id ? 'placement-selected' : ''}`}
+                onClick={() => setPlacingCharId(c.id)}
+              >
+                {c.emoji} {c.name}
+              </button>
+            ))}
+          </div>
+          <button className="campaign-next-btn" onClick={() => { setPlacingCharId(null); dispatch({ type: 'CONFIRM_PLACEMENT' }) }}>
+            ⚔️ Commencer le combat
+          </button>
+        </div>
+      ) : state.turnState === TURN_STATES.MOVING ? (
         <DirectionalPad
           movementRemaining={state.movementRemaining}
           onMove={(dx, dy) => dispatch({ type: 'MOVE_DIRECTION', payload: { dx, dy } })}
