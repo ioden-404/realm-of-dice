@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { BOARD_COLS, BOARD_ROWS } from '../data/config.js'
 import Token from './Token.jsx'
 
@@ -14,9 +14,12 @@ export default function Board({
   screenShake,
   onCellClick,
   onTokenClick,
-  onTerrainClick
+  onTerrainClick,
+  onDragPlace
 }) {
   const [floats, setFloats] = useState([])
+  const [dragState, setDragState] = useState(null)
+  const boardRef = useRef(null)
   const eventsKey = visualEvents.map(v => v.id).join(',')
 
   useEffect(() => {
@@ -28,6 +31,53 @@ export default function Board({
       setFloats([])
     }
   }, [eventsKey])
+
+  const isPlacing = turnState === 'placing'
+
+  const handlePointerDown = useCallback((charId, e) => {
+    if (!isPlacing) return
+    e.preventDefault()
+    e.stopPropagation()
+    const el = e.currentTarget
+    if (el.setPointerCapture) el.setPointerCapture(e.pointerId)
+    setDragState({ charId, x: e.clientX, y: e.clientY, moved: false })
+  }, [isPlacing])
+
+  const handlePointerMove = useCallback((e) => {
+    if (!dragState) return
+    setDragState(prev => prev ? { ...prev, x: e.clientX, y: e.clientY, moved: true } : null)
+  }, [dragState])
+
+  const handlePointerUp = useCallback((e) => {
+    if (!dragState) return
+    const board = boardRef.current
+    if (board && dragState.moved) {
+      const rect = board.getBoundingClientRect()
+      const relX = e.clientX - rect.left
+      const relY = e.clientY - rect.top
+      const col = Math.floor((relX / rect.width) * BOARD_COLS)
+      const row = Math.floor((relY / rect.height) * BOARD_ROWS)
+      if (col >= 0 && col <= 1 && row >= 0 && row < BOARD_ROWS && onDragPlace) {
+        onDragPlace(dragState.charId, col, row)
+      }
+    } else if (!dragState.moved) {
+      onTokenClick(dragState.charId)
+    }
+    setDragState(null)
+  }, [dragState, onDragPlace, onTokenClick])
+
+  useEffect(() => {
+    if (!dragState) return
+    const onMove = (e) => handlePointerMove(e)
+    const onUp = (e) => handlePointerUp(e)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [dragState, handlePointerMove, handlePointerUp])
+
   const cells = []
   for (let y = 0; y < BOARD_ROWS; y++) {
     for (let x = 0; x < BOARD_COLS; x++) {
@@ -47,14 +97,15 @@ export default function Board({
       const terrainCell = terrain[`${x},${y}`]
       const terrainClass = terrainCell ? `cell-terrain-${terrainCell.type}` : ''
       const isSelectingCell = turnState === 'selecting-cell'
-      const isPlacing = turnState === 'placing' && x <= 1
+      const cellIsPlacing = isPlacing && x <= 1
+      const isDragOver = dragState && cellIsPlacing
 
       cells.push(
         <div
           key={`${x}-${y}`}
-          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''} ${isPlacing ? 'cell-placement' : ''}`}
+          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''} ${cellIsPlacing ? 'cell-placement' : ''} ${isDragOver ? 'cell-drag-over' : ''}`}
           onClick={() => {
-            if (isPlacing) onCellClick(x, y)
+            if (cellIsPlacing) onCellClick(x, y)
             else if (isSelectingCell) onCellClick(x, y)
             else if (isValidMove) onCellClick(x, y)
             else if (terrainCell && !charHere) onTerrainClick(terrainCell)
@@ -67,15 +118,22 @@ export default function Board({
             </div>
           )}
           {charHere && (
-            <Token
-              character={charHere}
-              isActive={charHere.id === currentCharId}
-              terrainType={terrainCell?.type}
-              onClick={(e) => {
-                e.stopPropagation()
-                onTokenClick(charHere.id)
-              }}
-            />
+            <div
+              className={`token-drag-wrapper ${dragState?.charId === charHere.id ? 'token-dragging' : ''}`}
+              onPointerDown={isPlacing && charHere.team === 'ally' ? (e) => handlePointerDown(charHere.id, e) : undefined}
+              style={isPlacing && charHere.team === 'ally' ? { touchAction: 'none' } : undefined}
+            >
+              <Token
+                character={charHere}
+                isActive={charHere.id === currentCharId}
+                terrainType={terrainCell?.type}
+                onClick={(e) => {
+                  if (isPlacing) return
+                  e.stopPropagation()
+                  onTokenClick(charHere.id)
+                }}
+              />
+            </div>
           )}
           {showDead && (
             <Token character={deadHere} isActive={false} />
@@ -88,7 +146,11 @@ export default function Board({
   return (
     <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''} ${screenShake ? 'board-shake' : ''}`}>
       <div className="board-border">
-        <div className="board" style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}>
+        <div
+          className="board"
+          ref={boardRef}
+          style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}
+        >
           {cells}
         </div>
         {floats.filter(f => f.type === 'dice').map(f => (
@@ -111,6 +173,17 @@ export default function Board({
           </div>
         ))}
       </div>
+
+      {dragState && dragState.moved && (
+        <div
+          className="drag-ghost"
+          style={{ left: dragState.x, top: dragState.y }}
+        >
+          <span className="drag-ghost-emoji">
+            {characters[dragState.charId]?.emoji}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

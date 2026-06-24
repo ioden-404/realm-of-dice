@@ -88,17 +88,44 @@ export default function App() {
     }
   }, [state.visualEvents])
 
+  const lastSplashRef = useRef(null)
   useEffect(() => {
-    if (state.phase === PHASES.COMBAT && currentChar && state.turnState !== TURN_STATES.PLACING) {
-      setTurnSplash({ name: currentChar.name, emoji: currentChar.emoji, team: currentChar.team, id: `${currentChar.id}-${state.currentTurnIndex}-${state.round}` })
-      const timer = setTimeout(() => setTurnSplash(null), 1500)
-      return () => clearTimeout(timer)
-    }
-  }, [state.currentTurnIndex, state.round])
+    if (state.phase !== PHASES.COMBAT || !currentChar) return
+    if (state.turnState === TURN_STATES.PLACING) return
+    if (state.turnState !== TURN_STATES.IDLE && state.turnState !== TURN_STATES.ENEMY_TURN) return
+
+    const splashId = `${currentChar.id}-${state.currentTurnIndex}-${state.round}`
+    if (lastSplashRef.current === splashId) return
+    lastSplashRef.current = splashId
+
+    setTurnSplash({ name: currentChar.name, emoji: currentChar.emoji, team: currentChar.team, id: splashId })
+    const timer = setTimeout(() => setTurnSplash(null), 1500)
+    return () => clearTimeout(timer)
+  }, [state.currentTurnIndex, state.round, state.turnState])
 
   const prevCharsRef = useRef({})
+  const lastCutInLogLen = useRef(0)
+
+  useEffect(() => {
+    if (state.phase === PHASES.COMBAT) {
+      lastCutInLogLen.current = state.log?.length || 0
+      prevCharsRef.current = state.characters || {}
+      setCutIn(null)
+    } else {
+      lastSplashRef.current = null
+    }
+  }, [state.phase])
+
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT || cutIn) return
+    if (!state.initiativeOrder?.length) return
+
+    const logLen = state.log?.length || 0
+    if (logLen <= lastCutInLogLen.current) {
+      prevCharsRef.current = state.characters
+      return
+    }
+
     const charId = state.initiativeOrder[state.currentTurnIndex]
     const char = state.characters[charId]
     if (!char || char.team !== 'ally') {
@@ -106,8 +133,8 @@ export default function App() {
       return
     }
 
-    const recentLogs = state.log?.slice(-5) || []
-    const isCrit = recentLogs.some(l => l.text?.includes('CRITIQUE'))
+    const newLogs = state.log.slice(lastCutInLogLen.current)
+    const isCrit = newLogs.some(l => l.text?.includes('CRITIQUE'))
 
     const enemyJustDied = Object.values(state.characters).some(c =>
       c.team === 'enemy' && c.isDead && prevCharsRef.current[c.id] && !prevCharsRef.current[c.id].isDead
@@ -116,8 +143,10 @@ export default function App() {
     prevCharsRef.current = state.characters
 
     if (enemyJustDied) {
+      lastCutInLogLen.current = logLen
       setCutIn({ classId: char.classId, type: 'kill' })
     } else if (isCrit) {
+      lastCutInLogLen.current = logLen
       setCutIn({ classId: char.classId, type: 'crit' })
     }
   }, [state.log?.length, state.characters])
@@ -404,6 +433,10 @@ export default function App() {
             dispatch({ type: 'USE_ITEM', payload: { item: pendingItem, targetCell: { x, y } } })
             setPendingItem(null)
           }
+        }}
+        onDragPlace={(charId, x, y) => {
+          dispatch({ type: 'PLACE_CHARACTER', payload: { characterId: charId, x, y } })
+          setPlacingCharId(null)
         }}
         onTokenClick={(charId) => {
           if (state.turnState === TURN_STATES.PLACING && state.characters[charId]?.team === 'ally') {

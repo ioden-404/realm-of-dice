@@ -158,11 +158,16 @@ function applyLevelUpAbility(characters, characterId, ability) {
   const newClassData = JSON.parse(JSON.stringify(char.classData))
   const cat = ability.category || 'actions'
   newClassData.abilities[cat] = [...newClassData.abilities[cat], { ...ability }]
+  const newUses = { ...char.uses }
+  if (ability.maxUses > 0) {
+    newUses[ability.id] = ability.maxUses
+  }
   return {
     ...characters,
     [characterId]: {
       ...char,
       classData: newClassData,
+      uses: newUses,
       level: (char.level || 1) + 1,
       chosenAbilities: [...(char.chosenAbilities || []), ability.id]
     }

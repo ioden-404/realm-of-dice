@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 const B = import.meta.env.BASE_URL
 
@@ -20,8 +20,12 @@ function getImages(classId) {
   ]
 }
 
+const FRAME_TIMINGS = [500, 450, 600]
+
 export default function CutIn({ classId, type, onComplete }) {
   const [frame, setFrame] = useState(0)
+  const [flash, setFlash] = useState(false)
+  const timersRef = useRef([])
   const images = getImages(classId)
 
   useEffect(() => {
@@ -30,34 +34,52 @@ export default function CutIn({ classId, type, onComplete }) {
       return
     }
 
-    const timings = [400, 400, 500]
+    images.forEach(src => {
+      const img = new Image()
+      img.src = src
+    })
+
     let current = 0
+
+    const schedule = (fn, delay) => {
+      const id = setTimeout(fn, delay)
+      timersRef.current.push(id)
+      return id
+    }
 
     const advance = () => {
       current++
       if (current >= images.length) {
-        setTimeout(onComplete, timings[current - 1])
+        schedule(onComplete, FRAME_TIMINGS[current - 1])
       } else {
-        setFrame(current)
-        setTimeout(advance, timings[current])
+        setFlash(true)
+        schedule(() => {
+          setFlash(false)
+          setFrame(current)
+          schedule(advance, FRAME_TIMINGS[current])
+        }, 80)
       }
     }
 
-    setTimeout(advance, timings[0])
+    schedule(advance, FRAME_TIMINGS[0])
 
-    return () => {}
+    return () => {
+      timersRef.current.forEach(clearTimeout)
+      timersRef.current = []
+    }
   }, [])
 
   if (images.length === 0) return null
 
+  const frameAnim = frame === 0 ? 'cutin-slide-left' :
+                    frame === 1 ? 'cutin-slide-right' :
+                    'cutin-slam'
+
   return (
-    <div className="cutin-overlay">
-      <div className={`cutin-frame cutin-${type}`} key={frame}>
-        <img
-          src={images[frame]}
-          alt=""
-          className="cutin-image"
-        />
+    <div className={`cutin-overlay cutin-overlay-${type}`}>
+      {flash && <div className={`cutin-flash cutin-flash-${type}`} />}
+      <div className={`cutin-frame ${frameAnim}`} key={frame}>
+        <img src={images[frame]} alt="" className="cutin-image" />
       </div>
       <div className={`cutin-label cutin-label-${type}`}>
         {type === 'crit' ? '⚡ CRITIQUE !' : '💀 KILL !'}
