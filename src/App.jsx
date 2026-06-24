@@ -92,7 +92,7 @@ export default function App() {
       const timer = setTimeout(() => setTurnSplash(null), 1500)
       return () => clearTimeout(timer)
     }
-  }, [state.currentTurnIndex, state.round, state.turnState])
+  }, [state.currentTurnIndex, state.round])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
