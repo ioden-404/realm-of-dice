@@ -562,9 +562,11 @@ function gameReducer(state, action) {
       let updatedChars = { ...state.characters }
       let aoLogs = []
 
+      let aoVisuals = []
       if (aoResult.effects.length > 0) {
         const applied = applyEffects({ characters: updatedChars, stats: state.stats }, aoResult.effects)
         updatedChars = applied.characters
+        aoVisuals = applied.visualEvents || []
         aoLogs = aoResult.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' }))
       }
 
@@ -578,6 +580,7 @@ function gameReducer(state, action) {
           turnState: TURN_STATES.IDLE,
           movementRemaining: 0,
           validMoves: [],
+          visualEvents: aoVisuals,
           phase: resolveCampaignPhase(state, gameEnd) || state.phase
         }
       }
@@ -601,7 +604,8 @@ function gameReducer(state, action) {
         characters: newChars,
         movementRemaining: newRemaining,
         validMoves: newValidMoves,
-        log: [...state.log, ...aoLogs].slice(-50)
+        log: [...state.log, ...aoLogs].slice(-50),
+        visualEvents: aoVisuals
       }
     }
 
@@ -954,9 +958,11 @@ function gameReducer(state, action) {
       let updatedChars = { ...state.characters }
       let aoLogs = [{ text: `🏃 ${char.name} se déplace`, type: 'info' }]
 
+      let aiAoVisuals = []
       if (aoResult.effects.length > 0) {
         const applied = applyEffects({ characters: updatedChars, stats: state.stats }, aoResult.effects)
         updatedChars = applied.characters
+        aiAoVisuals = applied.visualEvents || []
         aoLogs.push(...aoResult.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' })))
       }
 
@@ -967,6 +973,7 @@ function gameReducer(state, action) {
           ...state,
           characters: updatedChars,
           log: [...state.log, ...aoLogs].slice(-50),
+          visualEvents: aiAoVisuals,
           phase: resolveCampaignPhase(state, gameEnd) || state.phase
         }
       }
@@ -977,7 +984,8 @@ function gameReducer(state, action) {
           ...updatedChars,
           [characterId]: { ...movedChar, position, movementUsed: char.movement }
         },
-        log: [...state.log, ...aoLogs].slice(-50)
+        log: [...state.log, ...aoLogs].slice(-50),
+        visualEvents: aiAoVisuals
       }
     }
 
@@ -1199,7 +1207,7 @@ function gameReducer(state, action) {
       const current = state.characters[state.initiativeOrder[state.currentTurnIndex]]
       const result = resolveItemUse(current, item, targetCell, state.terrain, state.characters)
 
-      const { characters: newChars, stats: newStats } = applyEffects(
+      const { characters: newChars, stats: newStats, visualEvents: itemVisuals } = applyEffects(
         { characters: state.characters, stats: state.stats }, result.effects
       )
 
@@ -1225,7 +1233,8 @@ function gameReducer(state, action) {
         selectedAbility: null,
         selectedCategory: null,
         validTargets: [],
-        validMoves: []
+        validMoves: [],
+        visualEvents: itemVisuals || []
       }
     }
 
