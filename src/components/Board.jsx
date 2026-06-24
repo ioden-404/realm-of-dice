@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { BOARD_COLS, BOARD_ROWS } from '../data/config.js'
 import Token from './Token.jsx'
 
@@ -9,10 +10,23 @@ export default function Board({
   turnState,
   terrain = {},
   terrainTheme,
+  visualEvents = [],
+  screenShake,
   onCellClick,
   onTokenClick,
   onTerrainClick
 }) {
+  const [floats, setFloats] = useState([])
+
+  useEffect(() => {
+    if (visualEvents.length > 0) {
+      setFloats(prev => [...prev, ...visualEvents])
+      const timer = setTimeout(() => {
+        setFloats(prev => prev.filter(f => !visualEvents.some(v => v.id === f.id)))
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [visualEvents])
   const cells = []
   for (let y = 0; y < BOARD_ROWS; y++) {
     for (let x = 0; x < BOARD_COLS; x++) {
@@ -69,11 +83,23 @@ export default function Board({
   }
 
   return (
-    <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''}`}>
+    <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''} ${screenShake ? 'board-shake' : ''}`}>
       <div className="board-border">
         <div className="board" style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}>
           {cells}
         </div>
+        {floats.map(f => (
+          <div
+            key={f.id}
+            className={`float-number float-${f.type}`}
+            style={{
+              left: `${((f.position?.x || 0) / BOARD_COLS) * 100 + (100 / BOARD_COLS / 2)}%`,
+              top: `${((f.position?.y || 0) / BOARD_ROWS) * 100}%`
+            }}
+          >
+            {f.type === 'heal' ? '+' : '-'}{f.amount}
+          </div>
+        ))}
       </div>
     </div>
   )

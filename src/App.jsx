@@ -37,6 +37,7 @@ export default function App() {
   const [inspectedCharId, setInspectedCharId] = useState(null)
   const [inspectedTerrain, setInspectedTerrain] = useState(null)
   const [pendingItem, setPendingItem] = useState(null)
+  const [screenShake, setScreenShake] = useState(false)
   const [glory, setGlory] = useState(() => loadGlory())
   const [narrativeEvent, setNarrativeEvent] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -70,6 +71,18 @@ export default function App() {
     else audio.switchTrack('hub')
     if (phase !== PHASES.COMBAT) setPendingItem(null)
   }, [state.phase])
+
+  useEffect(() => {
+    if (state.visualEvents?.length > 0) {
+      const hasCrit = state.log?.slice(-3).some(l => l.text?.includes('CRITIQUE'))
+      if (hasCrit) {
+        setScreenShake(true)
+        setTimeout(() => setScreenShake(false), 400)
+      }
+      const timer = setTimeout(() => dispatch({ type: 'CLEAR_VISUALS' }), 1600)
+      return () => clearTimeout(timer)
+    }
+  }, [state.visualEvents])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
@@ -331,6 +344,8 @@ export default function App() {
         turnState={state.turnState}
         terrain={state.terrain}
         terrainTheme={state.terrainTheme}
+        visualEvents={state.visualEvents || []}
+        screenShake={screenShake}
         onCellClick={(x, y) => {
           if (pendingItem) {
             dispatch({ type: 'USE_ITEM', payload: { item: pendingItem, targetCell: { x, y } } })

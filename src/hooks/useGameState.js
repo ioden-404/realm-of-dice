@@ -334,12 +334,14 @@ const initialState = {
   pendingLevelUps: [],
   combatResult: null,
   combatInventory: [],
-  campaignMode: false
+  campaignMode: false,
+  visualEvents: []
 }
 
 function applyEffects(state, effects) {
   let newChars = { ...state.characters }
   let newStats = { ...state.stats }
+  const visualEvents = []
 
   for (const effect of effects) {
     const char = newChars[effect.targetId || effect.characterId]
@@ -360,6 +362,7 @@ function applyEffects(state, effects) {
           newStats = { ...newStats, damageReceived: newStats.damageReceived + effect.amount }
         }
         newChars = { ...newChars, [char.id]: updated }
+        if (effect.amount > 0) visualEvents.push({ type: 'damage', amount: effect.amount, charId: char.id, position: char.position, id: `dmg-${Date.now()}-${Math.random()}` })
         break
       }
       case 'heal': {
@@ -367,6 +370,7 @@ function applyEffects(state, effects) {
         healed.animation = 'heal'
         newStats = { ...newStats, healingDone: newStats.healingDone + effect.amount }
         newChars = { ...newChars, [char.id]: healed }
+        if (effect.amount > 0) visualEvents.push({ type: 'heal', amount: effect.amount, charId: char.id, position: char.position, id: `heal-${Date.now()}-${Math.random()}` })
         break
       }
       case 'addStatus': {
@@ -437,7 +441,7 @@ function applyEffects(state, effects) {
     }
   }
 
-  return { characters: newChars, stats: newStats }
+  return { characters: newChars, stats: newStats, visualEvents }
 }
 
 function checkGameEnd(characters) {
@@ -681,7 +685,7 @@ function gameReducer(state, action) {
         }
       }
 
-      const { characters: newChars, stats: newStats } = applyEffects(
+      const { characters: newChars, stats: newStats, visualEvents: newVisuals } = applyEffects(
         { characters: state.characters, stats: state.stats },
         result.effects
       )
@@ -796,7 +800,8 @@ function gameReducer(state, action) {
         campaignEvent: execEvent,
         pendingPaliers: execPendingPaliers,
         pendingLevelUps: execLevelUps,
-        combatResult: execCombatResult
+        combatResult: execCombatResult,
+        visualEvents: [...(state.visualEvents || []), ...(newVisuals || [])]
       }
     }
 
@@ -992,6 +997,10 @@ function gameReducer(state, action) {
 
     case 'RESTART': {
       return { ...initialState, phase: PHASES.HUB }
+    }
+
+    case 'CLEAR_VISUALS': {
+      return { ...state, visualEvents: [] }
     }
 
     case 'SET_PHASE': {
