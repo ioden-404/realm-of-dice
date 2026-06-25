@@ -416,6 +416,7 @@ const initialState = {
   campaignMode: false,
   visualEvents: [],
   pendingCutIn: null,
+  pendingReaction: null,
   storyGrid: null,
   story: {
     active: false,
@@ -851,13 +852,20 @@ function gameReducer(state, action) {
         allVisuals.push(...(rageApplied.visualEvents || []))
       }
 
+      let reactionToPrompt = null
       if (targetId && ability.damage && current.team !== (state.characters[targetId]?.team)) {
         const allyReact = resolveAllyReactions(targetId, current.id, result.damage || 0, finalChars)
         if (allyReact.effects.length > 0) {
-          const reactApplied = applyEffects({ characters: finalChars, stats: newStats }, allyReact.effects)
-          finalChars = reactApplied.characters
-          allVisuals.push(...(reactApplied.visualEvents || []))
-          extraLogs.push(...allyReact.logs)
+          const targetChar = finalChars[targetId]
+          const isAllyReacting = targetChar?.team === TEAMS.ALLY
+          if (isAllyReacting && targetChar?.reactionsEnabled !== false) {
+            reactionToPrompt = { effects: allyReact.effects, logs: allyReact.logs, reactionName: allyReact.logs[0] || '' }
+          } else {
+            const reactApplied = applyEffects({ characters: finalChars, stats: newStats }, allyReact.effects)
+            finalChars = reactApplied.characters
+            allVisuals.push(...(reactApplied.visualEvents || []))
+            extraLogs.push(...allyReact.logs)
+          }
         }
       }
 
@@ -919,6 +927,7 @@ function gameReducer(state, action) {
         characters: execChars,
         terrain: terrainAfterAbility,
         stats: newStats,
+        pendingReaction: reactionToPrompt,
         log: newLog.slice(-50),
         turnState: gameEnd ? TURN_STATES.IDLE : TURN_STATES.IDLE,
         selectedAbility: null,
@@ -1174,6 +1183,27 @@ function gameReducer(state, action) {
 
     case 'CLEAR_CUTIN': {
       return { ...state, pendingCutIn: null }
+    }
+
+    case 'CONFIRM_REACTION': {
+      if (!state.pendingReaction) return state
+      const { effects, logs } = state.pendingReaction
+      const { characters: reactChars, stats: reactStats, visualEvents: reactVisuals } = applyEffects(
+        { characters: state.characters, stats: state.stats }, effects
+      )
+      const reactLog = [...state.log, ...logs.map(t => ({ text: t, type: t.includes('soins') ? 'heal' : 'info' }))]
+      return {
+        ...state,
+        characters: reactChars,
+        stats: reactStats,
+        log: reactLog.slice(-50),
+        visualEvents: reactVisuals,
+        pendingReaction: null
+      }
+    }
+
+    case 'SKIP_REACTION': {
+      return { ...state, pendingReaction: null }
     }
 
     case 'TOGGLE_REACTIONS': {

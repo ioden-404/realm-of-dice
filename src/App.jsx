@@ -23,6 +23,7 @@ import NarrativeEvent from './components/NarrativeEvent.jsx'
 import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
 import LevelUpScreen from './components/LevelUpScreen.jsx'
 import CutIn from './components/CutIn.jsx'
+import ReactionPrompt from './components/ReactionPrompt.jsx'
 import DialogueScreen from './components/DialogueScreen.jsx'
 import StoryMenu from './components/StoryMenu.jsx'
 import { PROLOGUE } from './data/prologue.js'
@@ -128,6 +129,7 @@ export default function App() {
     if (state.phase !== PHASES.COMBAT) return
     if (state.turnState !== TURN_STATES.ENEMY_TURN) return
     if (!currentChar || currentChar.team !== 'enemy') return
+    if (state.pendingReaction) return
 
     const timeout = setTimeout(() => executeAITurn(), cutIn ? 2000 : 600)
     return () => clearTimeout(timeout)
@@ -548,6 +550,14 @@ export default function App() {
         <TerrainCard
           terrainCell={inspectedTerrain}
           onClose={() => setInspectedTerrain(null)}
+        />
+      )}
+
+      {state.pendingReaction && (
+        <ReactionPrompt
+          reaction={state.pendingReaction}
+          onConfirm={() => dispatch({ type: 'CONFIRM_REACTION' })}
+          onSkip={() => dispatch({ type: 'SKIP_REACTION' })}
         />
       )}
 
