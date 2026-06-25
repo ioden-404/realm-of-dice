@@ -4,7 +4,11 @@ import Token from './Token.jsx'
 
 const B = import.meta.env.BASE_URL
 const THEME_BACKGROUNDS = {
-  forest: B + 'Images/bg-forest.png'
+  forest: B + 'Images/bg-forest.png',
+  crypt: B + 'Images/bg-crypt.png',
+  volcano: B + 'Images/bg-volcano.png',
+  ruins: B + 'Images/bg-ruins.png',
+  swamp: B + 'Images/bg-swamp.png'
 }
 
 export default function Board({
