@@ -111,6 +111,9 @@ export default function App() {
     if (state.phase !== PHASES.COMBAT) {
       lastSplashRef.current = null
     }
+    if (state.phase === PHASES.STORY && state.story?.combatConfig) {
+      dispatch({ type: 'STORY_COMBAT_END' })
+    }
   }, [state.phase])
 
   useEffect(() => {
@@ -263,7 +266,11 @@ export default function App() {
           onAdvance={() => dispatch({ type: 'STORY_ADVANCE', payload: { chapter: PROLOGUE } })}
           onChoice={(option) => dispatch({ type: 'STORY_CHOICE', payload: { option, chapter: PROLOGUE } })}
           onSetName={(name) => dispatch({ type: 'STORY_SET_NAME', payload: { name } })}
-          onStartCombat={(config) => {}}
+          onStartCombat={(config) => {
+            startTransition(() => {
+              dispatch({ type: 'STORY_START_COMBAT', payload: { config } })
+            })
+          }}
           onComplete={() => dispatch({ type: 'STORY_COMPLETE' })}
           onQuit={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.STORY_MENU } })}
         />
@@ -422,6 +429,8 @@ export default function App() {
         characters={state.characters}
         currentCharId={currentChar?.id}
         validMoves={state.validMoves}
+        gridCols={state.storyGrid?.cols}
+        gridRows={state.storyGrid?.rows}
         validTargets={state.validTargets}
         turnState={state.turnState}
         terrain={state.terrain}

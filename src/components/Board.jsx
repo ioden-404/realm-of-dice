@@ -15,8 +15,12 @@ export default function Board({
   onCellClick,
   onTokenClick,
   onTerrainClick,
-  onDragPlace
+  onDragPlace,
+  gridCols,
+  gridRows
 }) {
+  const cols = gridCols || BOARD_COLS
+  const rows = gridRows || BOARD_ROWS
   const [floats, setFloats] = useState([])
   const [dragState, setDragState] = useState(null)
   const boardRef = useRef(null)
@@ -55,9 +59,9 @@ export default function Board({
       const rect = board.getBoundingClientRect()
       const relX = e.clientX - rect.left
       const relY = e.clientY - rect.top
-      const col = Math.floor((relX / rect.width) * BOARD_COLS)
-      const row = Math.floor((relY / rect.height) * BOARD_ROWS)
-      if (col >= 0 && col <= 1 && row >= 0 && row < BOARD_ROWS && onDragPlace) {
+      const col = Math.floor((relX / rect.width) * cols)
+      const row = Math.floor((relY / rect.height) * rows)
+      if (col >= 0 && col <= 1 && row >= 0 && row < rows && onDragPlace) {
         onDragPlace(dragState.charId, col, row)
       }
     } else if (!dragState.moved) {
@@ -79,8 +83,8 @@ export default function Board({
   }, [dragState, handlePointerMove, handlePointerUp])
 
   const cells = []
-  for (let y = 0; y < BOARD_ROWS; y++) {
-    for (let x = 0; x < BOARD_COLS; x++) {
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
       const isDark = (x + y) % 2 === 0
       const isValidMove = validMoves.some(m => m.x === x && m.y === y)
       const charHere = Object.values(characters).find(
@@ -93,7 +97,7 @@ export default function Board({
         c => !c.isDead && c.position.x === x && c.position.y === y
       )
       const isValidTarget = charHere && validTargets.includes(charHere.id)
-      const isCorner = (x === 0 || x === BOARD_COLS - 1) && (y === 0 || y === BOARD_ROWS - 1)
+      const isCorner = (x === 0 || x === cols - 1) && (y === 0 || y === rows - 1)
       const terrainCell = terrain[`${x},${y}`]
       const terrainClass = terrainCell ? `cell-terrain-${terrainCell.type}` : ''
       const isSelectingCell = turnState === 'selecting-cell'
@@ -149,7 +153,7 @@ export default function Board({
         <div
           className="board"
           ref={boardRef}
-          style={{ gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }}
         >
           {cells}
         </div>
@@ -165,8 +169,8 @@ export default function Board({
             key={f.id}
             className={`float-number float-${f.type}`}
             style={{
-              left: `${((f.position?.x || 0) / BOARD_COLS) * 100 + (100 / BOARD_COLS / 2)}%`,
-              top: `${((f.position?.y || 0) / BOARD_ROWS) * 100}%`
+              left: `${((f.position?.x || 0) / cols) * 100 + (100 / cols / 2)}%`,
+              top: `${((f.position?.y || 0) / rows) * 100}%`
             }}
           >
             {f.type === 'heal' ? '+' : '-'}{f.amount}

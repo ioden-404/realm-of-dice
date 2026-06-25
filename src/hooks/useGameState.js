@@ -180,7 +180,9 @@ function getAllyPosition(index) {
 }
 
 function resolveCampaignPhase(state, gameEnd) {
-  if (!gameEnd || !state.campaign.active) return gameEnd
+  if (!gameEnd) return null
+  if (state.story?.active) return gameEnd === PHASES.DEFEAT ? PHASES.DEFEAT : PHASES.STORY
+  if (!state.campaign.active) return gameEnd
   if (gameEnd === PHASES.DEFEAT) return PHASES.CAMPAIGN_DEFEAT
   const node = state.campaign.currentNode
   if (node?.type === 'boss' && state.campaign.act >= ACTS.length - 1) {
@@ -414,6 +416,7 @@ const initialState = {
   campaignMode: false,
   visualEvents: [],
   pendingCutIn: null,
+  storyGrid: null,
   story: {
     active: false,
     chapterId: null,
@@ -1578,6 +1581,105 @@ function gameReducer(state, action) {
           companion: null,
           completed: state.story.completed || []
         }
+      }
+    }
+
+    case 'STORY_START_COMBAT': {
+      const { config } = action.payload
+      const { story } = state
+      const characters = {}
+      const gridCols = config.gridCols || BOARD_COLS
+      const gridRows = config.gridRows || BOARD_ROWS
+
+      const playerClassId = story.choices.classId || 'guerrier'
+      const playerName = story.choices.playerName || 'Héros'
+      const playerChar = createCharacter(playerClassId, TEAMS.ALLY, 0)
+      playerChar.name = playerName
+      playerChar.id = 'story-player'
+      playerChar.position = { x: 0, y: Math.floor(gridRows / 2) }
+      playerChar.uses = initUses(playerChar)
+      characters[playerChar.id] = playerChar
+
+      if (config.allies === 'player-and-companion' && story.companion) {
+        const comp = createCharacter(story.companion.classId, TEAMS.ALLY, 1)
+        comp.name = story.companion.name
+        comp.id = 'story-companion'
+        comp.position = { x: 0, y: Math.floor(gridRows / 2) + 1 }
+        comp.uses = initUses(comp)
+        characters[comp.id] = comp
+      }
+
+      let enemyIdx = 0
+      const enemySlots = []
+      for (let x = gridCols - 2; x < gridCols; x++) {
+        for (let y = 0; y < gridRows; y++) enemySlots.push({ x, y })
+      }
+      for (let i = enemySlots.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [enemySlots[i], enemySlots[j]] = [enemySlots[j], enemySlots[i]]
+      }
+
+      for (const group of config.enemies) {
+        if (group.spawnRound) continue
+        for (let i = 0; i < group.count; i++) {
+          const monster = createMonster(group.monsterId, enemyIdx, [group.monsterId])
+          monster.uses = initUses(monster)
+          monster.position = enemySlots[enemyIdx] || { x: gridCols - 1, y: enemyIdx % gridRows }
+          characters[monster.id] = monster
+          enemyIdx++
+        }
+      }
+
+      const initiativeOrder = rollInitiative(characters)
+      const firstChar = characters[initiativeOrder[0]]
+      const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
+
+      const pendingSpawns = config.enemies.filter(g => g.spawnRound).map(g => ({ ...g }))
+
+      return {
+        ...state,
+        phase: PHASES.COMBAT,
+        characters,
+        initiativeOrder,
+        currentTurnIndex: 0,
+        round: 1,
+        turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+        terrain: {},
+        terrainTheme: config.terrainTheme || null,
+        selectedAbility: null,
+        selectedCategory: null,
+        validTargets: [],
+        validMoves: [],
+        log: [{ text: '⚔️ Le combat commence !', type: 'system' }],
+        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
+        visualEvents: [],
+        pendingCutIn: null,
+        combatInventory: [],
+        story: {
+          ...story,
+          active: true,
+          combatConfig: config,
+          pendingSpawns
+        },
+        storyGrid: { cols: gridCols, rows: gridRows }
+      }
+    }
+
+    case 'STORY_COMBAT_END': {
+      const newStory = {
+        ...state.story,
+        blockIndex: state.story.blockIndex + 1,
+        combatConfig: null,
+        pendingSpawns: null
+      }
+      saveStoryState(newStory)
+      return {
+        ...state,
+        phase: PHASES.STORY,
+        story: newStory,
+        characters: {},
+        initiativeOrder: [],
+        storyGrid: null
       }
     }
 

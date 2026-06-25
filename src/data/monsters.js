@@ -1,4 +1,21 @@
 export const MONSTERS = {
+  // ============ PROLOGUE ============
+
+  silhouette: {
+    name: 'Silhouette',
+    emoji: '👤',
+    hp: 8, ac: 10, attackBonus: 2, damageDice: '1d4',
+    movement: 2, range: 1,
+    aiProfile: 'guerrier',
+    abilities: {
+      actions: [
+        { id: 'silh-touch', name: 'Toucher froid', damage: '1d4', range: 1, targetType: 'enemy', cooldown: 0, maxUses: 0, description: 'Un contact glacial' }
+      ],
+      bonusActions: [],
+      reactions: []
+    }
+  },
+
   // ============ ACTE 1 — Forêt maudite ============
 
   goblin: {
