@@ -1203,8 +1203,10 @@ body {
   border: none;
   background: none;
   border-radius: 0;
-  width: 100%;
-  height: 100%;
+  width: 110%;
+  height: 140%;
+  aspect-ratio: auto;
+  margin-top: -30%;
 }
 
 .token-sprite-mode .token-inner {
