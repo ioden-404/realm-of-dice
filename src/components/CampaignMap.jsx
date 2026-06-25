@@ -263,6 +263,16 @@ export default function CampaignMap({
               <>
                 <h3 className="cmap-event-title">🎁 Trésor trouvé !</h3>
                 <p className="cmap-event-gold">+{campaignEvent.goldGain} <span className="gold-icon">⬤</span></p>
+                {campaignEvent.equipmentReward && (
+                  <div className="campaign-reward" style={{ borderColor: campaignEvent.equipmentReward.tier === 'epic' ? '#ffc107' : campaignEvent.equipmentReward.tier === 'rare' ? '#42a5f5' : '#9e9e9e', cursor: 'default' }}>
+                    <span className="reward-icon">{campaignEvent.equipmentReward.icon}</span>
+                    <div className="reward-info">
+                      <span className="reward-name">{campaignEvent.equipmentReward.name}</span>
+                      <span className="reward-desc">{campaignEvent.equipmentReward.desc}</span>
+                    </div>
+                    <span className="reward-desc">Ajouté à l'inventaire</span>
+                  </div>
+                )}
                 <button className="campaign-next-btn" onClick={onEventDone}>Continuer</button>
               </>
             )}
@@ -296,6 +306,40 @@ export default function CampaignMap({
                     )
                   })}
                 </div>
+                {(campaignEvent.equipmentItems || []).length > 0 && (
+                  <>
+                    <p className="cmap-event-desc" style={{ marginTop: 8 }}>⚔️ Équipement</p>
+                    <div className="cmap-event-rewards">
+                      {campaignEvent.equipmentItems.map(item => {
+                        const shopMult = campaignEvent.shopCostMult || 1
+                        const finalCost = Math.max(1, Math.floor(item.cost * shopMult))
+                        const canAfford = (campaign.gold || 0) >= finalCost
+                        const alreadyBought = (campaignEvent.purchasedIds || []).includes(item.id)
+                        const canBuy = canAfford && !alreadyBought
+                        const tierColor = item.tier === 'rare' ? '#42a5f5' : '#9e9e9e'
+                        return (
+                          <button
+                            key={item.id}
+                            className={`campaign-reward ${!canBuy ? 'reward-disabled' : ''} ${alreadyBought ? 'reward-bought' : ''}`}
+                            style={{ borderColor: tierColor }}
+                            onClick={() => canBuy && onSelectReward({ ...item, cost: finalCost })}
+                            disabled={!canBuy}
+                          >
+                            <span className="reward-icon">{item.icon}</span>
+                            <div className="reward-info">
+                              <span className="reward-name">{item.name}</span>
+                              <span className="reward-desc">{item.desc}</span>
+                              {item.classRestriction && (
+                                <span className="reward-desc">{item.classRestriction.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')}</span>
+                              )}
+                            </div>
+                            <span className="reward-cost"><span className="gold-icon">⬤</span> {finalCost}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
                 <button className="campaign-next-btn" onClick={onEventDone}>Quitter la boutique</button>
               </>
             )}
