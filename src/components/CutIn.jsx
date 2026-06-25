@@ -20,7 +20,7 @@ function getImages(classId) {
   ]
 }
 
-const FRAME_TIMINGS = [500, 450, 600]
+const FRAME_TIMINGS = [500, 450, 900]
 
 export default function CutIn({ classId, type, onComplete }) {
   const [frame, setFrame] = useState(0)

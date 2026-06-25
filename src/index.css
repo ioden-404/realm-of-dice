@@ -3304,12 +3304,14 @@ body {
 }
 
 @keyframes cutin-impact {
-  0% { transform: scale(1.6); opacity: 0; }
-  30% { transform: scale(0.95); opacity: 1; }
-  50% { transform: scale(1.02) translateX(3px); }
-  65% { transform: scale(1) translateX(-2px); }
-  80% { transform: scale(1) translateX(1px); }
-  100% { transform: scale(1) translateX(0); }
+  0% { transform: scale(1.05); opacity: 0; }
+  20% { transform: scale(1); opacity: 1; }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-4px); }
+  55% { transform: translateX(3px); }
+  65% { transform: translateX(-2px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
 }
 
 @keyframes cutin-flash-anim {
