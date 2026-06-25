@@ -267,9 +267,7 @@ export default function App() {
           onChoice={(option) => dispatch({ type: 'STORY_CHOICE', payload: { option, chapter: PROLOGUE } })}
           onSetName={(name) => dispatch({ type: 'STORY_SET_NAME', payload: { name } })}
           onStartCombat={(config) => {
-            startTransition(() => {
-              dispatch({ type: 'STORY_START_COMBAT', payload: { config } })
-            })
+            dispatch({ type: 'STORY_START_COMBAT', payload: { config } })
           }}
           onComplete={() => dispatch({ type: 'STORY_COMPLETE' })}
           onQuit={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.STORY_MENU } })}
