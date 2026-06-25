@@ -141,12 +141,11 @@ export default function App() {
     )
 
     prevCharsRef.current = state.characters
+    lastCutInLogLen.current = logLen
 
     if (enemyJustDied) {
-      lastCutInLogLen.current = logLen
       setCutIn({ classId: char.classId, type: 'kill' })
     } else if (isCrit) {
-      lastCutInLogLen.current = logLen
       setCutIn({ classId: char.classId, type: 'crit' })
     }
   }, [state.log?.length, state.characters])
