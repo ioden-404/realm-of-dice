@@ -105,7 +105,7 @@ export default function ActionPanel({
 
   if (turnState === TURN_STATES.SELECTING_ACTION && selectedCategory) {
     if (selectedCategory === 'items') {
-      const items = combatInventory || []
+      const items = (combatInventory || []).filter(i => !i.outOfCombat)
       return (
         <div className="action-panel">
           <div className="action-header">

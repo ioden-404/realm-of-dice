@@ -1337,7 +1337,7 @@ function gameReducer(state, action) {
 
       if (isRelic) {
         updatedChars = applyRelicEffects(state.characters, reward)
-        newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon }]
+        newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon, desc: reward.desc }]
       } else if (event?.type === 'merchant') {
         if ((newCampaign.gold || 0) < reward.cost) return state
         newCampaign.gold = (newCampaign.gold || 0) - reward.cost

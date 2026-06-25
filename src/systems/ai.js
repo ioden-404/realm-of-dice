@@ -351,7 +351,7 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
 
   const terrainCell = terrain[`${position.x},${position.y}`]
   if (terrainCell) {
-    if (terrainCell.type === TERRAIN_TYPES.HAZARD) score -= 20
+    if (terrainCell.type === TERRAIN_TYPES.HAZARD || terrainCell.type === TERRAIN_TYPES.FIRE) score -= 8
     if (terrainCell.type === TERRAIN_TYPES.COVER && ['mage', 'rodeur', 'clerc'].includes(classId)) score += 5
   }
 

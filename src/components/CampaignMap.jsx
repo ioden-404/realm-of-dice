@@ -153,7 +153,7 @@ export default function CampaignMap({
         {campaign.relics && campaign.relics.length > 0 && (
           <div className="cmap-relics">
             {campaign.relics.map((r, i) => (
-              <span key={i} className="cmap-relic" title={r.name}>{r.icon}</span>
+              <span key={i} className="cmap-relic" title={`${r.name} : ${r.desc || ''}`}>{r.icon}</span>
             ))}
           </div>
         )}

@@ -147,13 +147,13 @@ export function generateCampaignMap(actIndex) {
 export const GOLD_REWARDS = { combat: 12, elite: 22, treasure: 18, boss: 35 }
 
 export const SHOP_ITEMS = [
-  { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 12, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },
-  { id: 'potion-resistance', name: 'Potion de résistance', desc: '+1 CA pendant 3 tours', icon: '🛡️', cost: 18, actionType: 'bonus', targetType: 'self', effect: 'acBoost', acBonus: 1, duration: 3 },
-  { id: 'antidote', name: 'Antidote', desc: 'Retire poison et malédictions', icon: '💊', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'purify' },
-  { id: 'huile', name: 'Bouteille d\'huile', desc: 'Crée zone huile 2x2, inflammable !', icon: '🛢️', cost: 15, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'oil', terrainEmoji: '🟤', terrainLabel: 'Huile', aoeSize: 2, duration: 4 },
-  { id: 'torche', name: 'Torche', desc: 'Enflamme une zone (feu 6 dégâts/tour)', icon: '🔥', cost: 10, actionType: 'bonus', targetType: 'cell', range: 2, effect: 'ignite', fireDamage: 6, fireDuration: 3 },
-  { id: 'bombe-fumigene', name: 'Bombe fumigène', desc: 'Fumée 2x2, désavantage, 2 tours', icon: '💨', cost: 18, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'smoke', terrainEmoji: '🌫️', terrainLabel: 'Fumée', aoeSize: 2, duration: 2 },
-  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe (hors combat)', icon: '🌿', cost: 12, effect: 'teamHeal', value: 0.3 },
+  { id: 'potion-soin-combat', name: 'Potion de soin', desc: 'Soigne 2d4+2 PV en combat', icon: '🧪', cost: 6, actionType: 'bonus', targetType: 'self', effect: 'heal', healDice: '2d4+2' },
+  { id: 'potion-resistance', name: 'Potion de résistance', desc: '+2 CA pendant 3 tours', icon: '🛡️', cost: 10, actionType: 'bonus', targetType: 'self', effect: 'acBoost', acBonus: 2, duration: 3 },
+  { id: 'antidote', name: 'Antidote', desc: 'Retire poison et malédictions', icon: '💊', cost: 5, actionType: 'bonus', targetType: 'self', effect: 'purify' },
+  { id: 'huile', name: 'Bouteille d\'huile', desc: 'Crée zone huile 2x2, inflammable !', icon: '🛢️', cost: 8, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'oil', terrainEmoji: '🟤', terrainLabel: 'Huile', aoeSize: 2, duration: 4 },
+  { id: 'torche', name: 'Torche', desc: 'Enflamme une zone (feu 6 dégâts/tour)', icon: '🔥', cost: 5, actionType: 'bonus', targetType: 'cell', range: 2, effect: 'ignite', fireDamage: 6, fireDuration: 3 },
+  { id: 'bombe-fumigene', name: 'Bombe fumigène', desc: 'Fumée 2x2, désavantage, 2 tours', icon: '💨', cost: 10, actionType: 'action', targetType: 'cell', range: 3, effect: 'createTerrain', terrainType: 'smoke', terrainEmoji: '🌫️', terrainLabel: 'Fumée', aoeSize: 2, duration: 2 },
+  { id: 'herbes-soin', name: 'Herbes médicinales', desc: 'Soigne 30% PV de l\'équipe (hors combat)', icon: '🌿', cost: 6, effect: 'teamHeal', value: 0.3, outOfCombat: true },
 ]
 
 export function generateShopItems() {
