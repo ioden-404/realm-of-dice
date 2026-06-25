@@ -93,13 +93,24 @@ function shuffle(arr) {
   return a
 }
 
-export function generateShopEquipment(act, ownedIds = []) {
-  const available = ALL_EQUIPMENT.filter(i =>
-    i.tier !== 'epic' &&
-    !ownedIds.includes(i.id) &&
-    (act === 0 ? i.tier === 'common' : true)
-  )
-  return shuffle(available).slice(0, 3)
+export function generateShopEquipment(act, ownedIds = [], teamClasses = []) {
+  const notOwned = ALL_EQUIPMENT.filter(i => i.tier !== 'epic' && !ownedIds.includes(i.id))
+  const usable = notOwned.filter(i => !i.classRestriction || i.classRestriction.some(c => teamClasses.includes(c)))
+
+  const commons = usable.filter(i => i.tier === 'common')
+  const rares = act > 0 ? usable.filter(i => i.tier === 'rare') : []
+
+  const picked = []
+  const shuffledCommons = shuffle(commons)
+  picked.push(...shuffledCommons.slice(0, 2))
+
+  if (rares.length > 0) {
+    picked.push(...shuffle(rares).slice(0, 1))
+  } else if (shuffledCommons.length > 2) {
+    picked.push(shuffledCommons[2])
+  }
+
+  return picked
 }
 
 export function generateTreasureEquipment(act, ownedIds = [], teamClasses = []) {

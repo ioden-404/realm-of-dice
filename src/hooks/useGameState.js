@@ -1378,7 +1378,7 @@ function gameReducer(state, action) {
           campaignEvent: {
             type: 'merchant',
             items: generateShopItems(),
-            equipmentItems: generateShopEquipment(campaign.act, (campaign.equipmentInventory || []).map(i => i.id)),
+            equipmentItems: generateShopEquipment(campaign.act, (campaign.equipmentInventory || []).map(i => i.id), Object.values(state.characters).filter(c => c.team === TEAMS.ALLY).map(c => c.classId)),
             nodeId: node.id,
             shopCostMult: merchMods.shopCostMult * merchDiscount
           },
