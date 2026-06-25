@@ -346,6 +346,8 @@ function loadCampaignState() {
     if (!raw) return null
     const data = JSON.parse(raw)
     if (!data.campaign?.active) return null
+    if (!data.characters || !Object.keys(data.characters).length) return null
+    if (!data.campaign?.map) return null
     return data
   } catch { return null }
 }
@@ -1449,8 +1451,19 @@ function gameReducer(state, action) {
 
 export function useGameState() {
   const [state, dispatch] = useReducer(gameReducer, initialState, (init) => {
-    const saved = loadCampaignState()
-    if (saved) return { ...init, ...saved }
+    try {
+      const saved = loadCampaignState()
+      if (saved) {
+        const merged = { ...init, ...saved }
+        if (!merged.campaign?.map || !Object.keys(merged.characters).length) {
+          clearCampaignSave()
+          return init
+        }
+        return merged
+      }
+    } catch {
+      clearCampaignSave()
+    }
     return init
   })
   const aiTimeoutRef = useRef(null)
@@ -1462,7 +1475,7 @@ export function useGameState() {
     if (state.phase === PHASES.HUB) {
       clearCampaignSave()
     }
-  }, [state.phase, state.campaignEvent, state.pendingPaliers, state.pendingLevelUps, state.combatResult])
+  }, [state.phase, state.characters, state.campaign, state.campaignEvent, state.pendingPaliers, state.pendingLevelUps, state.combatResult])
 
   const getAbilityState = useCallback((characterId, ability) => {
     const char = state.characters[characterId]
