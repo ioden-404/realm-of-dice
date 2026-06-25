@@ -970,8 +970,17 @@ body {
 
 /* ========== TERRAIN ========== */
 
-.cell-has-terrain-img {
+.cell-has-terrain-img,
+.cell-has-terrain-img.cell-terrain-blocking,
+.cell-has-terrain-img.cell-terrain-difficult,
+.cell-has-terrain-img.cell-terrain-cover,
+.cell-has-terrain-img.cell-terrain-hazard,
+.cell-has-terrain-img.cell-terrain-oil,
+.cell-has-terrain-img.cell-terrain-fire,
+.cell-has-terrain-img.cell-terrain-smoke {
   background: transparent !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
 .cell-terrain-img {
