@@ -144,7 +144,7 @@ function checkLevelUps(xp, characters) {
     const currentLevel = char.level || 1
     for (const threshold of LEVEL_THRESHOLDS) {
       if (xp >= threshold.xp && currentLevel < threshold.level) {
-        pending.push({ characterId: char.id, level: threshold.level })
+        pending.push({ characterId: char.id, level: currentLevel + 1 })
         break
       }
     }
@@ -333,6 +333,7 @@ function saveCampaignState(state) {
       pendingLevelUps: state.pendingLevelUps,
       campaignEvent: state.campaignEvent,
       combatResult: state.combatResult,
+      combatInventory: state.combatInventory,
       campaignMode: true,
       phase: PHASES.CAMPAIGN_MAP
     }
@@ -415,7 +416,9 @@ function applyEffects(state, effects) {
         break
       }
       case 'heal': {
+        if (char.isDead && effect.amount <= 0) break
         const healed = { ...char, hp: Math.min(char.maxHp, char.hp + effect.amount) }
+        if (healed.hp > 0 && char.isDead) healed.isDead = false
         healed.animation = 'heal'
         newStats = { ...newStats, healingDone: newStats.healingDone + effect.amount }
         newChars = { ...newChars, [char.id]: healed }
@@ -742,9 +745,13 @@ function gameReducer(state, action) {
       const result = resolveAbility(current, target, ability, state.characters, state.terrain)
 
       let terrainAfterAbility = state.terrain
+      if (result.terrain && target) {
+        const pos = target.position
+        terrainAfterAbility = { ...terrainAfterAbility, [`${pos.x},${pos.y}`]: result.terrain }
+      }
       if (ability.magical && target) {
-        const fireCheck = checkFireOnMagicAttack(ability, target, state.terrain)
-        if (fireCheck.terrain !== state.terrain) {
+        const fireCheck = checkFireOnMagicAttack(ability, target, terrainAfterAbility)
+        if (fireCheck.terrain !== terrainAfterAbility) {
           terrainAfterAbility = fireCheck.terrain
           result.logs.push(...fireCheck.logs)
         }
@@ -912,7 +919,9 @@ function gameReducer(state, action) {
         updatedTerrain = tickDynamicTerrain(updatedTerrain)
       }
 
+      let loopGuard = state.initiativeOrder.length * 2
       while (updatedChars[state.initiativeOrder[nextIndex]]?.isDead) {
+        if (--loopGuard <= 0) break
         nextIndex++
         if (nextIndex >= state.initiativeOrder.length) {
           nextIndex = 0
@@ -1149,6 +1158,7 @@ function gameReducer(state, action) {
           visitedNodes: [], currentNode: null,
           rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: startGold, inventory: [],
           modifiers,
+          fogOfWar: resolveModifiers(modifiers).fogOfWar || false,
           gloryUpgrades: glory.upgrades || {}
         },
         campaignEvent: null,
@@ -1186,9 +1196,11 @@ function gameReducer(state, action) {
       }
 
       if (node.type === 'merchant') {
+        const merchDiscount = 1 - (campaign.gloryUpgrades?.['merchant-discount'] || 0) * 0.1
+        const merchMods = resolveModifiers(campaign.modifiers)
         return {
           ...state,
-          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id, shopCostMult: resolveModifiers(campaign.modifiers).shopCostMult },
+          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id, shopCostMult: merchMods.shopCostMult * merchDiscount },
           campaign: { ...campaign, visitedNodes: newVisited }
         }
       }
@@ -1208,8 +1220,12 @@ function gameReducer(state, action) {
 
       const combatMods = resolveModifiers(campaign.modifiers)
       shuffleEnemySlots()
-      node.encounter.monsters.forEach((monsterId, i) => {
-        const monster = createMonster(monsterId, i, node.encounter.monsters)
+      const monsterList = [...node.encounter.monsters]
+      if (combatMods.extraEnemy && node.type === 'combat' && monsterList.length > 0) {
+        monsterList.push(monsterList[0])
+      }
+      monsterList.forEach((monsterId, i) => {
+        const monster = createMonster(monsterId, i, monsterList)
         monster.uses = initUses(monster)
         if (combatMods.enemyHpMult !== 1) {
           monster.maxHp = Math.floor(monster.maxHp * combatMods.enemyHpMult)
@@ -1361,7 +1377,12 @@ function gameReducer(state, action) {
           if (best) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
         }
       }
-      if (choice.effect === 'helpTraveler' || choice.effect === 'safeGold') {
+      if (choice.effect === 'helpTraveler') {
+        newCampaign.gold = (newCampaign.gold || 0) + (choice.gold || 0)
+        const potion = { ...SURVIVAL_POTION, id: `traveler-potion-${Date.now()}` }
+        return { ...state, characters: updatedChars, campaign: newCampaign, narrativeEvent: null, combatInventory: [...(state.combatInventory || []), potion] }
+      }
+      if (choice.effect === 'safeGold') {
         newCampaign.gold = (newCampaign.gold || 0) + (choice.gold || 0)
       }
       if (choice.effect === 'robTraveler') {
@@ -1411,7 +1432,14 @@ function gameReducer(state, action) {
       if (choice.effect === 'fountain' && choice.stat) {
         const allies = Object.entries(updatedChars).filter(([, c]) => c.team === 'ally' && !c.isDead)
         const best = allies.sort((a, b) => b[1].hp - a[1].hp)[0]
-        if (best) updatedChars[best[0]] = { ...updatedChars[best[0]], [choice.stat]: (updatedChars[best[0]][choice.stat] || 0) + (choice.value || 0) }
+        if (best) {
+          const ch = updatedChars[best[0]]
+          updatedChars[best[0]] = {
+            ...ch,
+            [choice.stat]: (ch[choice.stat] || 0) + (choice.value || 0),
+            statuses: [...ch.statuses, { type: 'poison', duration: choice.poisonDuration || 2, damage: 4, source: 'Fontaine obscure' }]
+          }
+        }
       }
 
       return { ...state, characters: updatedChars, campaign: newCampaign, narrativeEvent: null }
@@ -1556,13 +1584,25 @@ export function useGameState() {
       fn: () => dispatch({ type: 'END_TURN' })
     })
 
+    if (aiTimeoutRef.current) {
+      aiTimeoutRef.current.forEach(clearTimeout)
+    }
+    const ids = []
     let totalDelay = 200
     for (const step of steps) {
       totalDelay += step.delay
       const d = totalDelay
-      setTimeout(step.fn, d)
+      ids.push(setTimeout(step.fn, d))
     }
+    aiTimeoutRef.current = ids
   }, [state, getAbilityState])
+
+  useEffect(() => {
+    if (state.phase !== PHASES.COMBAT && aiTimeoutRef.current) {
+      aiTimeoutRef.current.forEach(clearTimeout)
+      aiTimeoutRef.current = null
+    }
+  }, [state.phase])
 
   return { state, dispatch, getAbilityState, executeAITurn }
 }

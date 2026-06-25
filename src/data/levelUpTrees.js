@@ -78,7 +78,7 @@ export const LEVEL_UP_TREES = {
       ],
       5: [
         { id: 'meteor', name: 'Nuée de météores', damage: '4d6+3', range: 6, description: 'Frappe cible + adjacents.', cooldown: 0, maxUses: 1, targetType: 'enemy', magical: true, effect: 'aoe', category: 'actions', path: 'Offense' },
-        { id: 'mur-de-feu', name: 'Mur de feu', description: 'Crée zone feu 1x3. 6 dégâts/tour, 3 tours.', cooldown: 0, maxUses: 1, targetType: 'cell', range: 5, magical: true, effect: 'createTerrain', terrainType: 'fire', terrainEmoji: '🔥', terrainLabel: 'Feu magique', aoeSize: 1, duration: 3, category: 'actions', path: 'Contrôle' },
+        { id: 'mur-de-feu', name: 'Mur de feu', description: 'Crée une zone de feu sur l\'ennemi. 6 dégâts/tour, 3 tours.', cooldown: 0, maxUses: 1, targetType: 'enemy', range: 5, magical: true, effect: 'createTerrain', terrainType: 'fire', terrainEmoji: '🔥', terrainLabel: 'Feu magique', duration: 3, category: 'actions', path: 'Contrôle' },
         { id: 'globe-invulnerabilite', name: 'Globe d\'invulnérabilité', description: 'Absorbe 25 dégâts.', cooldown: 0, maxUses: 1, targetType: 'self', effect: 'shield', absorption: 25, category: 'bonusActions', path: 'Défense' }
       ]
     },
@@ -121,7 +121,7 @@ export const LEVEL_UP_TREES = {
       5: [
         { id: 'frappe-mortelle', name: 'Frappe mortelle', damage: '1d6+3', bonusDamage: '4d6', range: 1, description: '+4d6 si sneak. 1x.', cooldown: 0, maxUses: 1, targetType: 'enemy', sneakAttack: true, category: 'actions', path: 'Offense' },
         { id: 'maitre-ombres', name: 'Maître des ombres', description: 'Avantage permanent 3 tours.', cooldown: 0, maxUses: 1, targetType: 'self', effect: 'advantage', category: 'bonusActions', path: 'Mobilité' },
-        { id: 'assassinat', name: 'Assassinat', damage: '3d6+3', range: 1, description: 'Dégâts doublés si cible n\'a pas encore agi.', cooldown: 0, maxUses: 1, targetType: 'enemy', category: 'actions', path: 'Offense' }
+        { id: 'assassinat', name: 'Assassinat', damage: '3d6+3', range: 1, description: 'Dégâts doublés si cible n\'a pas encore agi.', cooldown: 0, maxUses: 1, targetType: 'enemy', effect: 'assassinate', category: 'actions', path: 'Offense' }
       ]
     },
     evolution: {
@@ -162,7 +162,7 @@ export const LEVEL_UP_TREES = {
       ],
       5: [
         { id: 'tir-tueur', name: 'Tir du tueur', damage: '3d8+5', range: 5, description: 'Perce l\'armure. 1x.', cooldown: 0, maxUses: 1, targetType: 'enemy', armorPiercing: true, category: 'actions', path: 'Offense' },
-        { id: 'pluie-empoisonnee', name: 'Pluie empoisonnée', damage: '1d8+3', range: 5, description: 'AoE + poison 3 tours.', cooldown: 0, maxUses: 1, targetType: 'enemy', effect: 'aoe', category: 'actions', path: 'Contrôle' },
+        { id: 'pluie-empoisonnee', name: 'Pluie empoisonnée', damage: '1d8+3', range: 5, description: 'AoE + poison 3 tours.', cooldown: 0, maxUses: 1, targetType: 'enemy', effect: 'aoe', poisonOnHit: true, poisonDuration: 3, poisonDamage: 3, category: 'actions', path: 'Contrôle' },
         { id: 'oeil-de-faucon', name: 'Œil de faucon', description: 'Ignore couvert et LOS. Avantage 3 tours.', cooldown: 0, maxUses: 1, targetType: 'self', effect: 'advantage', category: 'bonusActions', path: 'Offense' }
       ]
     },
@@ -199,8 +199,8 @@ export const LEVEL_UP_TREES = {
       ],
       4: [
         { id: 'mot-guerison-urgence', name: 'Mot de guérison d\'urgence', heal: '1d8+3', description: 'Sauve un allié à 0 PV.', maxUses: 2, trigger: 'allyFalls', category: 'reactions', path: 'Soin' },
-        { id: 'chatiment-sacre', name: 'Châtiment sacré', damage: '2d8+3', range: 1, description: 'Soigne le Clerc de 50% des dégâts.', cooldown: 3, maxUses: 0, targetType: 'enemy', magical: true, category: 'actions', path: 'Offense' },
-        { id: 'benediction', name: 'Bénédiction', description: '+1 ATK allié adjacent 3 tours.', cooldown: 4, maxUses: 0, targetType: 'ally', range: 1, effect: 'giveAdvantage', category: 'bonusActions', path: 'Soutien' }
+        { id: 'chatiment-sacre', name: 'Châtiment sacré', damage: '2d8+3', range: 1, description: 'Soigne le Clerc de 50% des dégâts.', cooldown: 3, maxUses: 0, targetType: 'enemy', magical: true, effect: 'lifeSteal', category: 'actions', path: 'Offense' },
+        { id: 'benediction', name: 'Bénédiction', description: 'Avantage sur le prochain jet d\'un allié.', cooldown: 4, maxUses: 0, targetType: 'ally', range: 1, effect: 'giveAdvantage', category: 'bonusActions', path: 'Soutien' }
       ],
       5: [
         { id: 'guerison-groupe', name: 'Guérison de groupe', heal: '2d8+3', range: 3, description: 'Soigne TOUS les alliés. 1x.', cooldown: 0, maxUses: 1, targetType: 'self', effect: 'massHeal', category: 'actions', path: 'Soin' },

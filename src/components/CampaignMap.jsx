@@ -46,6 +46,7 @@ export default function CampaignMap({
   }
 
   function isReachable(node) {
+    if (campaign.fogOfWar && !visitedNodes.includes(node.id) && !isAvailable(node)) return false
     if (visitedNodes.includes(node.id)) return true
     if (isAvailable(node)) return true
     if (node.layerIndex <= currentLayer) return false

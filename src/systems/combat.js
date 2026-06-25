@@ -390,10 +390,40 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
     return { logs, effects }
   }
 
+  if (ability.effect === 'createTerrain') {
+    logs.push(`🔥 ${attacker.name} crée un ${ability.terrainLabel || 'terrain'} !`)
+    return { logs, effects, terrain: { type: ability.terrainType || 'fire', emoji: ability.terrainEmoji || '🔥', label: ability.terrainLabel || 'Feu', damage: 6, duration: ability.duration || 3 } }
+  }
+
   if (ability.effect === 'ambush') {
     effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'extraMovement', amount: ability.extraMove || 2, duration: 0 } })
     effects.push({ type: 'addStatus', targetId: attacker.id, status: { type: 'advantage', duration: 1 } })
     logs.push(`🗡️ ${attacker.name} — Embuscade parfaite !`)
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'lifeSteal' && ability.damage) {
+    const result = resolveAttack(attacker, target, { ...ability, effect: undefined }, characters, terrain)
+    logs.push(...result.logs)
+    effects.push(...result.effects)
+    if (result.totalDamage > 0) {
+      const healAmt = Math.floor(result.totalDamage * 0.5)
+      effects.push({ type: 'heal', targetId: attacker.id, amount: healAmt })
+      logs.push(`💚 ${attacker.name} se soigne de ${healAmt} PV`)
+    }
+    return { logs, effects }
+  }
+
+  if (ability.effect === 'assassinate' && ability.damage) {
+    const hasActed = target.actionUsed || target.bonusActionUsed || target.movementUsed > 0
+    const doubleDmg = !hasActed
+    const result = resolveAttack(attacker, target, { ...ability, effect: undefined }, characters, terrain)
+    logs.push(...result.logs)
+    effects.push(...result.effects)
+    if (doubleDmg && result.totalDamage > 0) {
+      effects.push({ type: 'damage', targetId: target.id, amount: result.totalDamage })
+      logs.push(`🗡️ Assassinat ! Dégâts doublés ! +${result.totalDamage} dégâts supplémentaires`)
+    }
     return { logs, effects }
   }
 
@@ -407,6 +437,13 @@ export function resolveAbility(attacker, target, ability, characters, terrain = 
       const aoeResult = resolveAttack(attacker, enemy, { ...ability, effect: undefined }, characters, terrain)
       logs.push(...aoeResult.logs)
       effects.push(...aoeResult.effects)
+    }
+    if (ability.poisonOnHit) {
+      const poisonTargets = [target, ...adjacent]
+      for (const pt of poisonTargets) {
+        effects.push({ type: 'addStatus', targetId: pt.id, status: { type: 'poison', duration: ability.poisonDuration || 3, damage: ability.poisonDamage || 3, source: attacker.name } })
+      }
+      logs.push(`☠️ Poison appliqué ! ${ability.poisonDamage || 3} dégâts/tour`)
     }
     return { logs, effects }
   }

@@ -326,8 +326,7 @@ export const CLASSES = {
           name: 'Esquive réflexe',
           description: 'Réduit dégâts reçus de 50%.',
           maxUses: 2,
-          trigger: 'selfHit',
-          effect: 'halve'
+          trigger: 'onDamage'
         },
         {
           id: 'attaque-opportunite-voleur',
