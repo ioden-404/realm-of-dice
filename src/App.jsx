@@ -532,6 +532,7 @@ export default function App() {
               dispatch({ type: 'USE_ITEM', payload: { item, targetCell: null } })
             }
           }}
+          onToggleReactions={() => dispatch({ type: 'TOGGLE_REACTIONS', payload: { characterId: currentChar?.id } })}
         />
       )}
 

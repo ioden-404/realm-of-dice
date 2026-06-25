@@ -562,7 +562,7 @@ export function resolveAllyReactions(targetId, attackerId, damage, characters) {
   const team = target.team
 
   const selfChar = characters[targetId]
-  if (selfChar && !selfChar.isDead && !selfChar.reactionUsed) {
+  if (selfChar && !selfChar.isDead && !selfChar.reactionUsed && selfChar.reactionsEnabled !== false) {
     const selfReactions = selfChar.classData?.abilities?.reactions || []
     for (const reaction of selfReactions) {
       if (reaction.trigger === 'onDamage' && damage > 0) {
@@ -576,7 +576,7 @@ export function resolveAllyReactions(targetId, attackerId, damage, characters) {
   }
 
   for (const char of Object.values(characters)) {
-    if (char.isDead || char.id === targetId || char.team !== team || char.reactionUsed) continue
+    if (char.isDead || char.id === targetId || char.team !== team || char.reactionUsed || char.reactionsEnabled === false) continue
 
     const reactions = char.classData?.abilities?.reactions || []
     for (const reaction of reactions) {

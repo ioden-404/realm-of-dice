@@ -1176,6 +1176,19 @@ function gameReducer(state, action) {
       return { ...state, pendingCutIn: null }
     }
 
+    case 'TOGGLE_REACTIONS': {
+      const { characterId } = action.payload
+      const char = state.characters[characterId]
+      if (!char) return state
+      return {
+        ...state,
+        characters: {
+          ...state.characters,
+          [characterId]: { ...char, reactionsEnabled: char.reactionsEnabled === false ? true : false }
+        }
+      }
+    }
+
     case 'SET_PHASE': {
       return { ...state, phase: action.payload.phase }
     }

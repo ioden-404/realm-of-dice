@@ -84,7 +84,8 @@ export default function ActionPanel({
   onEndTurn,
   onBack,
   combatInventory,
-  onUseItem
+  onUseItem,
+  onToggleReactions
 }) {
   if (!character || character.team === 'enemy') return null
 
@@ -208,6 +209,14 @@ export default function ActionPanel({
           🎒 Objets
           {combatInventory?.length > 0 && <span className="action-sub">{combatInventory.length}</span>}
         </button>
+        {classData.abilities.reactions.length > 0 && (
+          <button
+            className={`action-btn ${character.reactionsEnabled !== false ? 'action-reaction-on' : 'action-reaction-off'}`}
+            onClick={onToggleReactions}
+          >
+            {character.reactionsEnabled !== false ? '🛡️ Réactions ON' : '❌ Réactions OFF'}
+          </button>
+        )}
         <button className="action-btn action-end" onClick={onEndTurn}>
           ⏭️ Fin du tour
         </button>

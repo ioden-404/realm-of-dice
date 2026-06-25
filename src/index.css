@@ -1567,6 +1567,19 @@ body {
   color: var(--color-text-muted);
 }
 
+.action-reaction-on {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), var(--color-stone-dark));
+  font-size: 11px !important;
+}
+
+.action-reaction-off {
+  border-color: var(--color-crimson);
+  background: linear-gradient(135deg, rgba(139, 32, 32, 0.15), var(--color-stone-dark));
+  font-size: 11px !important;
+  opacity: 0.7;
+}
+
 .action-end {
   border-color: var(--color-gold);
   background: linear-gradient(135deg, rgba(201, 168, 76, 0.15), var(--color-stone-dark));
