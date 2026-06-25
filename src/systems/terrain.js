@@ -19,11 +19,13 @@ const CARDINAL = [
   { dx: 1, dy: 0 }
 ]
 
+const B = import.meta.env.BASE_URL
+
 const MAP_THEMES = {
   ruins: {
     name: 'Ruines antiques',
     obstacles: [
-      { type: TERRAIN_TYPES.BLOCKING, emoji: '🪨', label: 'Pilier' },
+      { type: TERRAIN_TYPES.BLOCKING, emoji: '🪨', label: 'Pilier', image: B + 'Images/terrain-ruins-pillar.png' },
       { type: TERRAIN_TYPES.DIFFICULT, emoji: '🧱', label: 'Gravats' },
       { type: TERRAIN_TYPES.COVER, emoji: '🏛️', label: 'Muret' }
     ],
@@ -32,28 +34,28 @@ const MAP_THEMES = {
   forest: {
     name: 'Forêt sombre',
     obstacles: [
-      { type: TERRAIN_TYPES.BLOCKING, emoji: '🌳', label: 'Arbre' },
-      { type: TERRAIN_TYPES.DIFFICULT, emoji: '💧', label: 'Ruisseau' },
-      { type: TERRAIN_TYPES.COVER, emoji: '🌿', label: 'Buisson' }
+      { type: TERRAIN_TYPES.BLOCKING, emoji: '🌳', label: 'Arbre', image: B + 'Images/terrain-forest-tree.png' },
+      { type: TERRAIN_TYPES.DIFFICULT, emoji: '💧', label: 'Ruisseau', image: B + 'Images/terrain-forest-stream.png' },
+      { type: TERRAIN_TYPES.COVER, emoji: '🌿', label: 'Buisson', image: B + 'Images/terrain-forest-bush.png' }
     ],
     density: { blocking: [1, 2], difficult: [1, 2], cover: [1, 2], hazard: [0, 0] }
   },
   crypt: {
     name: 'Crypte maudite',
     obstacles: [
-      { type: TERRAIN_TYPES.BLOCKING, emoji: '⚰️', label: 'Sarcophage' },
-      { type: TERRAIN_TYPES.DIFFICULT, emoji: '🦴', label: 'Ossements' },
-      { type: TERRAIN_TYPES.COVER, emoji: '⛩️', label: 'Autel' },
-      { type: TERRAIN_TYPES.HAZARD, emoji: '💀', label: 'Feu maudit' }
+      { type: TERRAIN_TYPES.BLOCKING, emoji: '⚰️', label: 'Sarcophage', image: B + 'Images/terrain-crypt-sarcophagus.png' },
+      { type: TERRAIN_TYPES.DIFFICULT, emoji: '🦴', label: 'Ossements', image: B + 'Images/terrain-crypt-bones.png' },
+      { type: TERRAIN_TYPES.COVER, emoji: '⛩️', label: 'Autel', image: B + 'Images/terrain-crypt-altar.png' },
+      { type: TERRAIN_TYPES.HAZARD, emoji: '💀', label: 'Feu maudit', image: B + 'Images/terrain-crypt-fire.png' }
     ],
     density: { blocking: [1, 2], difficult: [0, 1], cover: [0, 1], hazard: [1, 2] }
   },
   volcano: {
     name: 'Cratère volcanique',
     obstacles: [
-      { type: TERRAIN_TYPES.BLOCKING, emoji: '🗿', label: 'Roche' },
-      { type: TERRAIN_TYPES.COVER, emoji: '🌫️', label: 'Fumerolle' },
-      { type: TERRAIN_TYPES.HAZARD, emoji: '🔥', label: 'Lave' }
+      { type: TERRAIN_TYPES.BLOCKING, emoji: '🗿', label: 'Roche', image: B + 'Images/terrain-volcano-rock.png' },
+      { type: TERRAIN_TYPES.COVER, emoji: '🌫️', label: 'Fumerolle', image: B + 'Images/terrain-volcano-steam.png' },
+      { type: TERRAIN_TYPES.HAZARD, emoji: '🔥', label: 'Lave', image: B + 'Images/terrain-volcano-lava.png' }
     ],
     density: { blocking: [1, 2], difficult: [0, 0], cover: [1, 2], hazard: [1, 2] }
   },
@@ -139,7 +141,8 @@ export function generateTerrain(forceTheme = null, attempt = 0) {
       terrain[key] = {
         type: obstacleData.type,
         emoji: obstacleData.emoji,
-        label: obstacleData.label
+        label: obstacleData.label,
+        image: obstacleData.image || null
       }
       usedCells.add(key)
     }
