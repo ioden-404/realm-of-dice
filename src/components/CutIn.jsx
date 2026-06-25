@@ -6,7 +6,7 @@ const CLASS_IMAGE_MAP = {
   guerrier: 'bdguerrier',
   mage: 'bdmage',
   voleur: 'bdvoleur',
-  rodeur: 'bdrôdeur',
+  rodeur: 'bdrodeur',
   clerc: 'bdclerc'
 }
 
