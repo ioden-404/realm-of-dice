@@ -239,16 +239,12 @@ export default function App() {
   if (state.phase === PHASES.HUB) {
     return (
       <div className="app">
-        <Hub
-          hasSave={hasCampaignSave()}
-          onNavigate={(tab) => {
-            if (tab === 'continue') dispatch({ type: 'LOAD_CAMPAIGN' })
-            if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
-            if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
-            if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
-            if (tab === 'settings') setShowSettings(true)
-          }}
-        />
+        <Hub onNavigate={(tab) => {
+          if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
+          if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
+          if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
+          if (tab === 'settings') setShowSettings(true)
+        }} />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )
@@ -284,6 +280,8 @@ export default function App() {
           onToggle={(classId) => dispatch({ type: 'TOGGLE_CLASS', payload: { classId } })}
           onStart={handleStartCombat}
           onBack={() => dispatch({ type: 'GO_TO_HUB' })}
+          hasSave={state.campaignMode && hasCampaignSave()}
+          onContinue={() => dispatch({ type: 'LOAD_CAMPAIGN' })}
         />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>

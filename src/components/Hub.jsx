@@ -2,7 +2,7 @@ import { CLASS_EMOJIS } from '../data/config.js'
 
 const CLASS_ICONS = Object.values(CLASS_EMOJIS)
 
-export default function Hub({ onNavigate, hasSave }) {
+export default function Hub({ onNavigate }) {
   return (
     <div className="hub">
       <div className="hub-content">
@@ -22,12 +22,6 @@ export default function Hub({ onNavigate, hasSave }) {
           <h1 className="hub-title">Realm of Dice</h1>
           <p className="hub-subtitle">Combat tactique médiéval fantasy</p>
         </div>
-
-        {hasSave && (
-          <button className="hub-continue-btn" onClick={() => onNavigate('continue')}>
-            ▶ Continuer la campagne
-          </button>
-        )}
       </div>
 
       <nav className="hub-nav">

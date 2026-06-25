@@ -1,17 +1,23 @@
 import { CLASSES, CLASS_LIST } from '../data/classes.js'
 import { CLASS_COLORS, CLASS_EMOJIS } from '../data/config.js'
 
-export default function TeamSelect({ selectedClasses, onToggle, onStart, onBack }) {
+export default function TeamSelect({ selectedClasses, onToggle, onStart, onBack, hasSave, onContinue }) {
   const slots = [0, 1, 2]
 
   return (
     <div className="team-select">
       <div className="team-header">
         <button className="team-back-btn" onClick={onBack}>← Retour</button>
-        <span className="team-header-label">COMBAT</span>
+        <span className="team-header-label">ÉTAGES</span>
       </div>
 
-      <h2 className="team-title">Choisis tes champions</h2>
+      {hasSave && (
+        <button className="hub-continue-btn" onClick={onContinue}>
+          ▶ Continuer la campagne
+        </button>
+      )}
+
+      <h2 className="team-title">{hasSave ? 'Ou nouvelle campagne' : 'Choisis tes champions'}</h2>
       <p className="team-subtitle">3 sur 5</p>
 
       <div className="class-grid">
@@ -65,7 +71,7 @@ export default function TeamSelect({ selectedClasses, onToggle, onStart, onBack 
         disabled={selectedClasses.length !== 3}
         onClick={() => onStart(selectedClasses)}
       >
-        ⚔️ Lancer le combat
+        ⚔️ Nouvelle campagne
       </button>
     </div>
   )

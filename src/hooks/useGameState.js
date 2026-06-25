@@ -1076,6 +1076,7 @@ function gameReducer(state, action) {
     }
 
     case 'RESTART': {
+      clearCampaignSave()
       return { ...initialState, phase: PHASES.HUB }
     }
 
@@ -1470,9 +1471,6 @@ export function useGameState() {
   useEffect(() => {
     if (state.phase === PHASES.CAMPAIGN_MAP && state.campaign?.active) {
       saveCampaignState(state)
-    }
-    if (state.phase === PHASES.HUB) {
-      clearCampaignSave()
     }
   }, [state.phase, state.characters, state.campaign, state.campaignEvent, state.pendingPaliers, state.pendingLevelUps, state.combatResult])
 
