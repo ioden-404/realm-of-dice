@@ -3,13 +3,36 @@ import { CLASS_COLORS } from '../data/config.js'
 
 const B = import.meta.env.BASE_URL
 
-const TOKEN_IMAGES = {
+const ALLY_IMAGES = {
   guerrier: B + 'Images/guerriertoken.png',
   mage: B + 'Images/magetoken.png',
   voleur: B + 'Images/voleurtoken.png',
   rodeur: B + 'Images/Rodeurtoken.png',
   clerc: B + 'Images/clerctoken.png'
 }
+
+const MONSTER_IMAGES = {
+  silhouette: B + 'Images/silhouette.png',
+  goblin: B + 'Images/gobelin.png',
+  wolf: B + 'Images/loup.png',
+  skeleton: B + 'Images/squelette.png',
+  kobold: B + 'Images/kobold.png',
+  bugbear: B + 'Images/bugbear.png',
+  gnoll: B + 'Images/gnoll.png',
+  zombie: B + 'Images/zombie.png',
+  necromancer: B + 'Images/necromancien.png',
+  specter: B + 'Images/spectre.png',
+  minotaur: B + 'Images/minotaure.png',
+  orcBerserker: B + 'Images/orque.png',
+  darkMage: B + 'Images/magenoir.png',
+  deathKnight: B + 'Images/chevaliermort.png',
+  basilisk: B + 'Images/basilic.png',
+  youngDragon: B + 'Images/dragon.png'
+}
+
+const MONSTERS_NEED_FLIP = new Set([
+  'necromancer', 'specter', 'minotaur', 'orcBerserker', 'darkMage'
+])
 
 const TERRAIN_BADGES = {
   cover: '🛡️',
@@ -18,6 +41,18 @@ const TERRAIN_BADGES = {
   fire: '🔥',
   oil: '🛢️',
   smoke: '🌫️'
+}
+
+function getSpriteUrl(character) {
+  if (character.team === 'ally') return ALLY_IMAGES[character.classId] || null
+  const monsterId = character.id?.replace(/^enemy-/, '').replace(/-\d+$/, '')
+  return MONSTER_IMAGES[monsterId] || null
+}
+
+function needsFlip(character) {
+  if (character.team === 'ally') return false
+  const monsterId = character.id?.replace(/^enemy-/, '').replace(/-\d+$/, '')
+  return MONSTERS_NEED_FLIP.has(monsterId)
 }
 
 export default function Token({ character, isActive, terrainType, onClick }) {
@@ -46,7 +81,8 @@ export default function Token({ character, isActive, terrainType, onClick }) {
   const hasShield = character.statuses.some(s => s.type === 'shield' || s.type === 'faithShield')
   const isDodging = character.statuses.some(s => s.type === 'dodge')
 
-  const spriteUrl = isAlly ? TOKEN_IMAGES[character.classId] : null
+  const spriteUrl = getSpriteUrl(character)
+  const flip = needsFlip(character)
 
   if (spriteUrl) {
     return (
@@ -55,7 +91,11 @@ export default function Token({ character, isActive, terrainType, onClick }) {
         className={`token-sprite-container ${character.isDead ? 'token-dead' : ''}`}
         onClick={onClick}
       >
-        <img src={spriteUrl} alt="" className="token-sprite" />
+        <img
+          src={spriteUrl}
+          alt=""
+          className={`token-sprite ${flip ? 'token-sprite-flip' : ''}`}
+        />
         {!character.isDead && (
           <div className="token-hp-bar-bottom">
             <div className="token-hp-bar-fill" style={{ width: `${hpPercent * 100}%`, background: hpColor }} />

@@ -1225,6 +1225,10 @@ body {
   margin-top: -40%;
 }
 
+.token-sprite-flip {
+  transform: scaleX(-1);
+}
+
 .token-hp-bar-bottom {
   position: absolute;
   bottom: -2px;
