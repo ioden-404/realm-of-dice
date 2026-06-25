@@ -1722,7 +1722,13 @@ function gameReducer(state, action) {
         return { ...state, story: newStory }
       }
 
-      return state
+      const completed = [...(story.completed || []), story.chapterId]
+      clearStoryState()
+      return {
+        ...state,
+        phase: PHASES.STORY_MENU,
+        story: { ...initialState.story, completed }
+      }
     }
 
     case 'STORY_CHOICE': {

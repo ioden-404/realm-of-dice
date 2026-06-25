@@ -9,7 +9,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Noir complet. Pas le noir de la nuit. Lenoir d'avant les choses. Celui où même le silence a une texture.",
+            "Noir complet. Pas le noir de la nuit. Le noir d'avant les choses. Celui où même le silence a une texture.",
             "Puis, comme un souffle à travers un mur :"
           ]
         },
@@ -21,7 +21,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "La voix n'a pas de direction. Elle vient de partout. De nulle part. Elle est vieille. Pascomme une personne âgée, vieille comme de la pierre usée par des siècles de pluie.",
+            "La voix n'a pas de direction. Elle vient de partout. De nulle part. Elle est vieille. Pas comme une personne âgée, vieille comme de la pierre usée par des siècles de pluie.",
           ]
         },
         {
