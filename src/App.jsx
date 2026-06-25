@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useRef } from 'react'
 import { PHASES, TURN_STATES } from './data/config.js'
-import { useGameState, hasCampaignSave } from './hooks/useGameState.js'
+import { useGameState, hasCampaignSave, hasStorySave } from './hooks/useGameState.js'
 import { useAudio } from './hooks/useAudio.js'
 import Hub from './components/Hub.jsx'
 import Settings from './components/Settings.jsx'
@@ -24,6 +24,7 @@ import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './
 import LevelUpScreen from './components/LevelUpScreen.jsx'
 import CutIn from './components/CutIn.jsx'
 import DialogueScreen from './components/DialogueScreen.jsx'
+import StoryMenu from './components/StoryMenu.jsx'
 import { PROLOGUE } from './data/prologue.js'
 
 const B = import.meta.env.BASE_URL
@@ -207,7 +208,7 @@ export default function App() {
     return (
       <div className="app">
         <Hub onNavigate={(tab) => {
-          if (tab === 'story') dispatch({ type: 'START_STORY', payload: { chapter: PROLOGUE } })
+          if (tab === 'story') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.STORY_MENU } })
           if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
           if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
           if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
@@ -240,6 +241,19 @@ export default function App() {
     )
   }
 
+  if (state.phase === PHASES.STORY_MENU) {
+    return (
+      <div className="app">
+        <StoryMenu
+          hasSave={hasStorySave()}
+          onContinue={() => dispatch({ type: 'START_STORY', payload: { chapter: PROLOGUE } })}
+          onNewStory={() => dispatch({ type: 'NEW_STORY', payload: { chapter: PROLOGUE } })}
+          onBack={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.HUB } })}
+        />
+      </div>
+    )
+  }
+
   if (state.phase === PHASES.STORY) {
     return (
       <div className="app">
@@ -251,7 +265,7 @@ export default function App() {
           onSetName={(name) => dispatch({ type: 'STORY_SET_NAME', payload: { name } })}
           onStartCombat={(config) => {}}
           onComplete={() => dispatch({ type: 'STORY_COMPLETE' })}
-          onQuit={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.HUB } })}
+          onQuit={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.STORY_MENU } })}
         />
       </div>
     )

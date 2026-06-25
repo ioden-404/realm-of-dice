@@ -23,6 +23,7 @@ export const PHASES = {
   CAMPAIGN_DEFEAT: 'campaign-defeat',
   RUN_MODIFIERS: 'run-modifiers',
   GLORY: 'glory',
+  STORY_MENU: 'story-menu',
   STORY: 'story',
   STORY_COMBAT: 'story-combat'
 }

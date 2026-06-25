@@ -1563,6 +1563,24 @@ function gameReducer(state, action) {
       }
     }
 
+    case 'NEW_STORY': {
+      const { chapter } = action.payload
+      clearStoryState()
+      return {
+        ...state,
+        phase: PHASES.STORY,
+        story: {
+          active: true,
+          chapterId: chapter.id,
+          sequenceId: chapter.startSequence,
+          blockIndex: 0,
+          choices: {},
+          companion: null,
+          completed: state.story.completed || []
+        }
+      }
+    }
+
     case 'STORY_ADVANCE': {
       const { story } = state
       const chapter = action.payload?.chapter
@@ -1645,6 +1663,10 @@ function gameReducer(state, action) {
     default:
       return state
   }
+}
+
+export function hasStorySave() {
+  return loadStoryState() !== null
 }
 
 export function hasCampaignSave() {
