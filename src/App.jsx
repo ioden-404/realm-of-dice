@@ -311,6 +311,9 @@ export default function App() {
           stats={state.stats}
           onRestart={() => dispatch({ type: 'RESTART' })}
         />
+        {cutIn && (
+          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
+        )}
       </div>
     )
   }
@@ -361,6 +364,9 @@ export default function App() {
             }}
           />
         )}
+        {cutIn && (
+          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
+        )}
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )
@@ -384,6 +390,9 @@ export default function App() {
             dispatch({ type: 'RESTART' })
           }}
         />
+        {cutIn && (
+          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
+        )}
       </div>
     )
   }
