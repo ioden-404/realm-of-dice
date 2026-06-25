@@ -117,7 +117,9 @@ export default function App() {
   }, [state.phase])
 
   useEffect(() => {
-    if (state.phase !== PHASES.COMBAT || cutIn) return
+    if (cutIn) return
+    const combatEnded = [PHASES.VICTORY, PHASES.DEFEAT, PHASES.CAMPAIGN_MAP, PHASES.CAMPAIGN_COMPLETE, PHASES.CAMPAIGN_DEFEAT].includes(state.phase)
+    if (state.phase !== PHASES.COMBAT && !combatEnded) return
     if (!state.initiativeOrder?.length) return
 
     const logLen = state.log?.length || 0
@@ -130,6 +132,7 @@ export default function App() {
     const char = state.characters[charId]
     if (!char || char.team !== 'ally') {
       prevCharsRef.current = state.characters
+      lastCutInLogLen.current = logLen
       return
     }
 
@@ -145,10 +148,10 @@ export default function App() {
 
     if (enemyJustDied) {
       setCutIn({ classId: char.classId, type: 'kill' })
-    } else if (isCrit) {
+    } else if (isCrit && !combatEnded) {
       setCutIn({ classId: char.classId, type: 'crit' })
     }
-  }, [state.log?.length, state.characters])
+  }, [state.log?.length, state.characters, state.phase])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return
