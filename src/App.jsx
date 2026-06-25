@@ -104,55 +104,19 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [state.currentTurnIndex, state.round, state.turnState])
 
-  const prevDeadRef = useRef(new Set())
-  const lastCutInLogLen = useRef(0)
-
   useEffect(() => {
-    if (state.phase === PHASES.COMBAT) {
-      lastCutInLogLen.current = state.log?.length || 0
-      prevDeadRef.current = new Set(
-        Object.values(state.characters).filter(c => c.isDead).map(c => c.id)
-      )
-      setCutIn(null)
-    } else {
+    if (state.phase !== PHASES.COMBAT) {
       lastSplashRef.current = null
     }
   }, [state.phase])
 
   useEffect(() => {
-    if (cutIn) return
-    const combatEnded = [PHASES.VICTORY, PHASES.DEFEAT, PHASES.CAMPAIGN_MAP, PHASES.CAMPAIGN_COMPLETE, PHASES.CAMPAIGN_DEFEAT].includes(state.phase)
-    if (state.phase !== PHASES.COMBAT && !combatEnded) return
-    if (!state.initiativeOrder?.length) return
-
-    const logLen = state.log?.length || 0
-    if (logLen <= lastCutInLogLen.current) return
-
-    const charId = state.initiativeOrder[state.currentTurnIndex]
-    const char = state.characters[charId]
-    if (!char || char.team !== 'ally') {
-      lastCutInLogLen.current = logLen
-      return
-    }
-
-    const newLogs = state.log.slice(lastCutInLogLen.current)
-    const isCrit = newLogs.some(l => l.text?.includes('CRITIQUE'))
-
-    const enemyJustDied = Object.values(state.characters).some(c =>
-      c.team === 'enemy' && c.isDead && !prevDeadRef.current.has(c.id)
-    )
-
-    lastCutInLogLen.current = logLen
-    if (enemyJustDied) {
-      prevDeadRef.current = new Set(
-        Object.values(state.characters).filter(c => c.isDead).map(c => c.id)
-      )
-      if (combatEnded) setHoldCombatView(true)
-      setCutIn({ classId: char.classId, type: 'kill' })
-    } else if (isCrit && !combatEnded) {
-      setCutIn({ classId: char.classId, type: 'crit' })
-    }
-  }, [state.log?.length, state.characters, state.phase])
+    if (!state.pendingCutIn || cutIn) return
+    const combatEnded = state.phase !== PHASES.COMBAT
+    if (combatEnded) setHoldCombatView(true)
+    setCutIn(state.pendingCutIn)
+    dispatch({ type: 'CLEAR_CUTIN' })
+  }, [state.pendingCutIn])
 
   useEffect(() => {
     if (state.phase !== PHASES.COMBAT) return

@@ -385,7 +385,8 @@ const initialState = {
   combatResult: null,
   combatInventory: [],
   campaignMode: false,
-  visualEvents: []
+  visualEvents: [],
+  pendingCutIn: null
 }
 
 function applyEffects(state, effects) {
@@ -861,6 +862,19 @@ function gameReducer(state, action) {
         }
       }
 
+      let cutInData = null
+      if (current.team === TEAMS.ALLY) {
+        const enemyKilled = Object.values(finalChars).some(c =>
+          c.team === TEAMS.ENEMY && c.isDead && state.characters[c.id] && !state.characters[c.id].isDead
+        )
+        const isCrit = extraLogs.some(t => t.includes('CRITIQUE'))
+        if (enemyKilled) {
+          cutInData = { classId: current.classId, type: 'kill' }
+        } else if (isCrit) {
+          cutInData = { classId: current.classId, type: 'crit' }
+        }
+      }
+
       return {
         ...state,
         characters: execChars,
@@ -872,6 +886,7 @@ function gameReducer(state, action) {
         selectedCategory: null,
         validTargets: [],
         phase: resolvedPhase2 || state.phase,
+        pendingCutIn: cutInData,
         campaign: execCampaign,
         campaignEvent: execEvent,
         pendingPaliers: execPendingPaliers,
@@ -1116,6 +1131,10 @@ function gameReducer(state, action) {
 
     case 'CLEAR_VISUALS': {
       return { ...state, visualEvents: [] }
+    }
+
+    case 'CLEAR_CUTIN': {
+      return { ...state, pendingCutIn: null }
     }
 
     case 'SET_PHASE': {
