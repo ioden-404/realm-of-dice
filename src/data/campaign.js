@@ -334,31 +334,26 @@ export function applyPalierToCharacter(characters, palier, characterId) {
 // ============ RELICS ============
 
 export const MINOR_RELICS = [
-  { id: 'blood-pendant', name: 'Pendentif sanglant', icon: '🗡️', desc: '+3 PV max', effects: [{ stat: 'maxHp', value: 3 }] },
-  { id: 'iron-ring', name: 'Anneau de fer', icon: '🛡️', desc: '+1 CA', effects: [{ stat: 'ac', value: 1 }] },
-  { id: 'swift-boots', name: 'Bottes rapides', icon: '🏃', desc: '+1 mouvement', effects: [{ stat: 'movement', value: 1 }] },
-  { id: 'rage-stone', name: 'Pierre de rage', icon: '💢', desc: '+1 ATK', effects: [{ stat: 'attackBonus', value: 1 }] },
-  { id: 'vitality-gem', name: 'Gemme de vitalité', icon: '❤️', desc: '+4 PV max', effects: [{ stat: 'maxHp', value: 4 }] },
-  { id: 'war-horn', name: 'Cor de guerre', icon: '📯', desc: '+1 ATK, +2 PV max', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'maxHp', value: 2 }] },
+  { id: 'heal-on-kill', name: 'Amulette vampirique', icon: '🧛', desc: 'Soigne 5 PV en tuant un ennemi', relicEffect: { type: 'healOnKill', value: 5 } },
+  { id: 'auto-rage', name: 'Pierre de rage', icon: '💢', desc: 'Rage auto quand un allié tombe sous 25% PV', relicEffect: { type: 'autoRage', threshold: 0.25 } },
+  { id: 'ao-range-bonus', name: 'Anneau du tacticien', icon: '💍', desc: '+1 portée attaques d\'opportunité', relicEffect: { type: 'aoRangeBonus', value: 1 } },
+  { id: 'slow-adjacent', name: 'Pendentif de givre', icon: '❄️', desc: 'Ennemis adjacents ont -1 mouvement', relicEffect: { type: 'slowAdjacent', value: 1 } },
+  { id: 'no-los-disadvantage', name: 'Oeil du faucon', icon: '🦅', desc: 'Plus de désavantage pour la ligne de vue', relicEffect: { type: 'noLOSDisadvantage' } },
+  { id: 'bonus-first-heal', name: 'Cor de ralliement', icon: '📯', desc: 'Premier soin par combat +50%', relicEffect: { type: 'bonusFirstHeal', value: 1.5 } },
+  { id: 'reroll', name: 'Talisman de chance', icon: '🍀', desc: 'Relance un jet raté 1x/combat', relicEffect: { type: 'reroll', uses: 1 } },
+  { id: 'bonus-sneak', name: 'Croc du loup', icon: '🐺', desc: '+1d4 dégâts si allié adjacent à la cible', relicEffect: { type: 'bonusSneakDamage', dice: '1d4' } },
 ]
 
 export const MAJOR_RELICS = [
-  { id: 'destiny-blade', name: 'Lame du destin', icon: '🔥', desc: '+2 ATK', effects: [{ stat: 'attackBonus', value: 2 }] },
-  { id: 'phoenix-heart', name: 'Cœur du phénix', icon: '❤️', desc: '+6 PV max + soin complet', effects: [{ stat: 'maxHp', value: 6 }, { stat: 'fullHeal' }] },
-  { id: 'kings-crown', name: 'Couronne du roi', icon: '👑', desc: '+1 ATK, +4 PV max, +1 mouvement', effects: [{ stat: 'attackBonus', value: 1 }, { stat: 'maxHp', value: 4 }, { stat: 'movement', value: 1 }] },
-  { id: 'shadow-cloak', name: 'Cape d\'ombre', icon: '🌑', desc: '+2 CA', effects: [{ stat: 'ac', value: 2 }] },
-  { id: 'fortress-shield', name: 'Bouclier-forteresse', icon: '🏰', desc: '+1 CA, +4 PV max', effects: [{ stat: 'ac', value: 1 }, { stat: 'maxHp', value: 4 }] },
+  { id: 'phoenix-revive', name: 'Plume du phénix', icon: '🔥', desc: 'Revive un allié 1x/combat à 50% PV', relicEffect: { type: 'phoenixRevive', hpPercent: 0.5 } },
+  { id: 'team-advantage-r1', name: 'Couronne du roi', icon: '👑', desc: 'Toute l\'équipe commence avec avantage au round 1', relicEffect: { type: 'teamAdvantageR1' } },
+  { id: 'free-reaction', name: 'Cape du néant', icon: '🌑', desc: 'Réaction gratuite 1x/round', relicEffect: { type: 'freeReaction' } },
+  { id: 'cancel-crit', name: 'Sceau de protection', icon: '🛡️', desc: 'Annule un crit ennemi 1x/combat', relicEffect: { type: 'cancelEnemyCrit', uses: 1 } },
+  { id: 'x3-crit', name: 'Lame du destin', icon: '⚔️', desc: 'Critiques font x3 dégâts au lieu de x2', relicEffect: { type: 'x3CritDamage' } },
+  { id: 'see-ai', name: 'Orbe de prédiction', icon: '🔮', desc: 'Voit les intentions de l\'IA', relicEffect: { type: 'seeAIActions' } },
 ]
 
 export function pickRelics(pool, count, ownedRelics = []) {
   const available = pool.filter(r => !ownedRelics.some(o => o.id === r.id))
   return shuffle(available.length >= count ? available : [...pool]).slice(0, count)
-}
-
-export function applyRelicEffects(characters, relic) {
-  const updated = { ...characters }
-  for (const [id, char] of Object.entries(updated)) {
-    if (char.team === 'ally') updated[id] = applyStatEffects(char, relic.effects)
-  }
-  return updated
 }

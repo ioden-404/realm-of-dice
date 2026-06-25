@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { ACTS, NODE_TYPES, XP_PALIERS, SHOP_ITEMS } from '../data/campaign.js'
+import { TIER_COLORS } from '../data/equipment.js'
+import EquipmentScreen from './EquipmentScreen.jsx'
 
 const EVOLUTION_DETAILS = {
   guerrier: { from: 'Guerrier', to: 'Chevalier', change: 'Attaque puissante : CD réduit' },
@@ -22,14 +25,14 @@ function getNodeY(layerIdx) {
   return layerIdx * LAYER_H + NODE_R + 10
 }
 
-import { useState } from 'react'
-
 export default function CampaignMap({
   campaign, characters, campaignEvent, stats,
   pendingPaliers, combatResult,
   onSelectNode, onSelectReward, onEventDone, onAbandon,
-  onApplyPalier, onDismissResult
+  onApplyPalier, onDismissResult,
+  onEquipItem, onUnequipItem
 }) {
+  const [showEquipment, setShowEquipment] = useState(false)
   const { map, currentLayer, lastNodeId, visitedNodes } = campaign
   const act = ACTS[campaign.act]
   const [xpTooltip, setXpTooltip] = useState(null)
@@ -150,6 +153,10 @@ export default function CampaignMap({
           <span><span className="gold-icon">⬤</span> {campaign.gold || 0} or</span>
         </div>
 
+        <button className="cmap-equipment-btn" onClick={() => setShowEquipment(true)}>
+          🎒 Équipement {(campaign.equipmentInventory || []).length > 0 ? `(${campaign.equipmentInventory.length})` : ''}
+        </button>
+
         {campaign.relics && campaign.relics.length > 0 && (
           <div className="cmap-relics">
             {campaign.relics.map((r, i) => (
@@ -229,6 +236,16 @@ export default function CampaignMap({
       <button className="cmap-abandon-btn" onClick={onAbandon}>
         🚪 Abandonner
       </button>
+
+      {showEquipment && (
+        <EquipmentScreen
+          characters={characters}
+          campaign={campaign}
+          onEquip={onEquipItem}
+          onUnequip={onUnequipItem}
+          onClose={() => setShowEquipment(false)}
+        />
+      )}
 
       {campaignEvent && (
         <div className="cmap-event-overlay" onClick={

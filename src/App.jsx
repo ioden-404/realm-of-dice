@@ -351,6 +351,8 @@ export default function App() {
             }
           }}
           onAbandon={() => dispatch({ type: 'RESTART' })}
+          onEquipItem={(charId, item) => dispatch({ type: 'EQUIP_ITEM', payload: { characterId: charId, item } })}
+          onUnequipItem={(charId, slot) => dispatch({ type: 'UNEQUIP_ITEM', payload: { characterId: charId, slot } })}
         />
         {state.pendingLevelUps?.length > 0 && !state.campaignEvent && !state.combatResult && (state.pendingPaliers || []).length === 0 && (
           <LevelUpScreen

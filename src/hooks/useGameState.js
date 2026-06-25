@@ -7,7 +7,8 @@ import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } fr
 import { decideAction } from '../systems/ai.js'
 import { generateTerrain, TERRAIN_TYPES } from '../systems/terrain.js'
 import { MONSTERS } from '../data/monsters.js'
-import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, applyRelicEffects, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
+import { ACTS, generateCampaignMap, generateShopItems, applyCampaignRest, applyConsumable, applyNewPaliers, applyPalierToCharacter, pickRelics, MINOR_RELICS, MAJOR_RELICS, XP_PALIERS, GOLD_REWARDS, teamHasHealer, SURVIVAL_POTION } from '../data/campaign.js'
+import { generateShopEquipment, generateTreasureEquipment } from '../data/equipment.js'
 import { UNIVERSAL_ACTIONS, COMBAT_ITEMS } from '../data/items.js'
 import { LEVEL_UP_TREES, LEVEL_THRESHOLDS } from '../data/levelUpTrees.js'
 import { NARRATIVE_EVENTS, RUN_MODIFIERS } from '../data/modifiers.js'
@@ -407,7 +408,7 @@ const initialState = {
   terrain: {},
   terrainTheme: null,
   terrainThemeName: '',
-  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: [] },
+  campaign: { active: false, act: 0, map: null, currentLayer: 0, lastNodeId: null, visitedNodes: [], currentNode: null, rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: 0, inventory: [], equipment: {}, equipmentInventory: [] },
   campaignEvent: null,
   pendingPaliers: [],
   pendingLevelUps: [],
@@ -1206,6 +1207,70 @@ function gameReducer(state, action) {
       return { ...state, pendingReaction: null }
     }
 
+    case 'EQUIP_ITEM': {
+      const { characterId, item } = action.payload
+      const char = state.characters[characterId]
+      if (!char || char.team !== TEAMS.ALLY) return state
+      const slot = item.slot
+      const charEquip = { ...(state.campaign.equipment[characterId] || { weapon: null, armor: null, boots: null }) }
+      let newInventory = [...(state.campaign.equipmentInventory || [])]
+      let updatedChar = { ...char }
+
+      const currentItem = charEquip[slot]
+      if (currentItem) {
+        newInventory.push(currentItem)
+        if (currentItem.effects) {
+          for (const e of currentItem.effects) {
+            if (e.stat === 'maxHp') { updatedChar.maxHp -= e.value; updatedChar.hp = Math.min(updatedChar.hp, updatedChar.maxHp) }
+            else { updatedChar[e.stat] = (updatedChar[e.stat] || 0) - e.value }
+          }
+        }
+      }
+
+      const idx = newInventory.findIndex(i => i.id === item.id)
+      if (idx >= 0) newInventory.splice(idx, 1)
+
+      charEquip[slot] = item
+      if (item.effects) {
+        for (const e of item.effects) {
+          if (e.stat === 'maxHp') { updatedChar.maxHp += e.value; updatedChar.hp += e.value }
+          else { updatedChar[e.stat] = (updatedChar[e.stat] || 0) + e.value }
+        }
+      }
+
+      return {
+        ...state,
+        characters: { ...state.characters, [characterId]: updatedChar },
+        campaign: { ...state.campaign, equipment: { ...state.campaign.equipment, [characterId]: charEquip }, equipmentInventory: newInventory }
+      }
+    }
+
+    case 'UNEQUIP_ITEM': {
+      const { characterId, slot } = action.payload
+      const char = state.characters[characterId]
+      if (!char) return state
+      const charEquip = { ...(state.campaign.equipment[characterId] || { weapon: null, armor: null, boots: null }) }
+      const item = charEquip[slot]
+      if (!item) return state
+
+      let updatedChar = { ...char }
+      if (item.effects) {
+        for (const e of item.effects) {
+          if (e.stat === 'maxHp') { updatedChar.maxHp -= e.value; updatedChar.hp = Math.min(updatedChar.hp, updatedChar.maxHp) }
+          else { updatedChar[e.stat] = (updatedChar[e.stat] || 0) - e.value }
+        }
+      }
+
+      charEquip[slot] = null
+      const newInventory = [...(state.campaign.equipmentInventory || []), item]
+
+      return {
+        ...state,
+        characters: { ...state.characters, [characterId]: updatedChar },
+        campaign: { ...state.campaign, equipment: { ...state.campaign.equipment, [characterId]: charEquip }, equipmentInventory: newInventory }
+      }
+    }
+
     case 'TOGGLE_REACTIONS': {
       const { characterId } = action.payload
       const char = state.characters[characterId]
@@ -1258,6 +1323,8 @@ function gameReducer(state, action) {
           currentLayer: 0, lastNodeId: null,
           visitedNodes: [], currentNode: null,
           rewards: [], xp: 0, appliedPaliers: [], evolved: false, relics: [], gold: startGold, inventory: [],
+          equipment: Object.fromEntries(allyClasses.map(c => [`ally-${c}`, { weapon: null, armor: null, boots: null }])),
+          equipmentInventory: [],
           modifiers,
           fogOfWar: resolveModifiers(modifiers).fogOfWar || false,
           gloryUpgrades: glory.upgrades || {}
@@ -1289,10 +1356,17 @@ function gameReducer(state, action) {
       if (node.type === 'treasure') {
         const tMods = resolveModifiers(campaign.modifiers)
         const goldGain = Math.floor(GOLD_REWARDS.treasure * tMods.treasureGoldMult * tMods.goldMult)
+        const teamClasses = Object.values(state.characters).filter(c => c.team === TEAMS.ALLY).map(c => c.classId)
+        const ownedEquipIds = [...(campaign.equipmentInventory || []).map(i => i.id), ...Object.values(campaign.equipment || {}).flatMap(s => Object.values(s).filter(Boolean).map(i => i.id))]
+        const treasureEquip = generateTreasureEquipment(campaign.act, ownedEquipIds, teamClasses)
+        const newCampaign = { ...campaign, visitedNodes: newVisited, gold: (campaign.gold || 0) + goldGain }
+        if (treasureEquip) {
+          newCampaign.equipmentInventory = [...(newCampaign.equipmentInventory || []), treasureEquip]
+        }
         return {
           ...state,
-          campaignEvent: { type: 'treasure', goldGain, nodeId: node.id },
-          campaign: { ...campaign, visitedNodes: newVisited, gold: (campaign.gold || 0) + goldGain }
+          campaignEvent: { type: 'treasure', goldGain, equipmentReward: treasureEquip, nodeId: node.id },
+          campaign: newCampaign
         }
       }
 
@@ -1301,7 +1375,13 @@ function gameReducer(state, action) {
         const merchMods = resolveModifiers(campaign.modifiers)
         return {
           ...state,
-          campaignEvent: { type: 'merchant', items: generateShopItems(), nodeId: node.id, shopCostMult: merchMods.shopCostMult * merchDiscount },
+          campaignEvent: {
+            type: 'merchant',
+            items: generateShopItems(),
+            equipmentItems: generateShopEquipment(campaign.act, (campaign.equipmentInventory || []).map(i => i.id)),
+            nodeId: node.id,
+            shopCostMult: merchMods.shopCostMult * merchDiscount
+          },
           campaign: { ...campaign, visitedNodes: newVisited }
         }
       }
@@ -1379,8 +1459,13 @@ function gameReducer(state, action) {
       let newCampaign = { ...state.campaign }
 
       if (isRelic) {
-        updatedChars = applyRelicEffects(state.characters, reward)
-        newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon, desc: reward.desc }]
+        newCampaign.relics = [...(newCampaign.relics || []), { id: reward.id, name: reward.name, icon: reward.icon, desc: reward.desc, relicEffect: reward.relicEffect }]
+      } else if (reward.slot) {
+        if ((newCampaign.gold || 0) < reward.cost) return state
+        newCampaign.gold = (newCampaign.gold || 0) - reward.cost
+        newCampaign.equipmentInventory = [...(newCampaign.equipmentInventory || []), reward]
+        const purchased = [...(event.purchasedIds || []), reward.id]
+        return { ...state, campaignEvent: { ...event, purchasedIds: purchased }, campaign: newCampaign }
       } else if (event?.type === 'merchant') {
         if ((newCampaign.gold || 0) < reward.cost) return state
         newCampaign.gold = (newCampaign.gold || 0) - reward.cost
