@@ -1200,13 +1200,18 @@ body {
   line-height: 1;
 }
 
-.token-sprite-mode {
-  border: none !important;
-  background: none !important;
+.token.token-sprite-mode,
+.token.token-sprite-mode.token-ally,
+.token.token-sprite-mode.token-enemy,
+.token.token-sprite-mode.token-active,
+.token.token-sprite-mode.token-rage {
+  border: none;
+  background: none;
   border-radius: 0;
+  box-shadow: none;
   width: 100%;
   aspect-ratio: auto;
-  box-shadow: none !important;
+  animation: none;
 }
 
 .token-sprite-mode .token-inner {
