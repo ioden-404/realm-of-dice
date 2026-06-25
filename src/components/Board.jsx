@@ -2,6 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { BOARD_COLS, BOARD_ROWS } from '../data/config.js'
 import Token from './Token.jsx'
 
+const B = import.meta.env.BASE_URL
+const THEME_BACKGROUNDS = {
+  forest: B + 'Images/bg-forest.png'
+}
+
 export default function Board({
   characters,
   currentCharId,
@@ -147,13 +152,17 @@ export default function Board({
     }
   }
 
+  const bgImage = THEME_BACKGROUNDS[terrainTheme]
+  const boardStyle = { gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }
+  if (bgImage) boardStyle.backgroundImage = `url(${bgImage})`
+
   return (
-    <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''} ${screenShake ? 'board-shake' : ''}`}>
+    <div className={`board-container ${terrainTheme ? `board-theme-${terrainTheme}` : ''} ${bgImage ? 'board-bg-image' : ''} ${screenShake ? 'board-shake' : ''}`}>
       <div className="board-border">
         <div
           className="board"
           ref={boardRef}
-          style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }}
+          style={boardStyle}
         >
           {cells}
         </div>

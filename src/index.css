@@ -924,9 +924,17 @@ body {
   background: linear-gradient(135deg, #1a2e1a, #0e1f0e);
   border-color: #2d5a2d;
 }
-.board-theme-forest .board { background: #0a150a; }
-.board-theme-forest .cell-dark { background: #1e3020; }
-.board-theme-forest .cell-light { background: #263a28; }
+.board-theme-forest .board { background-color: #0a150a; }
+.board-theme-forest .cell-dark { background: rgba(10, 20, 10, 0.25); }
+.board-theme-forest .cell-light { background: rgba(20, 35, 20, 0.15); }
+
+.board-bg-image .board {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.board-bg-image .cell-dark { background: rgba(0, 0, 0, 0.15); }
+.board-bg-image .cell-light { background: rgba(0, 0, 0, 0.05); }
 
 .board-theme-crypt .board-border {
   background: linear-gradient(135deg, #1a1a2e, #0e0e1f);
