@@ -282,8 +282,8 @@ export const PROLOGUE = {
           type: 'combat',
           id: 'tutorial-combat',
           config: {
-            gridCols: 5,
-            gridRows: 4,
+            gridCols: 7,
+            gridRows: 5,
             allies: 'player-only',
             enemies: [{ monsterId: 'silhouette', count: 3 }],
             objective: 'survive',
@@ -648,15 +648,15 @@ export const PROLOGUE = {
           type: 'combat',
           id: 'escape-combat',
           config: {
-            gridCols: 5,
-            gridRows: 4,
+            gridCols: 7,
+            gridRows: 5,
             allies: 'player-and-companion',
             enemies: [
               { monsterId: 'silhouette', count: 3, positions: 'front' },
               { monsterId: 'silhouette', count: 2, spawnRound: 2, positions: 'back' }
             ],
             objective: 'escape',
-            escapeCol: 4,
+            escapeCol: 6,
             respawnAfter: 3,
             terrainTheme: 'ruins'
           }
