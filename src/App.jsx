@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useRef } from 'react'
 import { PHASES, TURN_STATES } from './data/config.js'
-import { useGameState } from './hooks/useGameState.js'
+import { useGameState, hasCampaignSave } from './hooks/useGameState.js'
 import { useAudio } from './hooks/useAudio.js'
 import Hub from './components/Hub.jsx'
 import Settings from './components/Settings.jsx'
@@ -239,12 +239,16 @@ export default function App() {
   if (state.phase === PHASES.HUB) {
     return (
       <div className="app">
-        <Hub onNavigate={(tab) => {
-          if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
-          if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
-          if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
-          if (tab === 'settings') setShowSettings(true)
-        }} />
+        <Hub
+          hasSave={hasCampaignSave()}
+          onNavigate={(tab) => {
+            if (tab === 'continue') dispatch({ type: 'LOAD_CAMPAIGN' })
+            if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
+            if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
+            if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
+            if (tab === 'settings') setShowSettings(true)
+          }}
+        />
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )

@@ -504,6 +504,15 @@ function checkGameEnd(characters) {
 
 function gameReducer(state, action) {
   switch (action.type) {
+    case 'LOAD_CAMPAIGN': {
+      const saved = loadCampaignState()
+      if (!saved || !saved.campaign?.map || !Object.keys(saved.characters || {}).length) {
+        clearCampaignSave()
+        return state
+      }
+      return { ...state, ...saved }
+    }
+
     case 'GO_TO_TEAM_SELECT': {
       return { ...state, phase: PHASES.TEAM_SELECT, selectedClasses: [], campaignMode: action.payload?.campaignMode || false }
     }
@@ -1104,6 +1113,7 @@ function gameReducer(state, action) {
     }
 
     case 'START_CAMPAIGN': {
+      clearCampaignSave()
       const { allyClasses, modifiers = [], glory = {} } = action.payload
       const characters = {}
 
@@ -1449,23 +1459,12 @@ function gameReducer(state, action) {
   }
 }
 
+export function hasCampaignSave() {
+  return loadCampaignState() !== null
+}
+
 export function useGameState() {
-  const [state, dispatch] = useReducer(gameReducer, initialState, (init) => {
-    try {
-      const saved = loadCampaignState()
-      if (saved) {
-        const merged = { ...init, ...saved }
-        if (!merged.campaign?.map || !Object.keys(merged.characters).length) {
-          clearCampaignSave()
-          return init
-        }
-        return merged
-      }
-    } catch {
-      clearCampaignSave()
-    }
-    return init
-  })
+  const [state, dispatch] = useReducer(gameReducer, initialState)
   const aiTimeoutRef = useRef(null)
 
   useEffect(() => {

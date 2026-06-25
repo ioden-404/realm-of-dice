@@ -186,6 +186,26 @@ body {
   50% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-52px) rotate(calc(-1 * var(--angle))); }
 }
 
+.hub-continue-btn {
+  width: 80%;
+  max-width: 300px;
+  padding: 14px 20px;
+  margin-top: 12px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), var(--color-stone-dark));
+  border: 2px solid var(--color-gold);
+  border-radius: 10px;
+  color: var(--color-gold-light);
+  cursor: pointer;
+  animation: pulse-gold 2s ease-in-out infinite;
+  letter-spacing: 1px;
+}
+
+.hub-continue-btn:active {
+  transform: scale(0.97);
+}
+
 /* Hub nav bar */
 .hub-nav {
   display: flex;
