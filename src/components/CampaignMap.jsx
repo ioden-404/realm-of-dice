@@ -102,14 +102,16 @@ export default function CampaignMap({
           {allies.map(char => {
             const pct = char.hp / char.maxHp
             const color = pct > 0.5 ? '#4caf50' : pct > 0.25 ? '#ff9800' : '#f44336'
+            const hasEquip = Object.values(campaign.equipment?.[char.id] || {}).some(Boolean)
             return (
-              <div key={char.id} className="cmap-char">
+              <button key={char.id} className="cmap-char cmap-char-clickable" onClick={() => setShowEquipment(char.id)}>
                 <span className="cmap-char-emoji">{char.emoji}</span>
+                <span className="cmap-char-bag">{hasEquip ? '⚔️' : '🎒'}</span>
                 <div className="cmap-char-hp">
                   <div className="cmap-char-hp-fill" style={{ width: `${pct * 100}%`, background: color }} />
                 </div>
                 <span className="cmap-char-hp-text">{char.hp}/{char.maxHp}</span>
-              </div>
+              </button>
             )
           })}
         </div>
@@ -152,10 +154,6 @@ export default function CampaignMap({
         <div className="cmap-gold">
           <span><span className="gold-icon">⬤</span> {campaign.gold || 0} or</span>
         </div>
-
-        <button className="cmap-equipment-btn" onClick={() => setShowEquipment(true)}>
-          🎒 Équipement {(campaign.equipmentInventory || []).length > 0 ? `(${campaign.equipmentInventory.length})` : ''}
-        </button>
 
         {campaign.relics && campaign.relics.length > 0 && (
           <div className="cmap-relics">
@@ -241,6 +239,7 @@ export default function CampaignMap({
         <EquipmentScreen
           characters={characters}
           campaign={campaign}
+          initialCharId={showEquipment}
           onEquip={onEquipItem}
           onUnequip={onUnequipItem}
           onClose={() => setShowEquipment(false)}

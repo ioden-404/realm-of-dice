@@ -1638,16 +1638,86 @@ body {
   color: var(--color-text-muted);
   font-size: 16px;
   cursor: pointer;
+  z-index: 5;
 }
 
 .equipment-tabs {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .equipment-tab {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  background: rgba(61, 52, 40, 0.4);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: border-color 0.15s;
+}
+
+.equipment-tab-active {
+  border-color: var(--tab-color, var(--color-gold));
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.equipment-char-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.equipment-char-name {
+  font-family: var(--font-title);
+  font-size: 18px;
+  display: block;
+}
+
+.equipment-char-class {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.equipment-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.equipment-slot-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.equipment-portrait {
+  width: 90px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.equipment-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.equipment-portrait-emoji {
+  font-size: 48px;
+}
+
+.equipment-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1658,120 +1728,68 @@ body {
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--font-ui);
-  color: var(--color-text-muted);
-  font-size: 10px;
-  transition: border-color 0.15s;
-}
-
-.equipment-tab-active {
-  border-color: var(--tab-color, var(--color-gold));
-  background: rgba(201, 168, 76, 0.1);
   color: var(--color-text-primary);
-}
-
-.equipment-tab-emoji { font-size: 18px; }
-.equipment-tab-name { font-size: 10px; }
-
-.equipment-char-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(90, 74, 48, 0.3);
-}
-
-.equipment-char-emoji { font-size: 28px; }
-
-.equipment-char-name {
-  font-family: var(--font-title);
-  font-size: 16px;
-  color: var(--color-gold-light);
-}
-
-.equipment-char-class {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.equipment-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.equipment-slot-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.equipment-slot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(61, 52, 40, 0.4);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  color: var(--color-text-primary);
-  text-align: left;
-  width: 100%;
+  text-align: center;
   transition: border-color 0.15s;
   position: relative;
+  min-height: 50px;
 }
 
 .equipment-slot:active { border-color: var(--color-gold); }
-
+.equipment-slot-selected { border-color: var(--color-gold); background: rgba(201, 168, 76, 0.1); }
 .equipment-slot-empty { opacity: 0.5; }
 
-.equipment-slot-icon { font-size: 18px; }
-
-.equipment-slot-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.equipment-slot-label {
-  font-size: 10px;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.equipment-slot-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.equipment-slot-desc {
-  font-size: 11px;
-  color: var(--color-gold);
-}
+.equipment-slot-icon { font-size: 16px; }
+.equipment-slot-name { font-size: 10px; font-weight: 600; }
 
 .equipment-unequip {
+  position: absolute;
+  top: 2px;
+  right: 2px;
   background: none;
   border: none;
   color: var(--color-crimson-light);
-  font-size: 14px;
+  font-size: 10px;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
 }
 
 .equipment-tier-common { border-color: #9e9e9e; }
 .equipment-tier-rare { border-color: #42a5f5; box-shadow: 0 0 4px rgba(66, 165, 245, 0.2); }
 .equipment-tier-epic { border-color: #ffc107; box-shadow: 0 0 6px rgba(255, 193, 7, 0.3); }
 
+.equipment-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  border-top: 1px solid rgba(90, 74, 48, 0.3);
+  border-bottom: 1px solid rgba(90, 74, 48, 0.3);
+  margin-bottom: 8px;
+}
+
+.equipment-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.equipment-stat-icon { font-size: 14px; }
+.equipment-stat-label { font-size: 9px; color: var(--color-text-muted); text-transform: uppercase; }
+.equipment-stat-value { font-family: var(--font-title); font-size: 14px; color: var(--color-text-primary); }
+
 .equipment-available {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-left: 20px;
   animation: fade-in 0.15s ease-out;
+}
+
+.equipment-available-title {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--color-gold);
+  margin-bottom: 4px;
 }
 
 .equipment-empty-msg {
@@ -1809,38 +1827,21 @@ body {
 .equipment-item-name { font-size: 12px; font-weight: 600; }
 .equipment-item-desc { font-size: 10px; color: var(--color-text-muted); }
 
-.equipment-item-classes {
-  display: flex;
-  gap: 2px;
-}
-
-.equipment-class-badge { font-size: 12px; }
-
-.cmap-equipment-btn {
-  width: 100%;
-  padding: 8px;
-  background: rgba(61, 52, 40, 0.5);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  color: var(--color-text-primary);
-  font-family: var(--font-ui);
-  font-size: 13px;
+.cmap-char-clickable {
   cursor: pointer;
-  text-align: center;
   transition: border-color 0.15s;
+  position: relative;
 }
 
-.cmap-equipment-btn:active {
+.cmap-char-clickable:active {
   border-color: var(--color-gold);
 }
 
-.equipment-stats-summary {
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 0;
-  border-top: 1px solid rgba(90, 74, 48, 0.3);
-  font-size: 13px;
-  color: var(--color-text-primary);
+.cmap-char-bag {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
 }
 
 /* ========== REACTION PROMPT ========== */
