@@ -1,6 +1,6 @@
 import { useReducer, useCallback, useRef, useEffect } from 'react'
 import { CLASSES } from '../data/classes.js'
-import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS, BOARD_ROWS } from '../data/config.js'
+import { PHASES, TURN_STATES, ALLY_NAMES, ENEMY_NAMES, TEAMS, BOARD_COLS, BOARD_ROWS } from '../data/config.js'
 import { rollInitiative } from '../systems/initiative.js'
 import { resolveAbility, processStartOfTurn, processEndOfTurn, checkRageComeback, resolveOpportunityAttacks, resolveAllyReactions, processGuardianDamage } from '../systems/combat.js'
 import { getAccessibleCells, getValidTargets, getAdjacentEnemies, canMoveTo } from '../systems/movement.js'
