@@ -9,13 +9,16 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
   let hasDisadvantage = false
 
   const atkRange = ability.range || attacker.range || 1
+  const hasNoLOSRelic = attacker.relicEffects?.some(r => r.type === 'noLOSDisadvantage')
   const los = atkRange > 1 ? checkLineOfSight(attacker, target, characters, terrain) : true
-  if (los === false) {
-    hasDisadvantage = true
-    logs.push('👁️ Ligne de vue bloquée - désavantage !')
-  } else if (los === 'smoke') {
-    hasDisadvantage = true
-    logs.push('🌫️ Vue obstruée - désavantage !')
+  if (!hasNoLOSRelic) {
+    if (los === false) {
+      hasDisadvantage = true
+      logs.push('👁️ Ligne de vue bloquée - désavantage !')
+    } else if (los === 'smoke') {
+      hasDisadvantage = true
+      logs.push('🌫️ Vue obstruée - désavantage !')
+    }
   }
 
   if (atkRange > 1 && isAdjacent(attacker.position, target.position)) {
@@ -697,15 +700,16 @@ export function resolveOpportunityAttacks(mover, oldPosition, newPosition, chara
   for (const char of Object.values(characters)) {
     if (char.isDead || char.team === mover.team || char.reactionUsed) continue
 
+    const aoRange = 1 + (char.relicEffects?.some(r => r.type === 'aoRangeBonus') ? 1 : 0)
     const wasAdjacent = Math.max(
       Math.abs(oldPosition.x - char.position.x),
       Math.abs(oldPosition.y - char.position.y)
-    ) <= 1
+    ) <= aoRange
 
     const stillAdjacent = Math.max(
       Math.abs(newPosition.x - char.position.x),
       Math.abs(newPosition.y - char.position.y)
-    ) <= 1
+    ) <= aoRange
 
     if (!wasAdjacent || stillAdjacent) continue
 

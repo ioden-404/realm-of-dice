@@ -499,7 +499,12 @@ function applyEffects(state, effects) {
         break
       }
       case 'useReaction': {
-        newChars = { ...newChars, [char.id]: { ...char, reactionUsed: true } }
+        const hasFreeReaction = char.relicEffects?.some(r => r.type === 'freeReaction') && !char._freeReactionUsed
+        if (hasFreeReaction) {
+          newChars = { ...newChars, [char.id]: { ...char, _freeReactionUsed: true } }
+        } else {
+          newChars = { ...newChars, [char.id]: { ...char, reactionUsed: true } }
+        }
         break
       }
       case 'breakConcentration': {
@@ -927,6 +932,16 @@ function gameReducer(state, action) {
         }
       }
 
+      if (relics.some(r => r.type === 'autoRage')) {
+        for (const id of Object.keys(finalChars)) {
+          const c = finalChars[id]
+          if (c.team === TEAMS.ALLY && !c.isDead && c.hp / c.maxHp < 0.25 && !hasStatus(c, 'rage')) {
+            finalChars = { ...finalChars, [id]: { ...c, statuses: [...c.statuses, { type: 'rage', duration: 3 }] } }
+            extraLogs.push(`💢 Pierre de rage ! ${c.name} entre en rage !`)
+          }
+        }
+      }
+
       if (current.team === TEAMS.ENEMY && targetId) {
         const targetChar = finalChars[targetId]
         if (targetChar && targetChar.isDead && !relicTrackers.phoenixUsed && relics.some(r => r.type === 'phoenixRevive')) {
@@ -1027,8 +1042,19 @@ function gameReducer(state, action) {
         }
       }
 
-      const nextChar = updatedChars[state.initiativeOrder[nextIndex]]
+      let nextChar = updatedChars[state.initiativeOrder[nextIndex]]
       const isEnemy = nextChar?.team === TEAMS.ENEMY
+
+      if (isEnemy && nextChar && (state.campaignRelics || []).some(r => r.type === 'slowAdjacent')) {
+        const adjToAlly = Object.values(updatedChars).some(c =>
+          c.team === TEAMS.ALLY && !c.isDead &&
+          Math.max(Math.abs(c.position.x - nextChar.position.x), Math.abs(c.position.y - nextChar.position.y)) <= 1
+        )
+        if (adjToAlly && nextChar.movement > 1) {
+          nextChar = { ...nextChar, movement: nextChar.movement - 1 }
+          updatedChars = { ...updatedChars, [nextChar.id]: nextChar }
+        }
+      }
 
       const startResult = nextChar ? processStartOfTurn(nextChar, state.terrain) : { logs: [], effects: [] }
       if (nextChar) {
