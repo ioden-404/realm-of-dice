@@ -985,8 +985,9 @@ body {
 
 .cell-terrain-img {
   position: absolute;
-  width: 90%;
-  height: 90%;
+  width: 130%;
+  height: 130%;
+  bottom: 0;
   object-fit: contain;
   image-rendering: pixelated;
   z-index: 1;
