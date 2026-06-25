@@ -34,7 +34,7 @@ const MAP_THEMES = {
   forest: {
     name: 'Forêt sombre',
     obstacles: [
-      { type: TERRAIN_TYPES.BLOCKING, emoji: '🌳', label: 'Arbre', image: B + 'Images/terrain-forest-tree.png' },
+      { type: TERRAIN_TYPES.BLOCKING, emoji: '🌳', label: 'Arbre', image: B + 'Images/terrain-forest-tree.png', large: true },
       { type: TERRAIN_TYPES.DIFFICULT, emoji: '💧', label: 'Ruisseau', image: B + 'Images/terrain-forest-stream.png' },
       { type: TERRAIN_TYPES.COVER, emoji: '🌿', label: 'Buisson', image: B + 'Images/terrain-forest-bush.png' }
     ],
@@ -142,7 +142,8 @@ export function generateTerrain(forceTheme = null, attempt = 0) {
         type: obstacleData.type,
         emoji: obstacleData.emoji,
         label: obstacleData.label,
-        image: obstacleData.image || null
+        image: obstacleData.image || null,
+        large: obstacleData.large || false
       }
       usedCells.add(key)
     }

@@ -985,14 +985,19 @@ body {
 
 .cell-terrain-img {
   position: absolute;
-  width: 130%;
-  height: 130%;
-  bottom: 0;
+  width: 90%;
+  height: 90%;
   object-fit: contain;
   image-rendering: pixelated;
   z-index: 1;
   pointer-events: none;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.cell-terrain-img-large {
+  width: 130%;
+  height: 130%;
+  bottom: 0;
 }
 
 .cell-terrain-icon {

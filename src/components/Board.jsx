@@ -127,7 +127,7 @@ export default function Board({
           {isCorner && <div className="cell-rune">᛭</div>}
           {terrainCell && (
             terrainCell.image ? (
-              <img src={terrainCell.image} alt={terrainCell.label} className="cell-terrain-img" title={terrainCell.label} />
+              <img src={terrainCell.image} alt={terrainCell.label} className={`cell-terrain-img ${terrainCell.large ? 'cell-terrain-img-large' : ''}`} title={terrainCell.label} />
             ) : (
               <div className="cell-terrain-icon" title={terrainCell.label}>
                 {terrainCell.emoji}
