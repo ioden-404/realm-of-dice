@@ -44,6 +44,7 @@ export default function App() {
   const [glory, setGlory] = useState(() => loadGlory())
   const [narrativeEvent, setNarrativeEvent] = useState(null)
   const [cutIn, setCutIn] = useState(null)
+  const [holdCombatView, setHoldCombatView] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -146,6 +147,7 @@ export default function App() {
       prevDeadRef.current = new Set(
         Object.values(state.characters).filter(c => c.isDead).map(c => c.id)
       )
+      if (combatEnded) setHoldCombatView(true)
       setCutIn({ classId: char.classId, type: 'kill' })
     } else if (isCrit && !combatEnded) {
       setCutIn({ classId: char.classId, type: 'crit' })
@@ -303,7 +305,7 @@ export default function App() {
     )
   }
 
-  if (state.phase === PHASES.VICTORY || state.phase === PHASES.DEFEAT) {
+  if ((state.phase === PHASES.VICTORY || state.phase === PHASES.DEFEAT) && !holdCombatView) {
     return (
       <div className="app">
         <VictoryScreen
@@ -311,14 +313,11 @@ export default function App() {
           stats={state.stats}
           onRestart={() => dispatch({ type: 'RESTART' })}
         />
-        {cutIn && (
-          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
-        )}
       </div>
     )
   }
 
-  if (state.phase === PHASES.CAMPAIGN_MAP) {
+  if (state.phase === PHASES.CAMPAIGN_MAP && !holdCombatView) {
     return (
       <div className="app">
         <CampaignMap
@@ -364,15 +363,12 @@ export default function App() {
             }}
           />
         )}
-        {cutIn && (
-          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
-        )}
         <Transition active={transitioning} onComplete={handleTransitionComplete} />
       </div>
     )
   }
 
-  if (state.phase === PHASES.CAMPAIGN_COMPLETE || state.phase === PHASES.CAMPAIGN_DEFEAT) {
+  if ((state.phase === PHASES.CAMPAIGN_COMPLETE || state.phase === PHASES.CAMPAIGN_DEFEAT) && !holdCombatView) {
     const won = state.phase === PHASES.CAMPAIGN_COMPLETE
     const gloryGain = calculateGloryReward(won, state.campaign.act + 1, (state.campaign.modifiers || []).length)
     return (
@@ -390,9 +386,6 @@ export default function App() {
             dispatch({ type: 'RESTART' })
           }}
         />
-        {cutIn && (
-          <CutIn classId={cutIn.classId} type={cutIn.type} onComplete={() => setCutIn(null)} />
-        )}
       </div>
     )
   }
@@ -556,7 +549,7 @@ export default function App() {
         <CutIn
           classId={cutIn.classId}
           type={cutIn.type}
-          onComplete={() => setCutIn(null)}
+          onComplete={() => { setCutIn(null); setHoldCombatView(false) }}
         />
       )}
 
