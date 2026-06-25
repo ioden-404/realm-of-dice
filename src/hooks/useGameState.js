@@ -910,6 +910,35 @@ function gameReducer(state, action) {
         }
       }
 
+      const relics = state.campaignRelics || []
+      let relicTrackers = { ...(state.campaignRelicTrackers || {}) }
+
+      if (current.team === TEAMS.ALLY) {
+        const enemyKilled = Object.values(finalChars).some(c =>
+          c.team === TEAMS.ENEMY && c.isDead && state.characters[c.id] && !state.characters[c.id].isDead
+        )
+
+        if (enemyKilled && relics.some(r => r.type === 'healOnKill')) {
+          const healVal = relics.find(r => r.type === 'healOnKill').value || 5
+          const healed = { ...finalChars[current.id], hp: Math.min(finalChars[current.id].maxHp, finalChars[current.id].hp + healVal) }
+          finalChars = { ...finalChars, [current.id]: healed }
+          execChars = { ...execChars, [current.id]: execChars[current.id] ? { ...execChars[current.id], hp: Math.min(execChars[current.id].maxHp, execChars[current.id].hp + healVal) } : healed }
+          extraLogs.push(`🧛 Amulette vampirique ! ${current.name} récupère ${healVal} PV`)
+        }
+      }
+
+      if (current.team === TEAMS.ENEMY && targetId) {
+        const targetChar = finalChars[targetId]
+        if (targetChar && targetChar.isDead && !relicTrackers.phoenixUsed && relics.some(r => r.type === 'phoenixRevive')) {
+          const phoenixRelic = relics.find(r => r.type === 'phoenixRevive')
+          const reviveHp = Math.floor(targetChar.maxHp * (phoenixRelic.hpPercent || 0.5))
+          finalChars = { ...finalChars, [targetId]: { ...targetChar, hp: reviveHp, isDead: false, animation: 'heal' } }
+          execChars = finalChars
+          relicTrackers = { ...relicTrackers, phoenixUsed: true }
+          extraLogs.push(`🔥 Plume du phénix ! ${targetChar.name} revient avec ${reviveHp} PV !`)
+        }
+      }
+
       let cutInData = null
       if (current.team === TEAMS.ALLY) {
         const enemyKilled = Object.values(finalChars).some(c =>
@@ -929,6 +958,7 @@ function gameReducer(state, action) {
         terrain: terrainAfterAbility,
         stats: newStats,
         pendingReaction: reactionToPrompt,
+        campaignRelicTrackers: relicTrackers,
         log: newLog.slice(-50),
         turnState: gameEnd ? TURN_STATES.IDLE : TURN_STATES.IDLE,
         selectedAbility: null,
@@ -1415,6 +1445,17 @@ function gameReducer(state, action) {
         characters[monster.id] = monster
       })
 
+      const relics = (campaign.relics || []).map(r => r.relicEffect).filter(Boolean)
+
+      for (const id of Object.keys(characters)) {
+        if (characters[id].team === TEAMS.ALLY) {
+          characters[id] = { ...characters[id], relicEffects: relics }
+          if (relics.some(r => r.type === 'teamAdvantageR1')) {
+            characters[id] = { ...characters[id], statuses: [...characters[id].statuses, { type: 'advantage', duration: 1 }] }
+          }
+        }
+      }
+
       const initiativeOrder = rollInitiative(characters)
       const firstChar = characters[initiativeOrder[0]]
       const firstIsEnemy = firstChar?.team === TEAMS.ENEMY
@@ -1426,6 +1467,8 @@ function gameReducer(state, action) {
         characters, initiativeOrder,
         currentTurnIndex: 0, round: 1,
         turnState: TURN_STATES.PLACING,
+        campaignRelics: relics,
+        campaignRelicTrackers: { healDone: false, phoenixUsed: false, cancelCritUsed: false },
         placingCharIndex: 0,
         terrain, terrainTheme, terrainThemeName: themeName,
         campaign: { ...campaign, currentNode: node, visitedNodes: newVisited },

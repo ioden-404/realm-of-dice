@@ -51,8 +51,13 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
     d20Roll = rollD20()
   }
 
-  const isCrit = d20Roll === 20
+  const critThreshold = attacker.specialEffects?.some(e => e.type === 'critRange19') ? 19 : 20
+  let isCrit = d20Roll >= critThreshold
   const isCritFail = d20Roll === 1
+
+  if (isCrit && attacker.team === 'enemy' && target.relicEffects?.some(r => r.type === 'cancelEnemyCrit')) {
+    isCrit = false
+  }
 
   const rageBonus = hasStatus(attacker, 'rage') ? 2 : 0
   const attackTotal = d20Roll + attacker.attackBonus + rageBonus
@@ -85,8 +90,13 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
   const damageNotation = ability.damage || attacker.damageDice
 
   if (damageNotation) {
+    const hasX3Crit = attacker.relicEffects?.some(r => r.type === 'x3CritDamage')
     const damageRoll = isCrit ? rollDiceCrit(damageNotation) : rollDice(damageNotation)
     totalDamage += damageRoll.total
+    if (isCrit && hasX3Crit) {
+      const extraDmg = rollDice(damageNotation)
+      totalDamage += extraDmg.total
+    }
 
     if (ability.sneakAttack && ability.bonusDamage) {
       const sneakAllies = getAdjacentAllies(target.position, characters, attacker.team, attacker.id)
@@ -102,6 +112,16 @@ export function resolveAttack(attacker, target, ability, characters, terrain = {
       const flankRoll = isCrit ? rollDiceCrit(ability.bonusDamage) : rollDice(ability.bonusDamage)
       totalDamage += flankRoll.total
       logs.push(`🗡️ Infiltration ! +${flankRoll.total} dégâts`)
+    }
+
+    const sneakRelic = attacker.relicEffects?.find(r => r.type === 'bonusSneakDamage')
+    if (sneakRelic) {
+      const adjAllies = getAdjacentAllies(target.position, characters, attacker.team, attacker.id)
+      if (adjAllies.length > 0) {
+        const relicDmg = rollDice(sneakRelic.dice || '1d4')
+        totalDamage += relicDmg.total
+        logs.push(`🐺 Croc du loup ! +${relicDmg.total} dégâts`)
+      }
     }
   }
 
@@ -176,6 +196,11 @@ export function resolveHeal(healer, target, ability) {
 
   const healRoll = rollDice(ability.heal)
   let healAmount = healRoll.total
+
+  const bonusHealRelic = healer.relicEffects?.find(r => r.type === 'bonusFirstHeal')
+  const bonusHealEquip = healer.specialEffects?.find(e => e.type === 'bonusHealing')
+  if (bonusHealEquip) healAmount += bonusHealEquip.value || 0
+  if (bonusHealRelic) healAmount = Math.floor(healAmount * (bonusHealRelic.value || 1.5))
 
   if (hasStatus(target, 'antiHeal')) {
     const factor = getStatusValue(target, 'antiHeal', 'factor') || 0.5
