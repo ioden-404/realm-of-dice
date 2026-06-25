@@ -103,13 +103,15 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [state.currentTurnIndex, state.round, state.turnState])
 
-  const prevCharsRef = useRef({})
+  const prevDeadRef = useRef(new Set())
   const lastCutInLogLen = useRef(0)
 
   useEffect(() => {
     if (state.phase === PHASES.COMBAT) {
       lastCutInLogLen.current = state.log?.length || 0
-      prevCharsRef.current = state.characters || {}
+      prevDeadRef.current = new Set(
+        Object.values(state.characters).filter(c => c.isDead).map(c => c.id)
+      )
       setCutIn(null)
     } else {
       lastSplashRef.current = null
@@ -123,15 +125,11 @@ export default function App() {
     if (!state.initiativeOrder?.length) return
 
     const logLen = state.log?.length || 0
-    if (logLen <= lastCutInLogLen.current) {
-      prevCharsRef.current = state.characters
-      return
-    }
+    if (logLen <= lastCutInLogLen.current) return
 
     const charId = state.initiativeOrder[state.currentTurnIndex]
     const char = state.characters[charId]
     if (!char || char.team !== 'ally') {
-      prevCharsRef.current = state.characters
       lastCutInLogLen.current = logLen
       return
     }
@@ -140,13 +138,14 @@ export default function App() {
     const isCrit = newLogs.some(l => l.text?.includes('CRITIQUE'))
 
     const enemyJustDied = Object.values(state.characters).some(c =>
-      c.team === 'enemy' && c.isDead && prevCharsRef.current[c.id] && !prevCharsRef.current[c.id].isDead
+      c.team === 'enemy' && c.isDead && !prevDeadRef.current.has(c.id)
     )
 
-    prevCharsRef.current = state.characters
     lastCutInLogLen.current = logLen
-
     if (enemyJustDied) {
+      prevDeadRef.current = new Set(
+        Object.values(state.characters).filter(c => c.isDead).map(c => c.id)
+      )
       setCutIn({ classId: char.classId, type: 'kill' })
     } else if (isCrit && !combatEnded) {
       setCutIn({ classId: char.classId, type: 'crit' })
