@@ -70,7 +70,10 @@ export default function Token({ character, isActive, terrainType, onClick }) {
     <div
       ref={tokenRef}
       className={`token ${isAlly ? 'token-ally' : 'token-enemy'} ${isActive ? 'token-active' : ''} ${hasRage ? 'token-rage' : ''} ${hasSprite ? 'token-sprite-mode' : ''}`}
-      style={{ '--team-color': teamColor, '--class-color': classColor }}
+      style={hasSprite
+        ? { '--team-color': teamColor, '--class-color': classColor, background: 'none', border: 'none', boxShadow: 'none', borderRadius: 0 }
+        : { '--team-color': teamColor, '--class-color': classColor }
+      }
       onClick={onClick}
     >
       {hasSprite ? (
