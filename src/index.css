@@ -1199,6 +1199,18 @@ body {
   line-height: 1;
 }
 
+.token-sprite {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.token-sprite-enemy {
+  transform: scaleX(-1);
+}
+
 .token-active-badge {
   position: absolute;
   bottom: -10px;

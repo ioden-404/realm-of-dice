@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { CLASS_COLORS } from '../data/config.js'
 
+const B = import.meta.env.BASE_URL
+
+const TOKEN_IMAGES = {
+  guerrier: B + 'Images/guerriertoken.png',
+  mage: B + 'Images/magetoken.png',
+  voleur: B + 'Images/voleurtoken.png',
+  rodeur: B + 'Images/Rodeurtoken.png',
+  clerc: B + 'Images/clerctoken.png'
+}
+
 const TERRAIN_BADGES = {
   cover: '🛡️',
   hazard: '🔥',
@@ -36,6 +46,8 @@ export default function Token({ character, isActive, terrainType, onClick }) {
   const hasShield = character.statuses.some(s => s.type === 'shield' || s.type === 'faithShield')
   const isDodging = character.statuses.some(s => s.type === 'dodge')
 
+  const tokenImage = TOKEN_IMAGES[character.classId]
+
   if (character.isDead) {
     return (
       <div
@@ -44,7 +56,11 @@ export default function Token({ character, isActive, terrainType, onClick }) {
         style={{ '--team-color': teamColor }}
       >
         <div className="token-inner">
-          <span className="token-emoji">{character.emoji}</span>
+          {tokenImage ? (
+            <img src={tokenImage} alt="" className={`token-sprite ${!isAlly ? 'token-sprite-enemy' : ''}`} />
+          ) : (
+            <span className="token-emoji">{character.emoji}</span>
+          )}
         </div>
       </div>
     )
@@ -71,7 +87,11 @@ export default function Token({ character, isActive, terrainType, onClick }) {
         />
       </svg>
       <div className="token-inner">
-        <span className="token-emoji">{character.emoji}</span>
+        {tokenImage ? (
+          <img src={tokenImage} alt="" className={`token-sprite ${!isAlly ? 'token-sprite-enemy' : ''}`} />
+        ) : (
+          <span className="token-emoji">{character.emoji}</span>
+        )}
       </div>
       <div className="token-team-marker">
         {isAlly ? '▲' : '▼'}
