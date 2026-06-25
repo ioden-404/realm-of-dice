@@ -133,7 +133,7 @@ export default function App() {
 
     const timeout = setTimeout(() => executeAITurn(), cutIn ? 2000 : 600)
     return () => clearTimeout(timeout)
-  }, [state.turnState, state.currentTurnIndex])
+  }, [state.turnState, state.currentTurnIndex, state.pendingReaction])
 
   const startTransition = useCallback((action) => {
     setPendingAction(() => action)
