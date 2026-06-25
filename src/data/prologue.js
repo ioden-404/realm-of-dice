@@ -9,7 +9,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Noir complet. Pas le noir de la nuit — le noir d'avant les choses. Celui où même le silence a une texture.",
+            "Noir complet. Pas le noir de la nuit. Lenoir d'avant les choses. Celui où même le silence a une texture.",
             "Puis, comme un souffle à travers un mur :"
           ]
         },
@@ -21,7 +21,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "La voix n'a pas de direction. Elle vient de partout. De nulle part. Elle est vieille — pas comme une personne âgée, vieille comme de la pierre usée par des siècles de pluie.",
+            "La voix n'a pas de direction. Elle vient de partout. De nulle part. Elle est vieille. Pascomme une personne âgée, vieille comme de la pierre usée par des siècles de pluie.",
           ]
         },
         {
@@ -110,8 +110,8 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Tu descends l'escalier. Ta maison est petite — deux pièces, un foyer, une vie simple. Le genre d'endroit dont personne ne se souvient quand tu le décris. \"Un village ? Où ça ?\" — \"Nulle Part.\"",
-            "Sous l'escalier, il y a une trappe. Tu la connais. Elle mène à la cave — trois mètres carrés de terre battue où ta mère stockait des conserves. Tu n'y descends jamais. Il n'y a rien en bas.",
+            "Tu descends l'escalier. Ta maison est petite : deux pièces, un foyer, une vie simple. Le genre d'endroit dont personne ne se souvient quand tu le décris. \"Un village ? Où ça ?\"\" \"Nulle Part.\"",
+            "Sous l'escalier, il y a une trappe. Tu la connais. Elle mène à la cave : trois mètres carrés de terre battue où ta mère stockait des conserves. Tu n'y descends jamais. Il n'y a rien en bas.",
             "Sauf que cette nuit, la trappe est tiède sous tes doigts.",
             "Tu descends."
           ]
@@ -119,9 +119,9 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "La cave n'est pas comme dans ton souvenir. Elle est plus grande. Beaucoup plus grande. Le plafond est plus haut, les murs plus éloignés. C'est impossible — ta maison n'est pas si grande. Mais tes pieds touchent le sol et le sol est réel.",
+            "La cave n'est pas comme dans ton souvenir. Elle est plus grande. Beaucoup plus grande. Le plafond est plus haut, les murs plus éloignés. C'est impossible; ta maison n'est pas si grande. Mais tes pieds touchent le sol et le sol est réel.",
             "Au centre, posé sur la terre nue, quelque chose.",
-            "Tu ne saurais pas dire ce que c'est. Pas encore. La forme refuse de se fixer — elle bouge quand tu ne la regardes pas directement. Elle est là et pas là. Comme un mot sur le bout de la langue.",
+            "Tu ne saurais pas dire ce que c'est. Pas encore. La forme refuse de se fixer; elle bouge quand tu ne la regardes pas directement. Elle est là et pas là. Comme un mot sur le bout de la langue.",
             "Les voix sont partout maintenant. Elles ne murmurent plus. Elles bourdonnent, comme un essaim, comme mille conversations à peine audibles dont tu ne captes qu'un mot sur cent."
           ]
         },
@@ -145,7 +145,7 @@ export const PROLOGUE = {
             { label: 'Un cristal veiné de lueurs, gravé de runes qui changent quand tu les lis', setValue: { key: 'classId', value: 'mage' } },
             { label: 'Un pendentif sombre qui boit la lumière autour de lui', setValue: { key: 'classId', value: 'voleur' } },
             { label: "Un croc d'os, poli par le temps, encore chaud comme s'il venait d'être arraché", setValue: { key: 'classId', value: 'rodeur' } },
-            { label: 'Un fragment de pierre blanche qui émet un son — une note, pure, continue', setValue: { key: 'classId', value: 'clerc' } }
+            { label: 'Un fragment de pierre blanche qui émet un son. Une note, pure, continue', setValue: { key: 'classId', value: 'clerc' } }
           ]
         },
         {
@@ -153,7 +153,7 @@ export const PROLOGUE = {
           lines: [
             "Tu le touches.",
             "Tout s'arrête. Les voix. L'air. Ton cœur, pendant une seconde qui dure une éternité.",
-            "Puis un flash. Pas de lumière — de compréhension. Quelque chose se déverrouille en toi. Quelque chose qui a toujours été là, enfoui sous les années de vie ordinaire, sous les gestes répétés, sous l'habitude de n'être personne."
+            "Puis un flash. Pas de lumière. De compréhension. Quelque chose se déverrouille en toi. Quelque chose qui a toujours été là, enfoui sous les années de vie ordinaire, sous les gestes répétés, sous l'habitude de n'être personne."
           ]
         },
         {
@@ -188,7 +188,7 @@ export const PROLOGUE = {
           type: 'narration',
           lines: [
             "La lumière te réveille. Trop de lumière. Les volets sont ouverts. Tu ne les as pas ouverts.",
-            "Tu te lèves. L'artefact est encore dans ta main. Tu ne l'as pas lâché de la nuit. Il est froid maintenant. Inerte. On dirait un objet ordinaire — presque.",
+            "Tu te lèves. L'artefact est encore dans ta main. Tu ne l'as pas lâché de la nuit. Il est froid maintenant. Inerte. On dirait un objet ordinaire. Presque.",
             "Tu sors."
           ]
         },
@@ -198,7 +198,7 @@ export const PROLOGUE = {
             "Le village de Nulle Part tient dans un regard. Trente maisons. Une place. Un puits. La forge d'un côté, la chapelle de l'autre, le marché au centre.",
             "Pas un bruit. Pas le silence du matin tôt où le monde dort encore. Le silence de l'absence. Le silence d'un lieu qui contient encore la forme des gens qui l'habitaient mais plus les gens eux-mêmes.",
             "La porte du boulanger est ouverte. Le four est tiède. Il y a de la farine sur le comptoir, un geste interrompu, la trace d'une main dans la poudre blanche. Mais pas de boulanger.",
-            "Chez les Aldren, la table est mise. Quatre assiettes. La soupe est encore chaude. Quatre chaises, dont une est renversée. Comme si quelqu'un s'était levé vite — mais pas assez vite."
+            "Chez les Aldren, la table est mise. Quatre assiettes. La soupe est encore chaude. Quatre chaises, dont une est renversée. Comme si quelqu'un s'était levé vite. Mais pas assez vite."
           ]
         },
         {
@@ -251,13 +251,13 @@ export const PROLOGUE = {
           lines: [
             "Puis tu le vois.",
             "Le brouillard.",
-            "Il n'est pas arrivé — il est là, comme s'il avait toujours été là et que tu venais seulement de le remarquer. Aux bords du village, entre les dernières maisons et les champs, un mur de gris opaque.",
+            "Il n'est pas arrivé. Il est là, comme s'il avait toujours été là et que tu venais seulement de le remarquer. Aux bords du village, entre les dernières maisons et les champs, un mur de gris opaque.",
             "Pas le brouillard du matin qui se lève avec le soleil. Un brouillard immobile. Dense. Qui ne bouge pas avec le vent parce que le vent ne souffle pas dedans.",
             "Il entoure le village entier.",
             "Et dedans, quelque chose bouge.",
-            "Des formes. Pas tout à fait des ombres, pas tout à fait des silhouettes. Des corps qui ne sont pas finis — comme un sculpteur qui aurait abandonné son travail à mi-chemin. Des bras trop longs. Des visages sans traits.",
+            "Des formes. Pas tout à fait des ombres, pas tout à fait des silhouettes. Des corps qui ne sont pas finis. Comme un sculpteur qui aurait abandonné son travail à mi-chemin. Des bras trop longs. Des visages sans traits.",
             "Elles sont lentes. Mais elles avancent.",
-            "L'artefact pulse. Fort. Et quelque chose en toi répond — un feu, une tension, un instinct que tu ne connaissais pas. Tes mains savent quoi faire. Ton corps sait où se placer.",
+            "L'artefact pulse. Fort. Et quelque chose en toi répond : un feu, une tension, un instinct que tu ne connaissais pas. Tes mains savent quoi faire. Ton corps sait où se placer.",
             "Tu n'as jamais appris à te battre.",
             "Mais tu sais."
           ]
@@ -294,7 +294,7 @@ export const PROLOGUE = {
           type: 'narration',
           lines: [
             "La dernière silhouette s'effiloche. Comme de la fumée aspirée vers le haut. Pas de corps. Pas de sang. Juste l'air qui se referme sur l'espace qu'elle occupait, comme de l'eau sur un trou.",
-            "Tu respires. Fort. Tes mains tremblent — pas de peur, d'autre chose. L'artefact est brûlant. Tes muscles se souviennent de chaque mouvement que tu viens de faire comme s'ils les avaient fait mille fois.",
+            "Tu respires. Fort. Tes mains tremblent. Pasde peur, d'autre chose. L'artefact est brûlant. Tes muscles se souviennent de chaque mouvement que tu viens de faire comme s'ils les avaient fait mille fois.",
             "Le brouillard recule de quelques mètres. Pas loin. Comme un animal qui reprend son souffle avant de charger à nouveau.",
             "Puis tu entends quelque chose."
           ]
@@ -327,8 +327,8 @@ export const PROLOGUE = {
           lines: [
             "La forge de Nulle Part n'a jamais été grande. Quatre murs de pierre noircie, un toit de tôle qui fuit quand il pleut, une enclume qui pèse plus que tout le reste réuni.",
             "Aldric y travaille depuis qu'il a quinze ans. C'est le seul endroit qu'il connaît mieux que sa propre maison.",
-            "Il est là. Debout. Le marteau de forge dans une main, un tisonnier dans l'autre. Le feu brûle — haut, trop haut, il a dû y jeter tout ce qu'il avait. Les flammes éclairent les murs et le brouillard reste dehors, repoussé par la chaleur.",
-            "Il te regarde entrer. Ses yeux sont rouges. Pas de larmes — de fumée et de nuits sans sommeil."
+            "Il est là. Debout. Le marteau de forge dans une main, un tisonnier dans l'autre. Le feu brûle. Haut, trop haut, il a dû y jeter tout ce qu'il avait. Les flammes éclairent les murs et le brouillard reste dehors, repoussé par la chaleur.",
+            "Il te regarde entrer. Ses yeux sont rouges. Pas de larmes. De fumée et de nuits sans sommeil."
           ]
         },
         {
@@ -379,7 +379,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Il pose le marteau. Il regarde ses mains. Des mains de forgeron — larges, brûlées, calleuses. Des mains qui savent tenir quelque chose sans le lâcher.",
+            "Il pose le marteau. Il regarde ses mains. Des mains de forgeron. Larges, brûlées, calleuses. Des mains qui savent tenir quelque chose sans le lâcher.",
             "Le feu faiblit. Les flammes descendent d'un cran. Le brouillard avance d'un pas."
           ]
         },
@@ -421,10 +421,10 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "La chapelle de Nulle Part est la plus petite chose qu'on puisse appeler un lieu de culte. Quatre bancs, un autel de bois, un vitrail qui ne représente rien de précis — juste de la couleur.",
-            "Mais ce matin, le vitrail brille. Pas avec la lumière du soleil — le ciel est gris. Il brille de l'intérieur, d'une lueur qui n'a pas de source.",
+            "La chapelle de Nulle Part est la plus petite chose qu'on puisse appeler un lieu de culte. Quatre bancs, un autel de bois, un vitrail qui ne représente rien de précis. Juste de la couleur.",
+            "Mais ce matin, le vitrail brille. Pas avec la lumière du soleil. Leciel est gris. Il brille de l'intérieur, d'une lueur qui n'a pas de source.",
             "Sur le seuil, le brouillard s'arrête. Net. Comme un mur invisible.",
-            "À l'intérieur, une femme. À genoux devant l'autel. Les mains jointes. Elle ne prie pas — elle écoute.",
+            "À l'intérieur, une femme. À genoux devant l'autel. Les mains jointes. Elle ne prie pas; elle écoute.",
             "Une seule bougie est allumée. Elle ne devrait pas éclairer autant.",
             "Elle parle sans se retourner."
           ]
@@ -448,7 +448,7 @@ export const PROLOGUE = {
           type: 'dialogue',
           speaker: 'Seren',
           speakerEmoji: '✨',
-          text: "Le brouillard est venu cette nuit. Je l'ai senti arriver — pas entendu, pas vu. Senti. Comme une pression. Comme l'air avant un orage, mais en froid."
+          text: "Le brouillard est venu cette nuit. Je l'ai senti arriver. Pasentendu, pas vu. Senti. Comme une pression. Comme l'air avant un orage, mais en froid."
         },
         {
           type: 'dialogue',
@@ -518,7 +518,7 @@ export const PROLOGUE = {
           type: 'narration',
           lines: [
             "Un sifflement. Bref. Humain. Ça vient d'en haut.",
-            "Tu lèves la tête. Sur le toit du marché, une silhouette — mais pas comme les autres. Celle-ci a un visage. Celle-ci te fait signe.",
+            "Tu lèves la tête. Sur le toit du marché, une silhouette. Mais pas comme les autres. Celle-ci a un visage. Celle-ci te fait signe.",
             "Le brouillard se referme derrière toi. Il ne te laisse qu'une direction.",
             "Tu grimpes."
           ]
@@ -609,7 +609,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Il se lève. Il époussette son manteau. Un couteau apparaît dans sa main — tu ne l'as pas vu le sortir."
+            "Il se lève. Il époussette son manteau. Un couteau apparaît dans sa main; tu ne l'as pas vu le sortir."
           ]
         },
         {
@@ -665,7 +665,7 @@ export const PROLOGUE = {
           type: 'narration',
           lines: [
             "Le brouillard s'arrête. Net. Comme une ligne tracée dans la terre que personne n'a dessinée.",
-            "D'un côté, le gris. De l'autre, le monde. L'herbe. Le ciel. Le vent, surtout — le vent, qui souffle à nouveau, qui bouge, qui vit.",
+            "D'un côté, le gris. De l'autre, le monde. L'herbe. Le ciel. Le vent, surtout. Levent, qui souffle à nouveau, qui bouge, qui vit.",
             "Tu te retournes.",
             "Nulle Part n'est plus là. Pas détruite. Pas en ruines. Juste... absente. Le brouillard occupe l'espace où le village était, dense, opaque, immobile.",
             "Tu es debout sur une route de terre battue qui s'étend dans les deux directions. Des champs vides. Des arbres au loin. Le monde normal, indifférent, qui continue sans savoir ce qui vient de se passer."
@@ -799,7 +799,7 @@ export const PROLOGUE = {
         {
           type: 'narration',
           lines: [
-            "Darrick regarde le brouillard. Il sort une nouvelle pomme de sa poche — d'où il les tire, c'est un mystère — et la fait tourner entre ses doigts sans la manger."
+            "Darrick regarde le brouillard. Il sort une nouvelle pomme de sa poche (d'où il les tire, c'est un mystère) et la fait tourner entre ses doigts sans la manger."
           ]
         },
         {

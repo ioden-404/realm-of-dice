@@ -108,17 +108,20 @@ export default function DialogueScreen({ chapter, story, onAdvance, onChoice, on
     onAdvance()
   }, [isTyping, showChoices, showQuitConfirm, block, lineIndex, getFullText, onAdvance])
 
+  const [choiceConfirm, setChoiceConfirm] = useState(null)
+
   const handleChoice = useCallback((option, index) => {
-    if (option.description && !choiceDescription) {
-      setChoiceDescription({ index, text: option.description })
-      setTimeout(() => {
-        onChoice(option)
-        setChoiceDescription(null)
-      }, 1500)
+    if (choiceDescription?.index === index && choiceConfirm) {
+      choiceConfirm()
       return
     }
-    onChoice(option)
-  }, [onChoice, choiceDescription])
+    setChoiceDescription(option.description ? { index, text: option.description } : { index, text: null })
+    setChoiceConfirm(() => () => {
+      onChoice(option)
+      setChoiceDescription(null)
+      setChoiceConfirm(null)
+    })
+  }, [onChoice, choiceDescription, choiceConfirm])
 
   const handleNameSubmit = useCallback(() => {
     if (nameInput.trim().length > 0) {
@@ -176,7 +179,12 @@ export default function DialogueScreen({ chapter, story, onAdvance, onChoice, on
               ))}
             </div>
             {choiceDescription && (
-              <div className="story-choice-desc">{choiceDescription.text}</div>
+              <div className="story-choice-desc">
+                {choiceDescription.text && <p>{choiceDescription.text}</p>}
+                <button className="story-choice-continue" onClick={(e) => { e.stopPropagation(); choiceConfirm && choiceConfirm() }}>
+                  Continuer ▸
+                </button>
+              </div>
             )}
           </div>
         )}

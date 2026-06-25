@@ -3155,6 +3155,24 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
+.story-choice-continue {
+  display: block;
+  margin: 10px auto 0;
+  padding: 8px 24px;
+  background: rgba(201, 168, 76, 0.15);
+  border: 1px solid var(--color-gold);
+  border-radius: 6px;
+  color: var(--color-gold);
+  font-family: var(--font-title);
+  font-size: 13px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.story-choice-continue:active {
+  background: rgba(201, 168, 76, 0.3);
+}
+
 .story-name-input {
   width: 100%;
   padding: 14px 16px;
