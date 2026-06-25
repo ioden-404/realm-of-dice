@@ -44,7 +44,7 @@ function createCharacter(classId, team, index) {
     const positions = [{ x: 0, y: 1 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 3 }, { x: 1, y: 2 }]
     position = positions[index] || { x: 0, y: index % BOARD_ROWS }
   } else {
-    position = _enemySlots[index] || { x: 5, y: index % BOARD_ROWS }
+    position = _enemySlots[index] || { x: BOARD_COLS - 1, y: index % BOARD_ROWS }
   }
 
   return {
@@ -79,7 +79,7 @@ let _enemySlots = []
 
 function shuffleEnemySlots() {
   _enemySlots = []
-  for (let x = 4; x <= 5; x++) {
+  for (let x = BOARD_COLS - 2; x < BOARD_COLS; x++) {
     for (let y = 0; y < BOARD_ROWS; y++) _enemySlots.push({ x, y })
   }
   for (let i = _enemySlots.length - 1; i > 0; i--) {
@@ -110,7 +110,7 @@ function createMonster(monsterId, index, allMonsterIds) {
     attackBonus: monsterData.attackBonus,
     movement: monsterData.movement,
     range: monsterData.range,
-    position: _enemySlots[index] || { x: 5, y: index % BOARD_ROWS },
+    position: _enemySlots[index] || { x: BOARD_COLS - 1, y: index % BOARD_ROWS },
     actionUsed: false,
     bonusActionUsed: false,
     reactionUsed: false,
