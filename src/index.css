@@ -970,6 +970,10 @@ body {
 
 /* ========== TERRAIN ========== */
 
+.cell-has-terrain-img {
+  background: transparent !important;
+}
+
 .cell-terrain-img {
   position: absolute;
   width: 90%;

@@ -116,7 +116,7 @@ export default function Board({
       cells.push(
         <div
           key={`${x}-${y}`}
-          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''} ${cellIsPlacing ? 'cell-placement' : ''} ${isDragOver ? 'cell-drag-over' : ''}`}
+          className={`cell ${isDark ? 'cell-dark' : 'cell-light'} ${isValidMove ? 'cell-move' : ''} ${isValidTarget ? 'cell-target' : ''} ${terrainClass} ${isSelectingCell ? 'cell-selectable' : ''} ${cellIsPlacing ? 'cell-placement' : ''} ${isDragOver ? 'cell-drag-over' : ''} ${terrainCell?.image ? 'cell-has-terrain-img' : ''}`}
           onClick={() => {
             if (cellIsPlacing) onCellClick(x, y)
             else if (isSelectingCell) onCellClick(x, y)
