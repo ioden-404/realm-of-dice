@@ -25,14 +25,18 @@ export default function Hub({ onNavigate }) {
       </div>
 
       <nav className="hub-nav">
+        <button className="hub-tab hub-tab-active" onClick={() => onNavigate('story')}>
+          <span className="hub-tab-icon">📜</span>
+          <span className="hub-tab-label">Histoire</span>
+        </button>
+        <button className="hub-tab" onClick={() => onNavigate('campaign')}>
+          <span className="hub-tab-icon">🏗️</span>
+          <span className="hub-tab-label">Étages</span>
+        </button>
         <button className="hub-tab hub-tab-locked" disabled>
           <span className="hub-tab-icon">⚔️</span>
           <span className="hub-tab-label">Combat</span>
           <span className="hub-tab-lock">🔒</span>
-        </button>
-        <button className="hub-tab hub-tab-active" onClick={() => onNavigate('campaign')}>
-          <span className="hub-tab-icon">🏗️</span>
-          <span className="hub-tab-label">Étages</span>
         </button>
         <button className="hub-tab" onClick={() => onNavigate('glory')}>
           <span className="hub-tab-icon">⭐</span>
@@ -40,7 +44,7 @@ export default function Hub({ onNavigate }) {
         </button>
         <button className="hub-tab" onClick={() => onNavigate('settings')}>
           <span className="hub-tab-icon">⚙️</span>
-          <span className="hub-tab-label">Paramètres</span>
+          <span className="hub-tab-label">Param.</span>
         </button>
       </nav>
     </div>

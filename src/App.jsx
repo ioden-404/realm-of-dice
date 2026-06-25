@@ -23,6 +23,8 @@ import NarrativeEvent from './components/NarrativeEvent.jsx'
 import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
 import LevelUpScreen from './components/LevelUpScreen.jsx'
 import CutIn from './components/CutIn.jsx'
+import DialogueScreen from './components/DialogueScreen.jsx'
+import { PROLOGUE } from './data/prologue.js'
 
 const B = import.meta.env.BASE_URL
 const TRACKS = {
@@ -205,6 +207,7 @@ export default function App() {
     return (
       <div className="app">
         <Hub onNavigate={(tab) => {
+          if (tab === 'story') dispatch({ type: 'START_STORY', payload: { chapter: PROLOGUE } })
           if (tab === 'combat') dispatch({ type: 'GO_TO_TEAM_SELECT' })
           if (tab === 'campaign') dispatch({ type: 'GO_TO_TEAM_SELECT', payload: { campaignMode: true } })
           if (tab === 'glory') dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.GLORY } })
@@ -232,6 +235,23 @@ export default function App() {
             }
           }}
           onBack={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.HUB } })}
+        />
+      </div>
+    )
+  }
+
+  if (state.phase === PHASES.STORY) {
+    return (
+      <div className="app">
+        <DialogueScreen
+          chapter={PROLOGUE}
+          story={state.story}
+          onAdvance={() => dispatch({ type: 'STORY_ADVANCE', payload: { chapter: PROLOGUE } })}
+          onChoice={(option) => dispatch({ type: 'STORY_CHOICE', payload: { option, chapter: PROLOGUE } })}
+          onSetName={(name) => dispatch({ type: 'STORY_SET_NAME', payload: { name } })}
+          onStartCombat={(config) => {}}
+          onComplete={() => dispatch({ type: 'STORY_COMPLETE' })}
+          onQuit={() => dispatch({ type: 'SET_PHASE', payload: { phase: PHASES.HUB } })}
         />
       </div>
     )

@@ -22,7 +22,9 @@ export const PHASES = {
   CAMPAIGN_COMPLETE: 'campaign-complete',
   CAMPAIGN_DEFEAT: 'campaign-defeat',
   RUN_MODIFIERS: 'run-modifiers',
-  GLORY: 'glory'
+  GLORY: 'glory',
+  STORY: 'story',
+  STORY_COMBAT: 'story-combat'
 }
 
 export const TURN_STATES = {

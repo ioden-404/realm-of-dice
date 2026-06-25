@@ -357,6 +357,33 @@ function clearCampaignSave() {
   try { localStorage.removeItem(SAVE_KEY) } catch {}
 }
 
+const STORY_SAVE_KEY = 'rod-story-save'
+
+function saveStoryState(story) {
+  try {
+    localStorage.setItem(STORY_SAVE_KEY, JSON.stringify({
+      chapterId: story.chapterId,
+      sequenceId: story.sequenceId,
+      blockIndex: story.blockIndex,
+      choices: story.choices,
+      companion: story.companion,
+      completed: story.completed
+    }))
+  } catch {}
+}
+
+function loadStoryState() {
+  try {
+    const raw = localStorage.getItem(STORY_SAVE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+
+function clearStoryState() {
+  try { localStorage.removeItem(STORY_SAVE_KEY) } catch {}
+}
+
 const initialState = {
   phase: PHASES.HUB,
   selectedClasses: [],
@@ -386,7 +413,16 @@ const initialState = {
   combatInventory: [],
   campaignMode: false,
   visualEvents: [],
-  pendingCutIn: null
+  pendingCutIn: null,
+  story: {
+    active: false,
+    chapterId: null,
+    sequenceId: null,
+    blockIndex: 0,
+    choices: {},
+    companion: null,
+    completed: []
+  }
 }
 
 function applyEffects(state, effects) {
@@ -1500,6 +1536,110 @@ function gameReducer(state, action) {
       }
 
       return { ...state, campaignEvent: null, campaign: newCampaign }
+    }
+
+    case 'START_STORY': {
+      const { chapter } = action.payload
+      const saved = loadStoryState()
+      if (saved && saved.chapterId === chapter.id) {
+        return {
+          ...state,
+          phase: PHASES.STORY,
+          story: { ...state.story, ...saved, active: true }
+        }
+      }
+      return {
+        ...state,
+        phase: PHASES.STORY,
+        story: {
+          active: true,
+          chapterId: chapter.id,
+          sequenceId: chapter.startSequence,
+          blockIndex: 0,
+          choices: {},
+          companion: null,
+          completed: saved?.completed || state.story.completed || []
+        }
+      }
+    }
+
+    case 'STORY_ADVANCE': {
+      const { story } = state
+      const chapter = action.payload?.chapter
+      if (!chapter) return state
+      const seq = chapter.sequences[story.sequenceId]
+      if (!seq) return state
+
+      const block = seq.blocks[story.blockIndex]
+
+      if (block?.type === 'branch') {
+        const key = block.key
+        const value = story.choices[key]
+        const targetSeq = block.paths[value]
+        if (targetSeq) {
+          const newStory = { ...story, sequenceId: targetSeq, blockIndex: 0 }
+          saveStoryState(newStory)
+          return { ...state, story: newStory }
+        }
+      }
+
+      if (block?.type === 'setCompanion') {
+        const newStory = { ...story, companion: block.companion, blockIndex: story.blockIndex + 1 }
+        saveStoryState(newStory)
+        return { ...state, story: newStory }
+      }
+
+      const nextIndex = story.blockIndex + 1
+      if (nextIndex < seq.blocks.length) {
+        const newStory = { ...story, blockIndex: nextIndex }
+        saveStoryState(newStory)
+        return { ...state, story: newStory }
+      }
+
+      if (seq.next) {
+        const newStory = { ...story, sequenceId: seq.next, blockIndex: 0 }
+        saveStoryState(newStory)
+        return { ...state, story: newStory }
+      }
+
+      return state
+    }
+
+    case 'STORY_CHOICE': {
+      const { option, chapter } = action.payload
+      let newChoices = { ...state.story.choices }
+      if (option.setValue) {
+        newChoices[option.setValue.key] = option.setValue.value
+      }
+      if (option.goto) {
+        const newStory = { ...state.story, choices: newChoices, sequenceId: option.goto, blockIndex: 0 }
+        saveStoryState(newStory)
+        return { ...state, story: newStory }
+      }
+      const newStory = { ...state.story, choices: newChoices, blockIndex: state.story.blockIndex + 1 }
+      saveStoryState(newStory)
+      return { ...state, story: newStory }
+    }
+
+    case 'STORY_SET_NAME': {
+      const { name } = action.payload
+      const newStory = {
+        ...state.story,
+        choices: { ...state.story.choices, playerName: name },
+        blockIndex: state.story.blockIndex + 1
+      }
+      saveStoryState(newStory)
+      return { ...state, story: newStory }
+    }
+
+    case 'STORY_COMPLETE': {
+      const completed = [...(state.story.completed || []), state.story.chapterId]
+      clearStoryState()
+      return {
+        ...state,
+        phase: PHASES.HUB,
+        story: { ...initialState.story, completed }
+      }
     }
 
     default:
