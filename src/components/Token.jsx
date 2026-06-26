@@ -85,14 +85,12 @@ export default function Token({ character, isActive, terrainType, onClick }) {
   const baseFlip = needsFlip(character)
   const facing = character.facingRight
 
-  let shouldFlip
-  if (isAlly) {
-    shouldFlip = facing === false ? false : true
-  } else {
-    if (facing === true) {
-      shouldFlip = !baseFlip
+  let shouldFlip = baseFlip
+  if (facing !== undefined) {
+    if (isAlly) {
+      shouldFlip = !facing
     } else {
-      shouldFlip = baseFlip
+      shouldFlip = facing ? !baseFlip : baseFlip
     }
   }
 
