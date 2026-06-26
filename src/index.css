@@ -933,8 +933,8 @@ body {
   background-position: center;
   background-repeat: no-repeat;
 }
-.board-bg-image .cell-dark { background: rgba(0, 0, 0, 0.15); }
-.board-bg-image .cell-light { background: rgba(0, 0, 0, 0.05); }
+.board-bg-image .cell-dark { background: rgba(0, 0, 0, 0.15) !important; }
+.board-bg-image .cell-light { background: rgba(0, 0, 0, 0.05) !important; }
 
 .board-theme-crypt .board-border {
   background: linear-gradient(135deg, #1a1a2e, #0e0e1f);
