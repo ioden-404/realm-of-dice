@@ -1184,62 +1184,72 @@ function gameReducer(state, action) {
         turnVisuals = applied.visualEvents || []
       }
 
-      if (nextChar && nextChar._chargeReady && nextChar.team === TEAMS.ENEMY && !nextChar.isDead) {
-        const turnsSincePhase = (nextChar._chargeTurnCount || 0) + 1
-        updatedChars = { ...updatedChars, [nextChar.id]: { ...updatedChars[nextChar.id], _chargeTurnCount: turnsSincePhase } }
-        if (turnsSincePhase % (nextChar._chargeEvery || 2) === 0) {
-          const allyTargets = Object.values(updatedChars).filter(c => c.team === TEAMS.ALLY && !c.isDead && !c.isCrystal)
-          if (allyTargets.length > 0) {
-            const chargeChar = updatedChars[nextChar.id]
-            const target = allyTargets.sort((a, b) => {
-              const da = Math.abs(a.position.x - chargeChar.position.x) + Math.abs(a.position.y - chargeChar.position.y)
-              const db = Math.abs(b.position.x - chargeChar.position.x) + Math.abs(b.position.y - chargeChar.position.y)
-              return da - db
-            })[0]
-            const chargeDmgTotal = Math.floor(Math.random() * 8) + Math.floor(Math.random() * 8) + 6
-            const dx = target.position.x > chargeChar.position.x ? 1 : target.position.x < chargeChar.position.x ? -1 : 0
-            const dy = target.position.y > chargeChar.position.y ? 1 : target.position.y < chargeChar.position.y ? -1 : 0
-            const chargeRange = nextChar._chargeRange || 3
-            const chargeLogs = [`🐂 ${chargeChar.name} CHARGE !`]
-            const chargeEffects = []
-            let finalPos = { ...chargeChar.position }
-            for (let step = 1; step <= chargeRange; step++) {
-              const cx = chargeChar.position.x + dx * step
-              const cy = chargeChar.position.y + dy * step
-              if (cx < 0 || cx >= BOARD_COLS || cy < 0 || cy >= BOARD_ROWS) break
-              const hitChar = Object.values(updatedChars).find(c => !c.isDead && c.position.x === cx && c.position.y === cy && c.team === TEAMS.ALLY)
-              if (hitChar) {
-                chargeEffects.push({ type: 'damage', targetId: hitChar.id, amount: chargeDmgTotal })
-                chargeLogs.push(`💥 ${hitChar.name} est percuté ! ${chargeDmgTotal} dégâts !`)
+      try {
+        const nc = nextChar?.id ? updatedChars[nextChar.id] : null
+        if (nc && nc._chargeReady && nc.team === TEAMS.ENEMY && !nc.isDead) {
+          const turnsSincePhase = (nc._chargeTurnCount || 0) + 1
+          updatedChars = { ...updatedChars, [nc.id]: { ...updatedChars[nc.id], _chargeTurnCount: turnsSincePhase } }
+          if (turnsSincePhase % (nc._chargeEvery || 2) === 0) {
+            const allyTargets = Object.values(updatedChars).filter(c => c.team === TEAMS.ALLY && !c.isDead && !c.isCrystal && c.position)
+            if (allyTargets.length > 0) {
+              const bossPos = updatedChars[nc.id].position
+              const target = allyTargets.sort((a, b) => {
+                const da = Math.abs(a.position.x - bossPos.x) + Math.abs(a.position.y - bossPos.y)
+                const db = Math.abs(b.position.x - bossPos.x) + Math.abs(b.position.y - bossPos.y)
+                return da - db
+              })[0]
+              if (target && target.position) {
+                const chargeDmg = Math.floor(Math.random() * 8) + Math.floor(Math.random() * 8) + 6
+                const dx = target.position.x > bossPos.x ? 1 : target.position.x < bossPos.x ? -1 : 0
+                const dy = target.position.y > bossPos.y ? 1 : target.position.y < bossPos.y ? -1 : 0
+                if (dx !== 0 || dy !== 0) {
+                  const chargeRange = nc._chargeRange || 3
+                  const chargeEffects = []
+                  let finalPos = { ...bossPos }
+                  startResult.logs.push(`🐂 ${nc.name} CHARGE !`)
+                  for (let step = 1; step <= chargeRange; step++) {
+                    const cx = bossPos.x + dx * step
+                    const cy = bossPos.y + dy * step
+                    if (cx < 0 || cx >= BOARD_COLS || cy < 0 || cy >= BOARD_ROWS) break
+                    const blocked = Object.values(updatedChars).find(c => !c.isDead && c.position.x === cx && c.position.y === cy && c.team === TEAMS.ENEMY)
+                    if (blocked) break
+                    const hitChar = Object.values(updatedChars).find(c => !c.isDead && c.position.x === cx && c.position.y === cy && c.team === TEAMS.ALLY)
+                    if (hitChar) {
+                      chargeEffects.push({ type: 'damage', targetId: hitChar.id, amount: chargeDmg })
+                      startResult.logs.push(`💥 ${hitChar.name} est percuté ! ${chargeDmg} dégâts !`)
+                    }
+                    finalPos = { x: cx, y: cy }
+                  }
+                  updatedChars = { ...updatedChars, [nc.id]: { ...updatedChars[nc.id], position: finalPos } }
+                  if (chargeEffects.length > 0) {
+                    const chargeApplied = applyEffects({ characters: updatedChars, stats: state.stats }, chargeEffects)
+                    updatedChars = chargeApplied.characters
+                    turnVisuals.push(...(chargeApplied.visualEvents || []))
+                  }
+                }
               }
-              finalPos = { x: cx, y: cy }
             }
-            updatedChars = { ...updatedChars, [nextChar.id]: { ...updatedChars[nextChar.id], position: finalPos } }
-            if (chargeEffects.length > 0) {
-              const chargeApplied = applyEffects({ characters: updatedChars, stats: state.stats }, chargeEffects)
-              updatedChars = chargeApplied.characters
-              turnVisuals.push(...(chargeApplied.visualEvents || []))
-            }
-            startResult.logs.push(...chargeLogs)
           }
         }
-      }
 
-      if (nextChar && nextChar.statuses?.some(s => s.type === 'flying') && nextChar.team === TEAMS.ENEMY) {
-        const flyStatus = nextChar.statuses.find(s => s.type === 'flying')
-        if (flyStatus && flyStatus.duration <= 1) {
-          const landX = 2 + Math.floor(Math.random() * 3)
-          const landY = Math.floor(Math.random() * BOARD_ROWS)
-          updatedChars = { ...updatedChars, [nextChar.id]: { ...updatedChars[nextChar.id], position: { x: landX, y: landY } } }
-          const firePositions = [
-            { x: landX - 1, y: landY }, { x: landX + 1, y: landY },
-            { x: landX, y: landY - 1 }, { x: landX, y: landY + 1 }
-          ].filter(p => p.x >= 0 && p.x < BOARD_COLS && p.y >= 0 && p.y < BOARD_ROWS)
-          for (const p of firePositions) {
-            updatedTerrain = { ...updatedTerrain, [`${p.x},${p.y}`]: { type: TERRAIN_TYPES.FIRE, emoji: '🔥', label: 'Feu draconique', damage: 6, duration: 3 } }
+        if (nc && nc.statuses?.some(s => s.type === 'flying') && nc.team === TEAMS.ENEMY) {
+          const flyStatus = nc.statuses.find(s => s.type === 'flying')
+          if (flyStatus && flyStatus.duration <= 1) {
+            const landX = 2 + Math.floor(Math.random() * 3)
+            const landY = Math.floor(Math.random() * BOARD_ROWS)
+            updatedChars = { ...updatedChars, [nc.id]: { ...updatedChars[nc.id], position: { x: landX, y: landY } } }
+            const firePositions = [
+              { x: landX - 1, y: landY }, { x: landX + 1, y: landY },
+              { x: landX, y: landY - 1 }, { x: landX, y: landY + 1 }
+            ].filter(p => p.x >= 0 && p.x < BOARD_COLS && p.y >= 0 && p.y < BOARD_ROWS)
+            for (const p of firePositions) {
+              updatedTerrain = { ...updatedTerrain, [`${p.x},${p.y}`]: { type: TERRAIN_TYPES.FIRE, emoji: '🔥', label: 'Feu draconique', damage: 6, duration: 3 } }
+            }
+            startResult.logs.push(`🐉 ${nc.name} atterrit et crée des flammes !`)
           }
-          startResult.logs.push(`🐉 ${nextChar.name} atterrit et crée des flammes !`)
         }
+      } catch (e) {
+        // Boss mechanic error - continue without crash
       }
 
       const gameEnd = checkGameEnd(updatedChars, state.combatObjective, state.round)
