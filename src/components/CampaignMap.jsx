@@ -158,7 +158,7 @@ export default function CampaignMap({
         {campaign.relics && campaign.relics.length > 0 && (
           <div className="cmap-relics">
             {campaign.relics.map((r, i) => (
-              <span key={i} className="cmap-relic" title={`${r.name} : ${r.desc || ''}`}>{r.icon}</span>
+              <button key={i} className="cmap-relic" onClick={() => alert(`${r.name}\n${r.desc || ''}`)}>{r.icon}</button>
             ))}
           </div>
         )}
@@ -403,7 +403,7 @@ export default function CampaignMap({
                   <span className="reward-icon">{char.emoji}</span>
                   <div className="reward-info">
                     <span className="reward-name">{char.name}</span>
-                    <span className="reward-desc">{char.classData.name} — {char.hp}/{char.maxHp} PV</span>
+                    <span className="reward-desc">❤️ {char.hp}/{char.maxHp}  🛡️ CA {char.ac}  ⚔️ +{char.attackBonus}  🏃 {char.movement}</span>
                   </div>
                 </button>
               ))}

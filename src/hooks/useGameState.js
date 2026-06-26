@@ -923,11 +923,14 @@ function gameReducer(state, action) {
           c.team === TEAMS.ENEMY && c.isDead && state.characters[c.id] && !state.characters[c.id].isDead
         )
 
-        if (enemyKilled && relics.some(r => r.type === 'healOnKill')) {
+        if (enemyKilled && relics.some(r => r.type === 'healOnKill') && finalChars[current.id]) {
           const healVal = relics.find(r => r.type === 'healOnKill').value || 5
-          const healed = { ...finalChars[current.id], hp: Math.min(finalChars[current.id].maxHp, finalChars[current.id].hp + healVal) }
-          finalChars = { ...finalChars, [current.id]: healed }
-          execChars = { ...execChars, [current.id]: execChars[current.id] ? { ...execChars[current.id], hp: Math.min(execChars[current.id].maxHp, execChars[current.id].hp + healVal) } : healed }
+          const cur = finalChars[current.id]
+          finalChars = { ...finalChars, [current.id]: { ...cur, hp: Math.min(cur.maxHp, cur.hp + healVal) } }
+          if (execChars[current.id]) {
+            const ec = execChars[current.id]
+            execChars = { ...execChars, [current.id]: { ...ec, hp: Math.min(ec.maxHp, ec.hp + healVal) } }
+          }
           extraLogs.push(`🧛 Amulette vampirique ! ${current.name} récupère ${healVal} PV`)
         }
       }
@@ -942,13 +945,12 @@ function gameReducer(state, action) {
         }
       }
 
-      if (current.team === TEAMS.ENEMY && targetId) {
+      if (current.team === TEAMS.ENEMY && targetId && finalChars[targetId]) {
         const targetChar = finalChars[targetId]
-        if (targetChar && targetChar.isDead && !relicTrackers.phoenixUsed && relics.some(r => r.type === 'phoenixRevive')) {
+        if (targetChar.team === TEAMS.ALLY && targetChar.isDead && !relicTrackers.phoenixUsed && relics.some(r => r.type === 'phoenixRevive')) {
           const phoenixRelic = relics.find(r => r.type === 'phoenixRevive')
           const reviveHp = Math.floor(targetChar.maxHp * (phoenixRelic.hpPercent || 0.5))
           finalChars = { ...finalChars, [targetId]: { ...targetChar, hp: reviveHp, isDead: false, animation: 'heal' } }
-          execChars = finalChars
           relicTrackers = { ...relicTrackers, phoenixUsed: true }
           extraLogs.push(`🔥 Plume du phénix ! ${targetChar.name} revient avec ${reviveHp} PV !`)
         }
