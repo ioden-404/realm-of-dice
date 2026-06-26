@@ -919,6 +919,8 @@ function gameReducer(state, action) {
         }
       }
 
+      let needInitiativeRefresh = false
+
       for (const id of Object.keys(finalChars)) {
         const ch = finalChars[id]
         if (ch.team !== TEAMS.ENEMY || ch.isDead || !ch.classData?.bossPhases || ch._phaseTriggered) continue
@@ -940,6 +942,7 @@ function gameReducer(state, action) {
               finalChars = { ...finalChars, [reinforcement.id]: reinforcement }
               extraLogs.push(`⚠️ ${reinforcement.name} rejoint le combat !`)
             })
+            needInitiativeRefresh = true
           }
         }
 
@@ -1071,9 +1074,16 @@ function gameReducer(state, action) {
         }
       }
 
+      const refreshedInitiative = needInitiativeRefresh ? rollInitiative(execChars) : state.initiativeOrder
+      const refreshedTurnIndex = needInitiativeRefresh
+        ? refreshedInitiative.indexOf(state.initiativeOrder[state.currentTurnIndex])
+        : state.currentTurnIndex
+
       return {
         ...state,
         characters: execChars,
+        initiativeOrder: refreshedInitiative,
+        currentTurnIndex: refreshedTurnIndex >= 0 ? refreshedTurnIndex : state.currentTurnIndex,
         terrain: terrainAfterAbility,
         stats: newStats,
         pendingReaction: reactionToPrompt,
