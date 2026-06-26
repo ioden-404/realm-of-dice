@@ -701,7 +701,8 @@ function gameReducer(state, action) {
         [current.id]: {
           ...movedCurrent,
           position: { x: newX, y: newY },
-          movementUsed: movedCurrent.movementUsed + moveCost
+          movementUsed: movedCurrent.movementUsed + moveCost,
+          facingRight: dx !== 0 ? dx > 0 : movedCurrent.facingRight
         }
       }
 
@@ -786,8 +787,12 @@ function gameReducer(state, action) {
 
     case 'EXECUTE_ABILITY': {
       const { ability, targetId, isBonusAction } = action.payload
-      const current = state.characters[state.initiativeOrder[state.currentTurnIndex]]
+      let current = state.characters[state.initiativeOrder[state.currentTurnIndex]]
       const target = targetId ? state.characters[targetId] : current
+
+      if (targetId && target && target.id !== current.id) {
+        current = { ...current, facingRight: target.position.x > current.position.x }
+      }
 
       const result = resolveAbility(current, target, ability, state.characters, state.terrain)
 
@@ -1143,8 +1148,9 @@ function gameReducer(state, action) {
 
     case 'MOVE_AI': {
       const { characterId, position } = action.payload
-      const char = state.characters[characterId]
+      let char = state.characters[characterId]
       if (!char) return state
+      char = { ...char, facingRight: position.x > char.position.x }
 
       const aoResult = resolveOpportunityAttacks(char, char.position, position, state.characters)
       let updatedChars = { ...state.characters }

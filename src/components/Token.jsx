@@ -82,7 +82,16 @@ export default function Token({ character, isActive, terrainType, onClick }) {
   const isDodging = character.statuses.some(s => s.type === 'dodge')
 
   const spriteUrl = getSpriteUrl(character)
-  const flip = needsFlip(character)
+  const baseFlip = needsFlip(character)
+  const facing = character.facingRight
+  let shouldFlip = baseFlip
+  if (facing !== undefined) {
+    if (isAlly) {
+      shouldFlip = facing === true
+    } else {
+      shouldFlip = facing === false ? !baseFlip : baseFlip
+    }
+  }
 
   if (spriteUrl) {
     return (
@@ -94,7 +103,7 @@ export default function Token({ character, isActive, terrainType, onClick }) {
         <img
           src={spriteUrl}
           alt=""
-          className={`token-sprite ${flip ? 'token-sprite-flip' : ''}`}
+          className={`token-sprite ${shouldFlip ? 'token-sprite-flip' : ''}`}
         />
         {!character.isDead && (
           <div className="token-hp-bar-bottom">
