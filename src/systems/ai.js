@@ -137,23 +137,18 @@ export function decideAction(character, characters, getAbilityState, terrain = {
     const dodgeAbility = findAbilityByEffect(character, 'dodge', 'actions', getAbilityState)
     if (dodgeAbility) {
       decision.action = dodgeAbility
-      if (!decision.movement && best.movement) {
-        decision.movement = best.movement
-      }
       if (!decision.movement) {
-        const enemies = Object.values(characters).filter(c => !c.isDead && c.team !== character.team)
-        const closestEnemy = enemies.sort((a, b) => {
-          const da = Math.abs(a.position.x - character.position.x) + Math.abs(a.position.y - character.position.y)
-          const db = Math.abs(b.position.x - character.position.x) + Math.abs(b.position.y - character.position.y)
-          return da - db
-        })[0]
-        if (closestEnemy) {
-          const moveToward = accessible.sort((a, b) => {
-            const da = Math.abs(a.x - closestEnemy.position.x) + Math.abs(a.y - closestEnemy.position.y)
-            const db = Math.abs(b.x - closestEnemy.position.x) + Math.abs(b.y - closestEnemy.position.y)
-            return da - db
-          })[0]
-          if (moveToward) decision.movement = moveToward
+        let bestMoveScore = -Infinity
+        let bestMovePos = null
+        for (const cell of accessible) {
+          const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
+          if (eval_.score > bestMoveScore) {
+            bestMoveScore = eval_.score
+            bestMovePos = cell
+          }
+        }
+        if (bestMovePos && bestMoveScore > stayEval.score) {
+          decision.movement = bestMovePos
         }
       }
     }
