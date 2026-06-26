@@ -128,7 +128,7 @@ export function loadGlory() {
     const saved = localStorage.getItem(GLORY_STORAGE_KEY)
     if (saved) return JSON.parse(saved)
   } catch {}
-  return { points: 0, totalRuns: 0, victories: 0, upgrades: {} }
+  return { points: 0, totalRuns: 0, victories: 0, upgrades: {}, bestiary: {}, bestScore: 0, completedChallenges: [] }
 }
 
 export function saveGlory(glory) {
@@ -154,4 +154,23 @@ export function calculateGloryReward(won, actsCompleted, modifiersCount) {
   points += actsCompleted
   points += modifiersCount
   return points
+}
+
+export function calculateRunScore(stats, actsCompleted, modifiers = [], hasEpicEquip = false) {
+  let base = 0
+  base += actsCompleted * 100
+  base += (stats.combatsWon || 0) * 20
+  base += (stats.elitesWon || 0) * 50
+  base += (stats.bossesWon || 0) * 100
+  base += (stats.enemiesKilled || 0) * 5
+  base += Math.max(0, 50 - (stats.rounds || 0)) * 2
+  base -= (stats.damageReceived || 0)
+  base = Math.max(0, base)
+
+  let mult = 1
+  if ((stats.allyDeaths || 0) === 0) mult *= 1.5
+  mult *= Math.pow(1.3, modifiers.length)
+  if (!hasEpicEquip) mult *= 1.2
+
+  return Math.floor(base * mult)
 }

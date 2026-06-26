@@ -387,6 +387,10 @@ function clearStoryState() {
   try { localStorage.removeItem(STORY_SAVE_KEY) } catch {}
 }
 
+function freshStats() {
+  return { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1, enemiesKilled: 0, combatsWon: 0, elitesWon: 0, bossesWon: 0, allyDeaths: 0, potionsUsed: 0 }
+}
+
 const initialState = {
   phase: PHASES.HUB,
   selectedClasses: [],
@@ -403,7 +407,7 @@ const initialState = {
   validTargets: [],
   validMoves: [],
   log: [],
-  stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
+  stats: freshStats(),
   pendingAO: null,
   terrain: {},
   terrainTheme: null,
@@ -418,6 +422,7 @@ const initialState = {
   visualEvents: [],
   pendingCutIn: null,
   pendingReaction: null,
+  runBestiary: {},
   storyGrid: null,
   story: {
     active: false,
@@ -622,7 +627,7 @@ function gameReducer(state, action) {
           { text: '⚔️ Le combat commence !', type: 'system' },
           { text: `--- Tour de ${firstChar.name} (${firstChar.classData.name}) ---`, type: 'turn' }
         ],
-        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+        stats: freshStats()
       }
     }
 
@@ -822,7 +827,7 @@ function gameReducer(state, action) {
       }
 
       const charsWithFacing = { ...state.characters, [current.id]: current }
-      const { characters: newChars, stats: newStats, visualEvents: newVisuals } = applyEffects(
+      let { characters: newChars, stats: newStats, visualEvents: newVisuals } = applyEffects(
         { characters: charsWithFacing, stats: state.stats },
         result.effects
       )
@@ -925,6 +930,9 @@ function gameReducer(state, action) {
         execCampaign = { ...advanceCampaignAfterCombat(state.campaign), xp: newXp, appliedPaliers: palierResult.appliedPaliers, evolved: palierResult.didEvolve || state.campaign.evolved, gold: (state.campaign.gold || 0) + goldGain }
         execPendingPaliers = palierResult.pendingChoices || []
         execCombatResult = { victory: true, gold: goldGain, xp: xpGain }
+        newStats = { ...newStats, combatsWon: (newStats.combatsWon || 0) + 1 }
+        if (nodeType === 'elite') newStats.elitesWon = (newStats.elitesWon || 0) + 1
+        if (nodeType === 'boss') newStats.bossesWon = (newStats.bossesWon || 0) + 1
         execLevelUps = checkLevelUps(newXp, execChars)
         if (nodeType === 'elite') {
           execEvent = { type: 'relic-minor', relics: pickRelics(MINOR_RELICS, 2, state.campaign.relics || []), rewardSelected: false, nodeId: state.campaign.currentNode.id }
@@ -951,6 +959,26 @@ function gameReducer(state, action) {
           }
           extraLogs.push(`🧛 Amulette vampirique ! ${current.name} récupère ${healVal} PV`)
         }
+      }
+
+      const newlyDead = Object.values(finalChars).filter(c =>
+        c.team === TEAMS.ENEMY && c.isDead && state.characters[c.id] && !state.characters[c.id].isDead
+      )
+      if (newlyDead.length > 0 && current.team === TEAMS.ALLY) {
+        newStats = { ...newStats, enemiesKilled: (newStats.enemiesKilled || 0) + newlyDead.length }
+      }
+
+      const newAllyDeaths = Object.values(finalChars).filter(c =>
+        c.team === TEAMS.ALLY && c.isDead && state.characters[c.id] && !state.characters[c.id].isDead
+      ).length
+      if (newAllyDeaths > 0) {
+        newStats = { ...newStats, allyDeaths: (newStats.allyDeaths || 0) + newAllyDeaths }
+      }
+
+      let newRunBestiary = { ...state.runBestiary }
+      for (const dead of newlyDead) {
+        const monsterId = dead.id?.replace(/^enemy-/, '').replace(/-\d+$/, '')
+        if (monsterId) newRunBestiary[monsterId] = (newRunBestiary[monsterId] || 0) + 1
       }
 
       if (relics.some(r => r.type === 'autoRage')) {
@@ -994,6 +1022,7 @@ function gameReducer(state, action) {
         stats: newStats,
         pendingReaction: reactionToPrompt,
         campaignRelicTrackers: relicTrackers,
+        runBestiary: newRunBestiary,
         log: newLog.slice(-50),
         turnState: gameEnd ? TURN_STATES.IDLE : TURN_STATES.IDLE,
         selectedAbility: null,
@@ -1407,7 +1436,7 @@ function gameReducer(state, action) {
           gloryUpgrades: glory.upgrades || {}
         },
         campaignEvent: null,
-        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 }
+        stats: freshStats()
       }
     }
 
@@ -1527,7 +1556,7 @@ function gameReducer(state, action) {
           { text: `⚔️ ${node.encounter.name}`, type: 'system' },
           { text: `🗺️ ${themeName}`, type: 'system' }
         ],
-        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
+        stats: freshStats(),
         combatInventory: (() => {
           const inv = [...(state.combatInventory || [])]
           const allies = Object.values(characters).filter(c => c.team === TEAMS.ALLY)
@@ -1607,7 +1636,7 @@ function gameReducer(state, action) {
       return {
         ...state,
         characters: { ...newChars, [current.id]: updatedCurrent },
-        stats: newStats,
+        stats: { ...newStats, potionsUsed: (newStats.potionsUsed || 0) + 1 },
         terrain: result.terrain,
         combatInventory: inventory,
         log: [...state.log, ...result.logs.map(t => ({ text: t, type: 'info' }))].slice(-50),
@@ -1869,7 +1898,7 @@ function gameReducer(state, action) {
         validTargets: [],
         validMoves: [],
         log: [{ text: '⚔️ Le combat commence !', type: 'system' }],
-        stats: { damageDealt: 0, damageReceived: 0, healingDone: 0, rounds: 1 },
+        stats: freshStats(),
         visualEvents: [],
         pendingCutIn: null,
         combatInventory: [],

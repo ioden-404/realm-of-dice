@@ -20,7 +20,8 @@ import CombatMenu from './components/CombatMenu.jsx'
 import RunModifiers from './components/RunModifiers.jsx'
 import GloryScreen from './components/GloryScreen.jsx'
 import NarrativeEvent from './components/NarrativeEvent.jsx'
-import { loadGlory, saveGlory, calculateGloryReward, NARRATIVE_EVENTS } from './data/modifiers.js'
+import { loadGlory, saveGlory, calculateGloryReward, calculateRunScore, NARRATIVE_EVENTS } from './data/modifiers.js'
+import { getActiveChallenges, evaluateChallenges } from './data/challenges.js'
 import LevelUpScreen from './components/LevelUpScreen.jsx'
 import CutIn from './components/CutIn.jsx'
 import ReactionPrompt from './components/ReactionPrompt.jsx'
@@ -378,6 +379,9 @@ export default function App() {
   if ((state.phase === PHASES.CAMPAIGN_COMPLETE || state.phase === PHASES.CAMPAIGN_DEFEAT) && !holdCombatView) {
     const won = state.phase === PHASES.CAMPAIGN_COMPLETE
     const gloryGain = calculateGloryReward(won, state.campaign.act + 1, (state.campaign.modifiers || []).length)
+    const hasEpic = Object.values(state.campaign.equipment || {}).some(slots => Object.values(slots).some(i => i?.tier === 'epic'))
+    const runScore = calculateRunScore(state.stats, state.campaign.act + 1, state.campaign.modifiers || [], hasEpic)
+    const isNewRecord = runScore > (glory.bestScore || 0)
     return (
       <div className="app">
         <VictoryScreen
@@ -386,8 +390,46 @@ export default function App() {
           title={won ? 'CAMPAGNE TERMINÉE !' : 'CAMPAGNE ÉCHOUÉE'}
           subtitle={won ? 'Vous avez vaincu le Dragon et sauvé le royaume !' : 'Votre équipe a été vaincue...'}
           gloryGain={gloryGain}
+          runScore={runScore}
+          bestScore={glory.bestScore || 0}
+          isNewRecord={isNewRecord}
           onRestart={() => {
-            const newGlory = { ...glory, points: glory.points + gloryGain, totalRuns: glory.totalRuns + 1, victories: won ? glory.victories + 1 : glory.victories }
+            const newBestiary = { ...(glory.bestiary || {}) }
+            for (const [mId, count] of Object.entries(state.runBestiary || {})) {
+              newBestiary[mId] = (newBestiary[mId] || 0) + count
+            }
+
+            const maxEquipTier = Object.values(state.campaign.equipment || {}).flatMap(s => Object.values(s).filter(Boolean).map(i => i.tier)).includes('epic') ? 'epic' : 'rare'
+            const runData = {
+              won,
+              classes: state.selectedClasses || [],
+              actsCompleted: state.campaign.act + 1,
+              totalKills: state.stats.enemiesKilled || 0,
+              totalRounds: state.stats.rounds || 0,
+              potionsUsed: state.stats.potionsUsed || 0,
+              maxEquipTier,
+              allyDeaths: state.stats.allyDeaths || 0,
+              modifiers: state.campaign.modifiers || [],
+              damageDealt: state.stats.damageDealt || 0,
+              damageReceived: state.stats.damageReceived || 0,
+              healingDone: state.stats.healingDone || 0,
+              bossesWon: state.stats.bossesWon || 0
+            }
+
+            const activeChallenges = getActiveChallenges(glory.completedChallenges || [])
+            const completedNow = evaluateChallenges(activeChallenges, runData)
+            const challengeGlory = completedNow.reduce((sum, c) => sum + c.gloryReward, 0)
+            const newCompleted = [...(glory.completedChallenges || []), ...completedNow.map(c => c.challengeKey)]
+
+            const newGlory = {
+              ...glory,
+              points: glory.points + gloryGain + challengeGlory,
+              totalRuns: glory.totalRuns + 1,
+              victories: won ? glory.victories + 1 : glory.victories,
+              bestiary: newBestiary,
+              bestScore: Math.max(glory.bestScore || 0, runScore),
+              completedChallenges: newCompleted
+            }
             setGlory(newGlory)
             saveGlory(newGlory)
             dispatch({ type: 'RESTART' })
