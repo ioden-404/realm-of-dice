@@ -809,8 +809,9 @@ function gameReducer(state, action) {
         }
       }
 
+      const charsWithFacing = { ...state.characters, [current.id]: current }
       const { characters: newChars, stats: newStats, visualEvents: newVisuals } = applyEffects(
-        { characters: state.characters, stats: state.stats },
+        { characters: charsWithFacing, stats: state.stats },
         result.effects
       )
 
@@ -1180,7 +1181,7 @@ function gameReducer(state, action) {
         ...state,
         characters: {
           ...updatedChars,
-          [characterId]: { ...movedChar, position, movementUsed: char.movement }
+          [characterId]: { ...movedChar, position, movementUsed: char.movement, facingRight: char.facingRight }
         },
         log: [...state.log, ...aoLogs].slice(-50),
         visualEvents: aiAoVisuals
