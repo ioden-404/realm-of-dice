@@ -98,6 +98,9 @@ export const MONSTERS = {
     hp: 42, ac: 14, attackBonus: 5, damageDice: '2d8+3',
     movement: 3, range: 1,
     aiProfile: 'guerrier',
+    bossPhases: [
+      { threshold: 0.5, effect: 'enrage', atkBonus: 3, movementBonus: 1, spawnReinforcements: ['goblin', 'goblin'] }
+    ],
     abilities: {
       actions: [
         { id: 'bugbear-atk', name: 'Morgenstern', damage: '2d8+3', range: 1, targetType: 'enemy', cooldown: 0, maxUses: 0, description: 'Frappe lourde au morgenstern' },
@@ -194,6 +197,9 @@ export const MONSTERS = {
 
   minotaur: {
     name: 'Minotaure',
+    bossPhases: [
+      { threshold: 0.5, effect: 'charge', chargeEveryNTurns: 2, chargeDamage: '2d8+4', chargeRange: 3 }
+    ],
     emoji: '🐂',
     hp: 58, ac: 16, attackBonus: 6, damageDice: '2d10+4',
     movement: 3, range: 1,
@@ -299,6 +305,9 @@ export const MONSTERS = {
   youngDragon: {
     name: 'Jeune Dragon',
     emoji: '🐉',
+    bossPhases: [
+      { threshold: 0.5, effect: 'fly', flyDuration: 1, landingCreatesTerrain: 'fire' }
+    ],
     hp: 65, ac: 17, attackBonus: 7, damageDice: '2d10+5',
     movement: 3, range: 1,
     aiProfile: 'guerrier',

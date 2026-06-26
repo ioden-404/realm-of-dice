@@ -919,6 +919,41 @@ function gameReducer(state, action) {
         }
       }
 
+      for (const id of Object.keys(finalChars)) {
+        const ch = finalChars[id]
+        if (ch.team !== TEAMS.ENEMY || ch.isDead || !ch.classData?.bossPhases || ch._phaseTriggered) continue
+        const phase = ch.classData.bossPhases[0]
+        if (ch.hp / ch.maxHp > phase.threshold) continue
+
+        finalChars = { ...finalChars, [id]: { ...ch, _phaseTriggered: true } }
+
+        if (phase.effect === 'enrage') {
+          finalChars[id] = { ...finalChars[id], attackBonus: ch.attackBonus + (phase.atkBonus || 0), movement: ch.movement + (phase.movementBonus || 0), statuses: [...ch.statuses, { type: 'rage', duration: 99 }] }
+          extraLogs.push(`🔥 ${ch.name} entre en rage furieuse ! (+${phase.atkBonus} ATK, +${phase.movementBonus} mouvement)`)
+          if (phase.spawnReinforcements) {
+            shuffleEnemySlots()
+            phase.spawnReinforcements.forEach((mId, i) => {
+              const reinforcement = createMonster(mId, Object.keys(finalChars).length + i, phase.spawnReinforcements)
+              reinforcement.uses = initUses(reinforcement)
+              const openSlots = _enemySlots.filter(s => !Object.values(finalChars).some(c => !c.isDead && c.position.x === s.x && c.position.y === s.y))
+              if (openSlots.length > 0) reinforcement.position = openSlots[i % openSlots.length]
+              finalChars = { ...finalChars, [reinforcement.id]: reinforcement }
+              extraLogs.push(`⚠️ ${reinforcement.name} rejoint le combat !`)
+            })
+          }
+        }
+
+        if (phase.effect === 'fly') {
+          finalChars[id] = { ...finalChars[id], statuses: [...finalChars[id].statuses, { type: 'flying', duration: (phase.flyDuration || 1) + 1 }] }
+          extraLogs.push(`🐉 ${ch.name} s'envole ! Intouchable pendant ${phase.flyDuration} tour !`)
+        }
+
+        if (phase.effect === 'charge') {
+          finalChars[id] = { ...finalChars[id], _chargeReady: true, _chargeEvery: phase.chargeEveryNTurns || 2, _chargeDamage: phase.chargeDamage, _chargeRange: phase.chargeRange || 3 }
+          extraLogs.push(`🐂 ${ch.name} gratte le sol... Il se prépare à charger !`)
+        }
+      }
+
       const gameEnd = checkGameEnd(finalChars, state.combatObjective, state.round)
 
       const newLog = [...state.log, ...extraLogs.map(text => ({
@@ -2139,7 +2174,7 @@ export function useGameState() {
     }
 
     const difficulty = state.campaign.active ? Math.min(state.campaign.act + 1, 3) : 2
-    const decision = decideAction(current, state.characters, getAbilityState, state.terrain, difficulty)
+    const decision = decideAction(current, state.characters, getAbilityState, state.terrain, difficulty, state.combatObjective)
     const steps = []
 
     if (decision.movement) {

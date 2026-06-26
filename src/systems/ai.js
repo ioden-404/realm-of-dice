@@ -73,9 +73,10 @@ function assessBattlefield(allies, enemies, difficulty) {
   return { strategy, focusTarget }
 }
 
-export function decideAction(character, characters, getAbilityState, terrain = {}, difficulty = 2) {
-  const enemies = Object.values(characters).filter(c => c.team !== character.team && !c.isDead)
+export function decideAction(character, characters, getAbilityState, terrain = {}, difficulty = 2, objective = null) {
+  const enemies = Object.values(characters).filter(c => c.team !== character.team && !c.isDead && !c.isCrystal)
   const allies = Object.values(characters).filter(c => c.team === character.team && !c.isDead && c.id !== character.id)
+  const objectiveTargets = Object.values(characters).filter(c => c.isCrystal && !c.isDead)
 
   if (enemies.length === 0) return { movement: null, action: null, actionTarget: null, bonusAction: null, bonusActionTarget: null }
 
@@ -91,7 +92,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
 
   const hasFreeDisengage = decision.bonusAction?.effect === 'disengage' || hasStatus(character, 'disengaged')
 
-  const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
+  const stayEval = evaluatePosition(character, character.position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty, objective, objectiveTargets)
   let best = { score: stayEval.score, action: stayEval.action, target: stayEval.target, movement: null }
 
   const aoDmg = inMelee && !hasFreeDisengage ? estimateAODamage(adjEnemiesNow) : 0
@@ -101,7 +102,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
   const isMeleeClass = classId === 'guerrier' || classId === 'voleur'
 
   for (const cell of accessible) {
-    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
+    const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty, objective, objectiveTargets)
 
     let moveCost = 0
     if (inMelee && !hasFreeDisengage) {
@@ -141,7 +142,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
         let bestMoveScore = -Infinity
         let bestMovePos = null
         for (const cell of accessible) {
-          const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty)
+          const eval_ = evaluatePosition(character, cell, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty, objective, objectiveTargets)
           if (eval_.score > bestMoveScore) {
             bestMoveScore = eval_.score
             bestMovePos = cell
@@ -157,7 +158,7 @@ export function decideAction(character, characters, getAbilityState, terrain = {
   return decision
 }
 
-function evaluatePosition(character, position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty) {
+function evaluatePosition(character, position, enemies, allies, characters, getAbilityState, terrain, battlePlan, difficulty, objective = null, objectiveTargets = []) {
   let score = 0
   let bestAction = null
   let bestTarget = null
@@ -369,6 +370,50 @@ function evaluatePosition(character, position, enemies, allies, characters, getA
   if (terrainCell) {
     if (terrainCell.type === TERRAIN_TYPES.HAZARD || terrainCell.type === TERRAIN_TYPES.FIRE) score -= 8
     if (terrainCell.type === TERRAIN_TYPES.COVER && ['mage', 'rodeur', 'clerc'].includes(classId)) score += 5
+  }
+
+  if (objective) {
+    if (objective.type === 'protect' && objectiveTargets.length > 0) {
+      const crystal = objectiveTargets[0]
+      const distToCrystal = Math.abs(position.x - crystal.position.x) + Math.abs(position.y - crystal.position.y)
+      const range = character.range || 1
+      if (distToCrystal <= range && bestAction?.damage) {
+        score += 30
+        bestTarget = crystal
+      }
+      score += Math.max(0, 6 - distToCrystal) * 4
+    }
+
+    if (objective.type === 'killLeader') {
+      if (character.isLeader) {
+        const minEnemyDist = enemies.length > 0 ? Math.min(...enemies.map(e => Math.abs(position.x - e.position.x) + Math.abs(position.y - e.position.y))) : 99
+        score += Math.min(minEnemyDist, 5) * 3
+      } else {
+        const leader = allies.find(a => a.isLeader) || character
+        if (leader.isLeader) {
+          const distToLeader = Math.abs(position.x - leader.position.x) + Math.abs(position.y - leader.position.y)
+          if (distToLeader <= 1) score += 10
+          else score += Math.max(0, 4 - distToLeader) * 3
+        }
+      }
+    }
+
+    if (objective.type === 'survive') {
+      score *= 1.5
+    }
+
+    if (objective.type === 'escort') {
+      const escort = Object.values(characters).find(c => c.isEscort && !c.isDead)
+      if (escort) {
+        const distToEscort = Math.abs(position.x - escort.position.x) + Math.abs(position.y - escort.position.y)
+        const range = character.range || 1
+        if (distToEscort <= range && bestAction?.damage) {
+          score += 25
+          bestTarget = escort
+        }
+        score += Math.max(0, 6 - distToEscort) * 3
+      }
+    }
   }
 
   return { score, action: bestAction, target: bestTarget }

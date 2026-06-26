@@ -5,6 +5,12 @@ import { TERRAIN_TYPES, HAZARD_DAMAGE } from './terrain.js'
 export function resolveAttack(attacker, target, ability, characters, terrain = {}) {
   const logs = []
   const effects = []
+
+  if (hasStatus(target, 'flying')) {
+    logs.push(`🐉 ${target.name} est en vol ! L'attaque ne peut pas l'atteindre !`)
+    return { hit: false, logs, effects, isCrit: false, isCritFail: false, d20Roll: 0 }
+  }
+
   let hasAdvantage = hasStatus(attacker, 'advantage')
   let hasDisadvantage = false
 
