@@ -423,6 +423,7 @@ const initialState = {
   pendingCutIn: null,
   pendingReaction: null,
   runBestiary: {},
+  combatObjective: null,
   storyGrid: null,
   story: {
     active: false,
@@ -548,11 +549,31 @@ function applyEffects(state, effects) {
   return { characters: newChars, stats: newStats, visualEvents }
 }
 
-function checkGameEnd(characters) {
-  const allyAlive = Object.values(characters).some(c => c.team === TEAMS.ALLY && !c.isDead)
+function checkGameEnd(characters, objective, round) {
+  const allyAlive = Object.values(characters).some(c => c.team === TEAMS.ALLY && !c.isDead && !c.isCrystal && !c.isEscort)
   const enemyAlive = Object.values(characters).some(c => c.team === TEAMS.ENEMY && !c.isDead)
 
   if (!allyAlive) return PHASES.DEFEAT
+
+  if (objective) {
+    if (objective.type === 'killLeader') {
+      const leader = Object.values(characters).find(c => c.isLeader)
+      if (leader?.isDead) return PHASES.VICTORY
+    }
+    if (objective.type === 'survive' && round > objective.turns) {
+      return PHASES.VICTORY
+    }
+    if (objective.type === 'protect') {
+      const crystal = Object.values(characters).find(c => c.isCrystal)
+      if (crystal?.isDead) return PHASES.DEFEAT
+    }
+    if (objective.type === 'escort') {
+      const npc = Object.values(characters).find(c => c.isEscort)
+      if (npc?.position?.x >= 6) return PHASES.VICTORY
+      if (npc?.isDead) return PHASES.DEFEAT
+    }
+  }
+
   if (!enemyAlive) return PHASES.VICTORY
   return null
 }
@@ -718,7 +739,7 @@ function gameReducer(state, action) {
 
       const current = updatedChars[state.initiativeOrder[state.currentTurnIndex]]
       if (current?.isDead) {
-        const gameEnd = checkGameEnd(updatedChars)
+        const gameEnd = checkGameEnd(updatedChars, state.combatObjective, state.round)
         return {
           ...state,
           characters: updatedChars,
@@ -898,7 +919,7 @@ function gameReducer(state, action) {
         }
       }
 
-      const gameEnd = checkGameEnd(finalChars)
+      const gameEnd = checkGameEnd(finalChars, state.combatObjective, state.round)
 
       const newLog = [...state.log, ...extraLogs.map(text => ({
         text,
@@ -1078,7 +1099,7 @@ function gameReducer(state, action) {
       }
 
       let loopGuard = state.initiativeOrder.length * 2
-      while (updatedChars[state.initiativeOrder[nextIndex]]?.isDead) {
+      while (updatedChars[state.initiativeOrder[nextIndex]]?.isDead || updatedChars[state.initiativeOrder[nextIndex]]?.isCrystal) {
         if (--loopGuard <= 0) break
         nextIndex++
         if (nextIndex >= state.initiativeOrder.length) {
@@ -1118,7 +1139,7 @@ function gameReducer(state, action) {
         turnVisuals = applied.visualEvents || []
       }
 
-      const gameEnd = checkGameEnd(updatedChars)
+      const gameEnd = checkGameEnd(updatedChars, state.combatObjective, state.round)
       if (gameEnd) {
         const resolvedPhase = resolveCampaignPhase(state, gameEnd)
         let restChars = updatedChars
@@ -1167,6 +1188,34 @@ function gameReducer(state, action) {
         }
       }
 
+      const obj = state.combatObjective
+      let extraObjLogs = []
+
+      if (obj?.type === 'stopReinforcements' && obj.spawnRounds?.includes(newRound)) {
+        const mId = obj.spawnMonster || 'goblin'
+        shuffleEnemySlots()
+        const reinforcement = createMonster(mId, Object.keys(updatedChars).length, [mId])
+        reinforcement.uses = initUses(reinforcement)
+        const openSlots = _enemySlots.filter(s => !Object.values(updatedChars).some(c => !c.isDead && c.position.x === s.x && c.position.y === s.y))
+        if (openSlots.length > 0) reinforcement.position = openSlots[0]
+        updatedChars = { ...updatedChars, [reinforcement.id]: reinforcement }
+        const newInitOrder = rollInitiative(updatedChars)
+        extraObjLogs.push(`⚠️ Des renforts arrivent ! ${reinforcement.name} rejoint le combat !`)
+        return {
+          ...state,
+          characters: updatedChars,
+          initiativeOrder: newInitOrder,
+          terrain: updatedTerrain,
+          currentTurnIndex: newInitOrder.indexOf(state.initiativeOrder[nextIndex]),
+          round: newRound,
+          turnState: isEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+          selectedAbility: null, selectedCategory: null, validTargets: [], validMoves: [],
+          log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' })), ...extraObjLogs.map(t => ({ text: t, type: 'system' })), { text: `--- Tour de ${nextChar.name} (${nextChar.classData.name}) ---`, type: 'turn' }].slice(-50),
+          stats: { ...state.stats, rounds: newRound },
+          visualEvents: turnVisuals
+        }
+      }
+
       return {
         ...state,
         characters: updatedChars,
@@ -1208,7 +1257,7 @@ function gameReducer(state, action) {
 
       const movedChar = updatedChars[characterId]
       if (movedChar.isDead) {
-        const gameEnd = checkGameEnd(updatedChars)
+        const gameEnd = checkGameEnd(updatedChars, state.combatObjective, state.round)
         return {
           ...state,
           characters: updatedChars,
@@ -1521,6 +1570,29 @@ function gameReducer(state, action) {
         characters[monster.id] = monster
       })
 
+      const objective = node.encounter.objective || null
+
+      if (objective?.type === 'killLeader') {
+        const leaderIdx = objective.leaderIndex || 0
+        const monsterIds = Object.keys(characters).filter(id => characters[id].team === TEAMS.ENEMY)
+        if (monsterIds[leaderIdx]) {
+          characters[monsterIds[leaderIdx]] = { ...characters[monsterIds[leaderIdx]], isLeader: true, maxHp: characters[monsterIds[leaderIdx]].maxHp + 5, hp: characters[monsterIds[leaderIdx]].hp + 5 }
+        }
+      }
+
+      if (objective?.type === 'protect') {
+        characters['objective-crystal'] = {
+          id: 'objective-crystal', name: 'Cristal', emoji: '💎', team: TEAMS.ALLY,
+          classId: 'crystal', classData: { name: 'Cristal', abilities: { actions: [], bonusActions: [], reactions: [] } },
+          hp: objective.crystalHp || 25, maxHp: objective.crystalHp || 25,
+          ac: 8, attackBonus: 0, movement: 0, range: 0,
+          position: { x: 3, y: 2 },
+          actionUsed: true, bonusActionUsed: true, reactionUsed: true, movementUsed: 0,
+          statuses: [], cooldowns: {}, uses: {}, concentration: null,
+          isDead: false, initiative: -99, animation: null, isCrystal: true
+        }
+      }
+
       const relics = (campaign.relics || []).map(r => r.relicEffect).filter(Boolean)
 
       for (const id of Object.keys(characters)) {
@@ -1543,6 +1615,7 @@ function gameReducer(state, action) {
         characters, initiativeOrder,
         currentTurnIndex: 0, round: 1,
         turnState: TURN_STATES.PLACING,
+        combatObjective: objective,
         campaignRelics: relics,
         campaignRelicTrackers: { healDone: false, phoenixUsed: false, cancelCritUsed: false },
         placingCharIndex: 0,

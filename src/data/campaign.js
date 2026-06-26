@@ -13,8 +13,8 @@ export const ACTS = [
         { name: 'Tombeau gardé', monsters: ['skeleton', 'goblin', 'goblin'] }
       ],
       elite: [
-        { name: 'Horde d\'os', monsters: ['skeleton', 'skeleton', 'skeleton', 'goblin'] },
-        { name: 'Meute alpha', monsters: ['wolf', 'wolf', 'wolf'] }
+        { name: 'Horde d\'os', monsters: ['skeleton', 'skeleton', 'skeleton', 'goblin'], objective: { type: 'killLeader', leaderIndex: 0, desc: '🎯 Tuez le chef squelette !' } },
+        { name: 'Meute alpha', monsters: ['wolf', 'wolf', 'wolf'], objective: { type: 'survive', turns: 5, desc: '⏳ Survivez 5 tours !' } }
       ],
       boss: [
         { name: 'Le Bugbear', monsters: ['bugbear', 'goblin', 'goblin'] }
@@ -33,8 +33,8 @@ export const ACTS = [
         { name: 'Couloir hanté', monsters: ['specter', 'gnoll', 'zombie'] }
       ],
       elite: [
-        { name: 'Le nécromancien', monsters: ['necromancer', 'zombie', 'zombie', 'zombie'] },
-        { name: 'Spectres vengeurs', monsters: ['specter', 'specter', 'specter'] }
+        { name: 'Le nécromancien', monsters: ['necromancer', 'zombie', 'zombie', 'zombie'], objective: { type: 'killLeader', leaderIndex: 0, desc: '🎯 Tuez le nécromancien !' } },
+        { name: 'Spectres vengeurs', monsters: ['specter', 'specter', 'specter'], objective: { type: 'protect', crystalHp: 25, desc: '🛡️ Protégez le cristal !' } }
       ],
       boss: [
         { name: 'Le Minotaure', monsters: ['minotaur', 'gnoll', 'gnoll'] }
@@ -53,8 +53,8 @@ export const ACTS = [
         { name: 'Garde avancée', monsters: ['deathKnight', 'darkMage'] }
       ],
       elite: [
-        { name: 'Garde royale', monsters: ['deathKnight', 'deathKnight', 'darkMage'] },
-        { name: 'Berserkers', monsters: ['orcBerserker', 'orcBerserker', 'orcBerserker'] }
+        { name: 'Garde royale', monsters: ['deathKnight', 'deathKnight', 'darkMage'], objective: { type: 'stopReinforcements', spawnRounds: [3, 5], spawnMonster: 'orcBerserker', desc: '⚔️ Éliminez-les avant les renforts !' } },
+        { name: 'Berserkers', monsters: ['orcBerserker', 'orcBerserker', 'orcBerserker'], objective: { type: 'survive', turns: 6, desc: '⏳ Survivez 6 tours !' } }
       ],
       boss: [
         { name: 'Le Jeune Dragon', monsters: ['youngDragon', 'orcBerserker', 'orcBerserker'] }

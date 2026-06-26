@@ -457,6 +457,17 @@ export default function App() {
         />
       </InitiativeBar>
 
+      {state.combatObjective && (
+        <div className="objective-banner">
+          {state.combatObjective.desc}
+          {state.combatObjective.type === 'survive' && <span className="objective-timer"> (Tour {state.round}/{state.combatObjective.turns})</span>}
+          {state.combatObjective.type === 'protect' && (() => {
+            const crystal = Object.values(state.characters).find(c => c.isCrystal)
+            return crystal ? <span className="objective-timer"> ({crystal.hp}/{crystal.maxHp} PV)</span> : null
+          })()}
+        </div>
+      )}
+
       {state.turnState === TURN_STATES.PLACING ? (
         <div className="turn-banner turn-placing">
           📍 Phase de placement — Positionnez votre équipe

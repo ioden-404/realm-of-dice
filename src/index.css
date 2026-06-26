@@ -1151,6 +1151,22 @@ body {
   text-align: center;
 }
 
+.objective-banner {
+  text-align: center;
+  padding: 6px 10px;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.2), transparent);
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--color-gold-light);
+  letter-spacing: 0.5px;
+}
+
+.objective-timer {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
 .turn-placing {
   background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.2), transparent);
   color: var(--color-gold-light);
@@ -1271,6 +1287,26 @@ body {
 
 .token-sprite-flip {
   transform: scaleX(-1);
+}
+
+.token-leader-badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  z-index: 5;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+.token-crystal-badge {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  z-index: 5;
+  animation: pulse-gold 2s ease-in-out infinite;
 }
 
 .token-hp-bar-bottom {

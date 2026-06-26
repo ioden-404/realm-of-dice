@@ -112,6 +112,8 @@ export default function Token({ character, isActive, terrainType, onClick }) {
           </div>
         )}
         {isActive && <div className="token-active-badge">ACTIF</div>}
+        {character.isLeader && <div className="token-leader-badge">👑</div>}
+        {character.isCrystal && <div className="token-crystal-badge">💎</div>}
         <div className="token-status-icons">
           {hasPoison && <span className="status-icon">☠️</span>}
           {hasShield && <span className="status-icon">🛡️</span>}
