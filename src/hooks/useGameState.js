@@ -670,39 +670,18 @@ function gameReducer(state, action) {
       if (!isDifficultTerrain && state.movementRemaining < moveCost) return state
 
       const aoResult = resolveOpportunityAttacks(current, current.position, { x: newX, y: newY }, state.characters)
-      let updatedChars = { ...state.characters }
-      let aoLogs = []
-
-      let aoVisuals = []
+      const pendingAOs = [...(state.pendingAOs || [])]
       if (aoResult.effects.length > 0) {
-        const applied = applyEffects({ characters: updatedChars, stats: state.stats }, aoResult.effects)
-        updatedChars = applied.characters
-        aoVisuals = applied.visualEvents || []
-        aoLogs = aoResult.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' }))
-      }
-
-      const movedCurrent = updatedChars[current.id]
-      if (movedCurrent.isDead) {
-        const gameEnd = checkGameEnd(updatedChars)
-        return {
-          ...state,
-          characters: updatedChars,
-          log: [...state.log, ...aoLogs].slice(-50),
-          turnState: TURN_STATES.IDLE,
-          movementRemaining: 0,
-          validMoves: [],
-          visualEvents: aoVisuals,
-          phase: resolveCampaignPhase(state, gameEnd) || state.phase
-        }
+        pendingAOs.push({ effects: aoResult.effects, logs: aoResult.logs })
       }
 
       const newChars = {
-        ...updatedChars,
+        ...state.characters,
         [current.id]: {
-          ...movedCurrent,
+          ...current,
           position: { x: newX, y: newY },
-          movementUsed: movedCurrent.movementUsed + moveCost,
-          facingRight: dx !== 0 ? dx > 0 : movedCurrent.facingRight
+          movementUsed: current.movementUsed + moveCost,
+          facingRight: dx !== 0 ? dx > 0 : current.facingRight
         }
       }
 
@@ -716,18 +695,50 @@ function gameReducer(state, action) {
         characters: newChars,
         movementRemaining: newRemaining,
         validMoves: newValidMoves,
-        log: [...state.log, ...aoLogs].slice(-50),
-        visualEvents: aoVisuals
+        pendingAOs
       }
     }
 
     case 'CONFIRM_MOVE': {
+      let updatedChars = { ...state.characters }
+      let aoLogs = []
+      let aoVisuals = []
+
+      for (const ao of (state.pendingAOs || [])) {
+        const applied = applyEffects({ characters: updatedChars, stats: state.stats }, ao.effects)
+        updatedChars = applied.characters
+        aoVisuals.push(...(applied.visualEvents || []))
+        aoLogs.push(...ao.logs.map(t => ({ text: t, type: t.includes('Raté') ? 'miss' : 'info' })))
+      }
+
+      const current = updatedChars[state.initiativeOrder[state.currentTurnIndex]]
+      if (current?.isDead) {
+        const gameEnd = checkGameEnd(updatedChars)
+        return {
+          ...state,
+          characters: updatedChars,
+          log: [...state.log, ...aoLogs].slice(-50),
+          turnState: TURN_STATES.IDLE,
+          movementRemaining: 0,
+          validMoves: [],
+          visualEvents: aoVisuals,
+          pendingAOs: [],
+          originalPosition: null,
+          originalMovementUsed: 0,
+          phase: resolveCampaignPhase(state, gameEnd) || state.phase
+        }
+      }
+
       return {
         ...state,
+        characters: updatedChars,
         turnState: TURN_STATES.IDLE,
         originalPosition: null,
         originalMovementUsed: 0,
-        validMoves: []
+        validMoves: [],
+        pendingAOs: [],
+        log: [...state.log, ...aoLogs].slice(-50),
+        visualEvents: aoVisuals
       }
     }
 
@@ -748,7 +759,8 @@ function gameReducer(state, action) {
         originalPosition: null,
         originalMovementUsed: 0,
         movementRemaining: 0,
-        validMoves: []
+        validMoves: [],
+        pendingAOs: []
       }
     }
 
