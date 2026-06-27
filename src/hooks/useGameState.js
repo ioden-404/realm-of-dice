@@ -451,6 +451,7 @@ function applyEffects(state, effects) {
         if (updated.hp === 0 && !updated.isDead) {
           updated.isDead = true
           updated.animation = 'death'
+          updated._deathRound = newStats?.rounds || 1
         } else if (effect.amount > 0 && !updated.isDead) {
           updated.animation = 'shake'
         }
@@ -568,8 +569,9 @@ function checkGameEnd(characters, objective, round) {
       if (crystal?.isDead) return PHASES.DEFEAT
     }
     if (objective.type === 'escort') {
+      const anyAllyEscaped = Object.values(characters).some(c => c.team === TEAMS.ALLY && !c.isDead && !c.isCrystal && c.position?.x >= 6)
+      if (anyAllyEscaped) return PHASES.VICTORY
       const npc = Object.values(characters).find(c => c.isEscort)
-      if (npc?.position?.x >= 6) return PHASES.VICTORY
       if (npc?.isDead) return PHASES.DEFEAT
     }
   }
@@ -1329,6 +1331,51 @@ function gameReducer(state, action) {
         }
       }
 
+      let storySpawnLogs = []
+      const storyConfig = state.story?.combatConfig
+      if (storyConfig?.enemies && state.story?.active) {
+        const pendingGroups = storyConfig.enemies.filter(g => g.spawnRound === newRound)
+        for (const group of pendingGroups) {
+          shuffleEnemySlots()
+          for (let i = 0; i < group.count; i++) {
+            const reinforcement = createMonster(group.monsterId, Object.keys(updatedChars).length + i, [group.monsterId])
+            reinforcement.uses = initUses(reinforcement)
+            const openSlots = _enemySlots.filter(s => !Object.values(updatedChars).some(c => !c.isDead && c.position.x === s.x && c.position.y === s.y))
+            if (openSlots.length > 0) reinforcement.position = openSlots[i % openSlots.length]
+            updatedChars = { ...updatedChars, [reinforcement.id]: reinforcement }
+            storySpawnLogs.push(`⚠️ ${reinforcement.name} émerge du brouillard !`)
+          }
+        }
+
+        if (storyConfig.respawnAfter) {
+          const deadEnemies = Object.values(updatedChars).filter(c => c.team === TEAMS.ENEMY && c.isDead && c._deathRound && newRound - c._deathRound >= storyConfig.respawnAfter)
+          for (const dead of deadEnemies) {
+            const openSlots = _enemySlots.filter(s => !Object.values(updatedChars).some(c => !c.isDead && c.position.x === s.x && c.position.y === s.y))
+            if (openSlots.length > 0) {
+              updatedChars = { ...updatedChars, [dead.id]: { ...dead, hp: dead.maxHp, isDead: false, position: openSlots[0], animation: null, _deathRound: null } }
+              storySpawnLogs.push(`👤 Une silhouette se reforme...`)
+            }
+          }
+        }
+
+        if (storySpawnLogs.length > 0 || pendingGroups.length > 0) {
+          const newInitOrder = rollInitiative(updatedChars)
+          return {
+            ...state,
+            characters: updatedChars,
+            initiativeOrder: newInitOrder,
+            terrain: updatedTerrain,
+            currentTurnIndex: Math.max(0, newInitOrder.indexOf(state.initiativeOrder[nextIndex])),
+            round: newRound,
+            turnState: isEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
+            selectedAbility: null, selectedCategory: null, validTargets: [], validMoves: [],
+            log: [...state.log, ...startResult.logs.map(t => ({ text: t, type: 'info' })), ...storySpawnLogs.map(t => ({ text: t, type: 'system' })), { text: `--- Tour de ${nextChar.name} (${nextChar.classData.name}) ---`, type: 'turn' }].slice(-50),
+            stats: { ...state.stats, rounds: newRound },
+            visualEvents: turnVisuals
+          }
+        }
+      }
+
       return {
         ...state,
         characters: updatedChars,
@@ -2069,6 +2116,13 @@ function gameReducer(state, action) {
 
       const pendingSpawns = config.enemies.filter(g => g.spawnRound).map(g => ({ ...g }))
 
+      let storyObjective = null
+      if (config.objective === 'escape') {
+        storyObjective = { type: 'escort', desc: '🏃 Fuyez ! Atteignez le bord droit du plateau !' }
+      } else if (config.objective === 'survive') {
+        storyObjective = { type: 'survive', turns: config.surviveTurns || 5, desc: '⏳ Survivez !' }
+      }
+
       return {
         ...state,
         phase: PHASES.COMBAT,
@@ -2079,6 +2133,7 @@ function gameReducer(state, action) {
         turnState: firstIsEnemy ? TURN_STATES.ENEMY_TURN : TURN_STATES.IDLE,
         terrain: {},
         terrainTheme: config.terrainTheme || null,
+        combatObjective: storyObjective,
         selectedAbility: null,
         selectedCategory: null,
         validTargets: [],
